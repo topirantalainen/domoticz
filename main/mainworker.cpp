@@ -48,6 +48,7 @@
 #include "../hardware/OTGWTCP.h"
 #include "../hardware/Teleinfo.h"
 #include "../hardware/Limitless.h"
+#include "../hardware/LKIHC.h"
 #include "../hardware/MochadTCP.h"
 #include "../hardware/EnOceanESP2.h"
 #include "../hardware/EnOceanESP3.h"
@@ -798,6 +799,10 @@ bool MainWorker::AddHardwareFromParams(
 	case HTYPE_HEOS:
 		//HEOS by DENON
 		pHardware = new CHEOS(ID, Address, Port, Username, Password, Mode1, Mode2);
+		break;
+	case HTYPE_IHC:
+		//LK IHC Controller
+		pHardware = new CLKIHC(ID, Address, Port, Username, Password);
 		break;
 	case HTYPE_MultiFun:
 		//MultiFun LAN
@@ -2030,6 +2035,7 @@ void MainWorker::ProcessRXMessage(const CDomoticzHardwareBase *pHardware, const 
 			case pTypeThermostat3:
 			case pTypeRadiator1:
 			case pTypeGeneralSwitch:
+			case pTypeIHC:
 			case pTypeHomeConfort:
 			case pTypeFan:
 				//we received a control message from a domoticz client,
@@ -2245,6 +2251,9 @@ void MainWorker::ProcessRXMessage(const CDomoticzHardwareBase *pHardware, const 
 			break;
 		case pTypeYeelight:
 			decode_Yeelight(HwdID, HwdType, reinterpret_cast<const tRBUF *>(pRXCommand), procResult);
+			break;
+		case pTypeIHC:
+			decode_IHC(HwdID, HwdType, reinterpret_cast<const tRBUF *>(pRXCommand), procResult);
 			break;
 		default:
 			_log.Log(LOG_ERROR, "UNHANDLED PACKET TYPE:      FS20 %02X", pRXCommand[1]);
@@ -9673,6 +9682,53 @@ void MainWorker::decode_General(const int HwdID, const _eHardwareTypes HwdType, 
 	procResult.DeviceRowIdx = DevRowIdx;
 }
 
+void MainWorker::decode_IHC(const int HwdID, const _eHardwareTypes HwdType, const tRBUF *pResponse, _tRxMessageProcessingResult & procResult)
+{
+	std::cout << "decode_IHC\n";
+
+	char szTmp[300];
+	_tIHC *pLed=(_tIHC*)pResponse;
+
+	unsigned char devType=pTypeIHC;
+	unsigned char subType=pLed->subtype;
+	if (pLed->id==1)
+		sprintf(szTmp,"%d", 1);
+	else
+		sprintf(szTmp, "%08x", (unsigned int)pLed->id);
+	std::string ID = szTmp;
+	unsigned char Unit=pLed->dunit;
+	unsigned char cmnd=pLed->command;
+	unsigned char value=pLed->value;
+
+	unsigned long long DevRowIdx=m_sql.UpdateValue(HwdID, ID.c_str(),Unit,devType,subType,12,-1,cmnd, procResult.DeviceName);
+	if (DevRowIdx == -1)
+		return;
+	CheckSceneCode(DevRowIdx,devType,subType,cmnd,szTmp);
+/*
+	if (cmnd == Limitless_SetBrightnessLevel)
+	{
+		std::vector<std::vector<std::string> > result;
+		result = m_sql.safe_query(
+			"SELECT ID,Name FROM DeviceStatus WHERE (HardwareID=%d AND DeviceID='%q' AND Unit=%d AND Type=%d AND SubType=%d)",
+			HwdID, ID.c_str(), Unit, devType, subType);
+		if (result.size() != 0)
+		{
+			unsigned long long ulID;
+			std::stringstream s_str(result[0][0]);
+			s_str >> ulID;
+
+			//store light level
+			m_sql.safe_query(
+				"UPDATE DeviceStatus SET LastLevel='%d' WHERE (ID = %llu)",
+				value,
+				ulID);
+		}
+
+	}
+*/
+	procResult.DeviceRowIdx = DevRowIdx;
+}
+
 void MainWorker::decode_GeneralSwitch(const int HwdID, const _eHardwareTypes HwdType, const tRBUF *pResponse, _tRxMessageProcessingResult & procResult)
 {
 	char szTmp[200];
@@ -11117,6 +11173,65 @@ bool MainWorker::SwitchLightInt(const std::vector<std::string> &sd, std::string 
 			PushAndWaitRxMessage(m_hardwaredevices[hindex], (const unsigned char *)&lcmd, NULL, -1);
 		}
 		return true;
+	case pTypeIHC:
+	{
+		_log.Log(LOG_STATUS,"pTypeIHC");
+		_tLimitlessLights lcmd;
+		lcmd.len=sizeof(_tLimitlessLights)-1;
+		lcmd.type=dType;
+		lcmd.subtype=dSubType;
+		lcmd.id = ID;
+		lcmd.dunit = Unit;
+std::cout << switchcmd << std::endl;
+		if ((switchcmd=="On")||(switchcmd=="Set Level"))
+		{
+			_log.Log(LOG_STATUS,"ON || Set level");
+			if (hue!=-1)
+			{
+				_tLimitlessLights lcmd2;
+				lcmd2.len=sizeof(_tLimitlessLights)-1;
+				lcmd2.type=dType;
+				lcmd2.subtype=dSubType;
+				lcmd2.id = ID;
+				lcmd2.dunit = Unit;
+				if (hue!=1000)
+				{
+					double dval;
+					dval=(255.0/360.0)*float(hue);
+					int ival;
+					ival=round(dval);
+					lcmd2.value=ival;
+					lcmd2.command=Limitless_SetRGBColour;
+				}
+				else
+				{
+					lcmd2.command=Limitless_SetColorToWhite;
+				}
+				if (!WriteToHardware(HardwareID, (const char*)&lcmd2, sizeof(_tLimitlessLights)))
+					return false;
+				sleep_milliseconds(100);
+			}
+		}
+
+		lcmd.value=level;
+		if (!GetLightCommand(dType,dSubType,switchtype,switchcmd,lcmd.command, options))
+			return false;
+		_log.Log(LOG_STATUS,"Second write");
+		if (!WriteToHardware(HardwareID, (const char*)&lcmd, sizeof(_tLimitlessLights)))
+			return false;
+		_log.Log(LOG_STATUS,"Second write true");
+
+		_log.Log(LOG_STATUS,"testing?");
+		if (!IsTesting) {
+			_log.Log(LOG_STATUS,"   no");
+			//send to internal for now (later we use the ACK)
+			PushAndWaitRxMessage(m_hardwaredevices[hindex],(const unsigned char *)&lcmd, NULL, -1);
+		}
+		else
+			_log.Log(LOG_STATUS,"   yes");
+		return true;
+	}
+	break;
 	case pTypeGeneralSwitch:
 		{
 			_tGeneralSwitch gswitch;

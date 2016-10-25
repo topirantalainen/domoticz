@@ -358,6 +358,8 @@ namespace http {
 			RegisterCommandCode("updatehardware", boost::bind(&CWebServer::Cmd_UpdateHardware, this, _1, _2, _3));
 			RegisterCommandCode("deletehardware", boost::bind(&CWebServer::Cmd_DeleteHardware, this, _1, _2, _3));
 
+			RegisterCommandCode("lkihcgetnodes", boost::bind(&CWebServer::Cmd_LKIHCGetNodes, this, _1, _2, _3));
+
 			RegisterCommandCode("wolgetnodes", boost::bind(&CWebServer::Cmd_WOLGetNodes, this, _1, _2, _3));
 			RegisterCommandCode("woladdnode", boost::bind(&CWebServer::Cmd_WOLAddNode, this, _1, _2, _3));
 			RegisterCommandCode("wolupdatenode", boost::bind(&CWebServer::Cmd_WOLUpdateNode, this, _1, _2, _3));
@@ -1108,6 +1110,9 @@ namespace http {
 			else if (htype == HTYPE_Yeelight) {
 				//all fine here!
 			}
+			else if (htype == HTYPE_IHC) {
+				//all fine here!
+			}
 			else if (
 				(htype == HTYPE_Wunderground) ||
 				(htype == HTYPE_DarkSky) ||
@@ -1389,6 +1394,9 @@ namespace http {
 				//All fine here
 			}
 			else if (htype == HTYPE_Yeelight) {
+				//All fine here
+			}
+			else if (htype == HTYPE_IHC) {
 				//All fine here
 			}
 			else if (
@@ -3281,6 +3289,7 @@ namespace http {
 						case pTypeLighting6:
 						case pTypeFan:
 						case pTypeLimitlessLights:
+						case pTypeIHC:
 						case pTypeSecurity1:
 						case pTypeSecurity2:
 						case pTypeEvohome:
@@ -7421,6 +7430,7 @@ namespace http {
 								(dType != pTypeThermostat2) &&
 								(dType != pTypeThermostat3) &&
 								(dType != pTypeRemote) &&
+								(dType != pTypeIHC) &&
 								(dType != pTypeGeneralSwitch) &&
 								(dType != pTypeHomeConfort) &&
 								(dType != pTypeChime) &&
@@ -7689,6 +7699,7 @@ namespace http {
 						(dType == pTypeRemote)||
 						(dType == pTypeGeneralSwitch) ||
 						(dType == pTypeHomeConfort) ||
+						(dType == pTypeIHC) ||
 						((dType == pTypeRadiator1) && (dSubType == sTypeSmartwaresSwitchRadiator)) ||
 						((dType == pTypeRego6XXValue) && (dSubType == sTypeRego6XXStatus))
 						)

@@ -239,6 +239,7 @@ const char *Hardware_Type_Desc(int hType)
 		{ HTYPE_ZIBLUEUSB, "ZiBlue RFPlayer USB" },
 		{ HTYPE_ZIBLUETCP, "ZiBlue RFPlayer with LAN interface" },
 		{ HTYPE_Yeelight, "Yeelight LED" },
+		{ HTYPE_IHC, "LK IHC Controller" },
 
 		{ 0, NULL, NULL }
 	};
@@ -425,6 +426,7 @@ const char *RFX_Type_Desc(const unsigned char i, const unsigned char snum)
 		{ pTypeLighting6, "Lighting 6" , "lightbulb", },
 		{ pTypeHomeConfort, "Home Confort" , "lightbulb" },
 		{ pTypeLimitlessLights, "Lighting Limitless/Applamp" , "lightbulb" },
+		{ pTypeIHC, "IHC", "lightbulb" },
 		{ pTypeCurtain, "Curtain" , "blinds" },
 		{ pTypeBlinds, "Blinds" , "blinds" },
 		{ pTypeSecurity1, "Security", "security" },
@@ -720,6 +722,8 @@ const char *RFX_Type_SubType_Desc(const unsigned char dType, const unsigned char
 
 		{ pTypePOWER, sTypeELEC5, "Revolt" },
 
+		{ pTypeIHC, sTypeIHCAirRelay, "Air Relay" },
+		{ pTypeIHC, sTypeIHCAirDimmer, "Air Dimmer" },
 		{ pTypeLimitlessLights, sTypeLimitlessRGBW, "RGBW" },
 		{ pTypeLimitlessLights, sTypeLimitlessRGB, "RGB" },
 		{ pTypeLimitlessLights, sTypeLimitlessWhite, "White" },
@@ -816,6 +820,8 @@ const char *RFX_Type_SubType_Desc(const unsigned char dType, const unsigned char
 		{ pTypeGeneralSwitch, sSwitchMiLightv1, "MiLightv1" },
 		{ pTypeGeneralSwitch, sSwitchMiLightv2, "MiLightv2" },
 		{ pTypeGeneralSwitch, sSwitchHT6P20, "HT6P20" },
+		{ pTypeGeneralSwitch, sSwitchIHCAirRelay, "IHC Air Relay" },
+		{ pTypeGeneralSwitch, sSwitchIHCAirDimmer, "IHC Air Dimmer" },
 		{ pTypeYeelight, sTypeYeelightColor, "RGBW" },
 		{ pTypeYeelight, sTypeYeelightWhite, "White" },
 		{ pTypeGeneralSwitch, sSwitchTypeDoitrand, "Doitrand" },
@@ -1155,6 +1161,9 @@ const char *RFX_Type_SubType_Values(const unsigned char dType, const unsigned ch
 		{ pTypeGeneralSwitch, sSwitchTypeFunkbus, "Status" },
 		{ pTypeGeneralSwitch, sSwitchTypeNice, "Status" },
 		{ pTypeGeneralSwitch, sSwitchTypeForest, "Status" },
+
+		{ pTypeGeneralSwitch, sSwitchIHCAirRelay, "Status" },
+		{ pTypeGeneralSwitch, sSwitchIHCAirDimmer, "Status" },
 
 		{  0,0,NULL }
 	};
@@ -1796,6 +1805,23 @@ void GetLightStatus(
 			break;
 		}
 		break;
+	case pTypeIHC:
+		std::cout << "IHC\n";
+			bHaveDimmer=true;
+			maxDimLevel=100;
+			switch (nValue)
+			{
+			case Limitless_LedOff:
+				lstatus="Off";
+				break;
+			case Limitless_LedOn:
+				lstatus="On";
+				break;
+			case Limitless_SetBrightnessLevel:
+				lstatus="Set Level";
+				break;
+			}
+			break;
 	case pTypeSecurity1:
 		llevel=0;
 		switch (nValue)
@@ -3409,6 +3435,21 @@ bool GetLightCommand(
 			break;
 		}
 		return true;
+	}
+	case pTypeIHC:
+	{
+		std::cout << switchcmd << std::endl;
+		if (switchcmd=="Off")
+		{
+			cmd=Limitless_LedOff;
+			return true;
+		}
+		else if (switchcmd=="On")
+		{
+			cmd=Limitless_LedOn;
+			return true;
+		}
+		break;
 	}
 	break;
 	}

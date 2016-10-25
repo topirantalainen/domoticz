@@ -109,6 +109,7 @@ private:
 	void Cmd_AddHardware(WebEmSession & session, const request& req, Json::Value &root);
 	void Cmd_UpdateHardware(WebEmSession & session, const request& req, Json::Value &root);
 	void Cmd_DeleteHardware(WebEmSession & session, const request& req, Json::Value &root);
+	void Cmd_LKIHCGetNodes(WebEmSession & session, const request& req, Json::Value &root);
 	void Cmd_WOLGetNodes(WebEmSession & session, const request& req, Json::Value &root);
 	void Cmd_WOLAddNode(WebEmSession & session, const request& req, Json::Value &root);
 	void Cmd_WOLUpdateNode(WebEmSession & session, const request& req, Json::Value &root);

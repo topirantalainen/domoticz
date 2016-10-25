@@ -36,6 +36,9 @@
 #define sTypeThermSetpoint		0x01
 #define sTypeThermTemperature	0x02
 
+#define pTypeIHC            0xF0
+#define sTypeIHCAirRelay                  0x01
+#define sTypeIHCAirDimmer                 0x02
 
 #define pTypeGeneral				0xF3
 #define sTypeVisibility				0x01
@@ -160,6 +163,8 @@
 #define sSwitchTypeSteffen			0x61
 #define sSwitchTypeAlectoSA			0x62
 #define sSwitchTypeGPIOset			0x63
+#define sSwitchIHCAirRelay			0x64
+#define sSwitchIHCAirDimmer			0x65 
 
 //Switch commands
 #define gswitch_sOff				0x00
@@ -551,6 +556,30 @@ typedef struct _tYeelight {
 #define Yeelight_FullBrightness 21
 #define Yeelight_DiscoSpeedFasterLong 22
 #define Yeelight_SetHEXColour 23
+
+typedef struct _tIHC {
+	uint8_t len;
+	uint8_t type;
+	uint8_t subtype;
+	uint32_t id;
+	uint8_t dunit; //0=All, 1=Group1,2=Group2,3=Group3,4=Group4
+	uint8_t command;
+	uint8_t value;
+	_tIHC()
+	{
+		id = 1;
+		dunit = 1;
+		len=sizeof(_tIHC)-1;
+		type=pTypeIHC;
+		subtype=sTypeIHCAirRelay;
+		command=0;
+		value=0;
+	}
+} _tIHC;
+
+#define IHC_Off 0
+#define IHC_On 1
+
 
 typedef union tREVOBUF {
 	struct _tEVOHOME1 {
