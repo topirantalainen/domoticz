@@ -98,6 +98,7 @@ void CLKIHC::Do_Work()
 	int sec_counter = 0;
 	while (!m_stoprequested)
 	{
+	sleep_seconds(1);
 		sec_counter++;
 
 		if (sec_counter  % 12 == 0) {
@@ -118,7 +119,7 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 	const tRBUF *pSen = reinterpret_cast<const tRBUF*>(pdata);
 	if (pSen->ICMND.packettype == pTypeGeneralSwitch && pSen->ICMND.subtype == sSwitchIHCAirRelay)
 	{
-		std::cout << "Got relay with ID: " << std::endl;
+		_log.Log(LOG_STATUS, "Got relay with ID: ");
 		const _tGeneralSwitch *general = reinterpret_cast<const _tGeneralSwitch*>(pdata);
 
 		std::cout << general->id << std::endl;
@@ -126,10 +127,10 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 		ResourceValue const t(general->id, general->cmnd == gswitch_sOn ? true : false);
 	    if (ihcC->resourceUpdate(t))
 	    {
-	        std::cout << "Resource update was successful\n";
+		_log.Log(LOG_STATUS, "Resource update was successful");
 	    }
 	    else
-	        std::cout << "Failed resource update\n";
+	        _log.Log(LOG_STATUS, "Failed resource update");
 	}
 	else
 	{
@@ -141,10 +142,10 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 		ResourceValue const t(general->id, RangedInteger(general->level));
 	    if (ihcC->resourceUpdate(t))
 	    {
-	        std::cout << "Resource update was successful\n";
+	        _log.Log(LOG_STATUS, "Resource update was successful");
 	    }
 	    else
-	        std::cout << "Failed resource update\n";
+	        _log.Log(LOG_STATUS, "Failed resource update");
 	}
 
 
