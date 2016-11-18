@@ -359,6 +359,7 @@ namespace http {
 			RegisterCommandCode("deletehardware", boost::bind(&CWebServer::Cmd_DeleteHardware, this, _1, _2, _3));
 
 			RegisterCommandCode("lkihcgetnodes", boost::bind(&CWebServer::Cmd_LKIHCGetNodes, this, _1, _2, _3));
+			RegisterCommandCode("lkihcaddnode", boost::bind(&CWebServer::Cmd_LKIHCAddNode, this, _1, _2, _3));
 
 			RegisterCommandCode("wolgetnodes", boost::bind(&CWebServer::Cmd_WOLGetNodes, this, _1, _2, _3));
 			RegisterCommandCode("woladdnode", boost::bind(&CWebServer::Cmd_WOLAddNode, this, _1, _2, _3));

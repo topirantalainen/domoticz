@@ -90,7 +90,7 @@ void CLKIHC::Do_Work()
         std::cout << "Failed resource update\n";*/
 	std::string asd = "hej";
 	char ID[40];
-	sprintf(ID, "%lu", (long unsigned int)0x13645e);
+	sprintf(ID, "%lu", (long unsigned int)0x13645e); // 1270878
 	//m_sql.UpdateValue(1    , ID, 0, pTypeIHCWireless, sTypeRelay, 10, 255, 0, asd);
 	std::string devname;
 	//m_sql.UpdateValue(m_HwdID, ID   , 0, pTypeGeneralSwitch, sSwitchIHCAirRelay, 10, 255, 0, "Normal", devname);
@@ -176,46 +176,118 @@ std::cout << sd[0] << std::endl;
 	return false;
 }
 
+void CLKIHC::AddDevice(const std::string nodeID, const std::string &Name, const std::string type, const std::string location)
+{
+	std::vector<std::vector<std::string> > result;
+/*
+	//Check if exists
+	result=m_sql.safe_query("SELECT ID FROM DeviceStatus WHERE (HardwareID==%d) AND (DeviceID=='%d')",
+		m_HwdID, type);
+	if (result.size()>0)
+		return; //Already exists*/
+	std::string devname = "hej";
+	char ID[40];
+	//sprintf(ID, "%08u", nodeID);
+std::cout << ID << std::endl;
+	m_sql.UpdateValue(m_HwdID, nodeID.c_str() , 0, pTypeGeneralSwitch, sSwitchIHCAirRelay, 10, 255, 0, "Normal", devname);
+/*
+
+	m_sql.safe_query("INSERT INTO WOLNodes (HardwareID, Name, MacAddress) VALUES (%d,'%q','%q')",
+		m_HwdID, Name.c_str(), MACAddress.c_str());
+
+	result=m_sql.safe_query("SELECT ID FROM WOLNodes WHERE (HardwareID==%d) AND (Name=='%q') AND (MacAddress=='%q')",
+		m_HwdID, Name.c_str(), MACAddress.c_str());
+	if (result.size()<1)
+		return;
+
+	int ID=atoi(result[0][0].c_str());
+
+	char szID[40];
+	sprintf(szID,"%X%02X%02X%02X", 0, 0, (ID&0xFF00)>>8, ID&0xFF);
+
+	//Also add a light (push) device
+	m_sql.safe_query(
+		"INSERT INTO DeviceStatus (HardwareID, DeviceID, Unit, Type, SubType, SwitchType, Used, SignalLevel, BatteryLevel, Name, nValue, sValue) "
+		"VALUES (%d,'%q',%d,%d,%d,%d,1, 12,255,'%q',1,' ')",
+		m_HwdID, szID, int(1), pTypeLighting2, sTypeAC, int(STYPE_PushOn), Name.c_str());*/
+}
+
+
 //Webserver helpers
 namespace http {
 	namespace server {
-		void CWebServer::Cmd_LKIHCGetNodes(WebEmSession & session, const request& req, Json::Value &root)
-		{
-			if (session.rights != 2)
-				return;//Only admin user allowed
-			std::string hwid = request::findValue(&req, "idx");
-			if (hwid == "")
-				return;
-			int iHardwareID = atoi(hwid.c_str());
-			CDomoticzHardwareBase *pHardware = m_mainworker.GetHardware(iHardwareID);
-			if (pHardware == NULL)
-				return;
-			std::cout << hwid << std::endl;
-			/*if (pHardware->HwdType != HTYPE_WOL)
-				return;*/
-
-			root["status"] = "OK";
-			root["title"] = "LKIHCGetNodes";
-
-			std::vector<std::vector<std::string> > result;
-			result = m_sql.safe_query("SELECT DeviceID, Name, (SubType-%d), StrParam1 FROM DeviceStatus WHERE (HardwareID==%d)",
-					sSwitchIHCAirRelay,
-				iHardwareID);
-			if (result.size() > 0)
+	void CWebServer::Cmd_LKIHCGetNodes(WebEmSession & session, const request& req, Json::Value &root)
 			{
-				std::vector<std::vector<std::string> >::const_iterator itt;
-				int ii = 0;
-				for (itt = result.begin(); itt != result.end(); ++itt)
+				if (session.rights != 2)
+					return;//Only admin user allowed
+				std::string hwid = request::findValue(&req, "idx");
+				if (hwid == "")
+					return;
+				int iHardwareID = atoi(hwid.c_str());
+				CDomoticzHardwareBase *pHardware = m_mainworker.GetHardware(iHardwareID);
+				if (pHardware == NULL)
+					return;
+				std::cout << hwid << std::endl;
+				/*if (pHardware->HwdType != HTYPE_WOL)
+					return;*/
+
+				root["status"] = "OK";
+				root["title"] = "LKIHCGetNodes";
+
+				std::vector<std::vector<std::string> > result;
+				result = m_sql.safe_query("SELECT DeviceID, Name, (SubType-%d), StrParam1 FROM DeviceStatus WHERE (HardwareID==%d)",
+						sSwitchIHCAirRelay,
+					iHardwareID);
+				if (result.size() > 0)
 				{
-					std::vector<std::string> sd = *itt;
-std::cout << sd[1] << std::endl;
-					root["result"][ii]["idx"] = sd[0];
-					root["result"][ii]["Name"] = sd[1];
-					root["result"][ii]["Type"] = sd[2];
-					root["result"][ii]["Mac"] = sd[3];
-					ii++;
+					std::vector<std::vector<std::string> >::const_iterator itt;
+					int ii = 0;
+					for (itt = result.begin(); itt != result.end(); ++itt)
+					{
+						std::vector<std::string> sd = *itt;
+	std::cout << sd[1] << std::endl;
+						root["result"][ii]["idx"] = sd[0];
+						root["result"][ii]["Name"] = sd[1];
+						root["result"][ii]["Type"] = sd[2];
+						root["result"][ii]["Mac"] = sd[3];
+						ii++;
+					}
 				}
 			}
+
+	void CWebServer::Cmd_LKIHCAddNode(WebEmSession & session, const request& req, Json::Value &root)
+			{
+
+		std::cout << "add node\n";
+		if (session.rights != 2)
+		{
+			//No admin user, and not allowed to be here
+			return;
 		}
+
+		std::string hwid = request::findValue(&req, "idx");
+		std::string nodeid = request::findValue(&req, "nodeid");
+		std::string nodename = request::findValue(&req, "nodename");
+		std::string nodetype = request::findValue(&req, "nodetype");
+		std::string nodelocation = request::findValue(&req, "nodelocation");
+		std::cout << hwid << ":" << nodeid << ":" << nodename << ":" << nodetype << ":" << nodelocation << std::endl;
+		/*if (
+			(hwid == "") ||
+			(name == "") ||
+			(mac == "")
+			)
+			return;*/
+		int iHardwareID = atoi(hwid.c_str());
+		CDomoticzHardwareBase *pBaseHardware = m_mainworker.GetHardware(iHardwareID);
+		/*if (pBaseHardware == NULL)
+			return;
+		if (pBaseHardware->HwdType != HTYPE_WOL)
+			return;*/
+		CLKIHC *pHardware = reinterpret_cast<CLKIHC*>(pBaseHardware);
+
+		root["status"] = "OK";
+		root["title"] = "WOLAddNode";
+		pHardware->AddDevice(nodeid, nodename, nodetype,nodelocation);
+			}
 	}
 }

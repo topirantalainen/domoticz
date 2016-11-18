@@ -1638,6 +1638,51 @@ define(['app'], function (app) {
             });
         }
 
+        AddLKIHCNode = function()
+        {
+            var nodeid=$("#hardwarecontent #nodeparamstable #nodeid").val();
+            if (nodeid=="")
+            {
+                ShowNotify($.t('Please enter a nodeid!'), 2500, true);
+                return;
+            }
+            var nodename=$("#hardwarecontent #nodeparamstable #nodename").val();
+            if (nodename=="")
+            {
+                ShowNotify($.t('Please enter a Name!'), 2500, true);
+                return;
+            }
+            var nodetype=$("#hardwarecontent #nodeparamstable #nodetype option:selected").val();
+            if (nodetype=="")
+            {
+                ShowNotify($.t('Please enter a type!'), 2500, true);
+                return;
+            }
+            var nodelocation=$("#hardwarecontent #nodeparamstable #nodelocation").val();
+            if (nodelocation=="")
+            {
+                ShowNotify($.t('Please enter a MAC location!'), 2500, true);
+                return;
+            }
+
+            $.ajax({
+                 url: "json.htm?type=command&param=lkihcaddnode" +
+                    "&idx=" + $.devIdx +
+                    "&nodeid=" + encodeURIComponent(nodeid) +
+                    "&nodename=" + encodeURIComponent(name) +
+                    "&nodetype=" + encodeURIComponent(nodetype) +
+                    "&nodelocation=" + encodeURIComponent(name),
+                 async: false,
+                 dataType: 'json',
+                 success: function(data) {
+                    RefreshWOLNodeTable();
+                 },
+                 error: function(){
+                    ShowNotify($.t('Problem Adding Node!'), 2500, true);
+                 }
+            });
+        }
+
         WOLDeleteNode = function(nodeid)
         {
             if ($('#updelclr #nodedelete').attr("class")=="btnstyle3-dis") {
@@ -2395,6 +2440,37 @@ RefreshLKIHCNodeTable = function()
             $.devIdx=idx;
             cursordefault();
             var htmlcontent = '';
+            htmlcontent='<p><center>a<h2><span data-i18n="Device"></span>: ' + name + '</h2></center></p>\n';
+            htmlcontent+=$('#lkihc').html();
+            $('#hardwarecontent').html(GetBackbuttonHTMLTable('ShowHardware')+htmlcontent);
+            $('#hardwarecontent').i18n();
+
+            var oTable = $('#LKIHCdeviceTable').dataTable( {
+              "sDom": '<"H"lfrC>t<"F"ip>',
+              "oTableTools": {
+                "sRowSelect": "single",
+              },
+              "aaSorting": [[ 0, "desc" ]],
+              "bSortClasses": false,
+              "bProcessing": true,
+              "bStateSave": true,
+              "bJQueryUI": true,
+              "aLengthMenu": [[25, 50, 100, -1], [25, 50, 100, "All"]],
+              "iDisplayLength" : 25,
+              "sPaginationType": "full_numbers",
+              language: $.DataTableLanguage
+            } );
+
+            $('#hardwarecontent #idx').val(idx);
+
+            RefreshLKIHCNodeTable();
+        }
+        /*
+        EditLKIHC = function(idx,name,Mode1,Mode2,Mode3,Mode4,Mode5,Mode6)
+        {
+            $.devIdx=idx;
+            cursordefault();
+            var htmlcontent = '';
             htmlcontent='<p><center><h2><span data-i18n="Device"></span>: ' + name + '</h2></center></p>\n';
             htmlcontent+=$('#lkihc').html();
             $('#hardwarecontent').html(GetBackbuttonHTMLTable('ShowHardware')+htmlcontent);
@@ -2433,7 +2509,7 @@ RefreshLKIHCNodeTable = function()
 
             $('#hardwarecontent #idx').val(idx);
             RefreshLKIHCNodeTable();
-        }
+        }*/
 
         AddKodiNode = function () {
             var name = $("#hardwarecontent #kodinodeparamstable #nodename").val();
@@ -3306,7 +3382,7 @@ RefreshLKIHCNodeTable = function()
                 e.preventDefault();
                 SetLimitlessType();
             });
-
+            
             $('#hardwarecontent #idx').val(idx);
             $('#hardwarecontent #combom1type').val(Mode1);
         }

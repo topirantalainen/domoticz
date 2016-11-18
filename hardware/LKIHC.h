@@ -36,6 +36,7 @@ public:
 	~CLKIHC(void);
 	bool WriteToHardware(const char *pdata, const unsigned char length);
 	static std::string RegisterUser(const std::string &IPAddress, const unsigned short Port, const std::string &username);
+	void AddDevice(const std::string nodeID, const std::string &Name, const std::string type, const std::string location);
 private:
 	std::string m_IPAddress;
 	unsigned short m_Port;
@@ -50,5 +51,6 @@ private:
 	bool StopHardware();
 	void Do_Work();
 	bool GetDevices();
+
 };
 
