@@ -52,6 +52,8 @@
 #include "../main/LuaHandler.h"
 
 #include "mainstructs.h"
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 
 #define round(a) ( int ) ( a + .5 )
 
@@ -332,7 +334,6 @@ namespace http {
 			m_pWebEm->RegisterActionCode("setrego6xxtype", boost::bind(&CWebServer::SetRego6XXType, this, _1, _2, _3));
 			m_pWebEm->RegisterActionCode("sets0metertype", boost::bind(&CWebServer::SetS0MeterType, this, _1, _2, _3));
 			m_pWebEm->RegisterActionCode("setlimitlesstype", boost::bind(&CWebServer::SetLimitlessType, this, _1, _2, _3));
-			m_pWebEm->RegisterActionCode("setyeelighttype", boost::bind(&CWebServer::SetYeelightType, this, _1, _2, _3));
 
 			m_pWebEm->RegisterActionCode("setopenthermsettings", boost::bind(&CWebServer::SetOpenThermSettings, this, _1, _2, _3));
 			RegisterCommandCode("sendopenthermcommand", boost::bind(&CWebServer::Cmd_SendOpenThermCommand, this, _1, _2, _3), true);
@@ -341,6 +342,8 @@ namespace http {
 			m_pWebEm->RegisterActionCode("setcurrentcostmetertype", boost::bind(&CWebServer::SetCurrentCostUSBType, this, _1, _2, _3));
 			m_pWebEm->RegisterActionCode("restoredatabase", boost::bind(&CWebServer::RestoreDatabase, this, _1, _2, _3));
 			m_pWebEm->RegisterActionCode("sbfspotimportolddata", boost::bind(&CWebServer::SBFSpotImportOldData, this, _1, _2, _3));
+
+			m_pWebEm->RegisterActionCode("event_create", boost::bind(&CWebServer::EventCreate, this, _1, _2, _3));
 
 			RegisterCommandCode("getlanguage", boost::bind(&CWebServer::Cmd_GetLanguage, this, _1, _2, _3), true);
 			RegisterCommandCode("getthemes", boost::bind(&CWebServer::Cmd_GetThemes, this, _1, _2, _3), true);
@@ -399,7 +402,7 @@ namespace http {
 
 			RegisterCommandCode("heossetmode", boost::bind(&CWebServer::Cmd_HEOSSetMode, this, _1, _2, _3));
 			RegisterCommandCode("heosmediacommand", boost::bind(&CWebServer::Cmd_HEOSMediaCommand, this, _1, _2, _3));
-			
+
 			RegisterCommandCode("bleboxsetmode", boost::bind(&CWebServer::Cmd_BleBoxSetMode, this, _1, _2, _3));
 			RegisterCommandCode("bleboxgetnodes", boost::bind(&CWebServer::Cmd_BleBoxGetNodes, this, _1, _2, _3));
 			RegisterCommandCode("bleboxaddnode", boost::bind(&CWebServer::Cmd_BleBoxAddNode, this, _1, _2, _3));
@@ -519,12 +522,16 @@ namespace http {
 			RegisterCommandCode("addmobiledevice", boost::bind(&CWebServer::Cmd_AddMobileDevice, this, _1, _2, _3));
 			RegisterCommandCode("deletemobiledevice", boost::bind(&CWebServer::Cmd_DeleteMobileDevice, this, _1, _2, _3));
 
+			RegisterCommandCode("addyeelight", boost::bind(&CWebServer::Cmd_AddYeeLight, this, _1, _2, _3));
+
+
 			RegisterRType("graph", boost::bind(&CWebServer::RType_HandleGraph, this, _1, _2, _3));
 			RegisterRType("lightlog", boost::bind(&CWebServer::RType_LightLog, this, _1, _2, _3));
 			RegisterRType("textlog", boost::bind(&CWebServer::RType_TextLog, this, _1, _2, _3));
 			RegisterRType("scenelog", boost::bind(&CWebServer::RType_SceneLog, this, _1, _2, _3));
 			RegisterRType("settings", boost::bind(&CWebServer::RType_Settings, this, _1, _2, _3));
 			RegisterRType("events", boost::bind(&CWebServer::RType_Events, this, _1, _2, _3));
+
 			RegisterRType("hardware", boost::bind(&CWebServer::RType_Hardware, this, _1, _2, _3));
 			RegisterRType("devices", boost::bind(&CWebServer::RType_Devices, this, _1, _2, _3));
 			RegisterRType("deletedevice", boost::bind(&CWebServer::RType_DeleteDevice, this, _1, _2, _3));
@@ -1026,7 +1033,7 @@ namespace http {
 			}
 			else if (
 				(htype == HTYPE_RFXLAN) || (htype == HTYPE_P1SmartMeterLAN) || (htype == HTYPE_YouLess) || (htype == HTYPE_RazberryZWave) || (htype == HTYPE_OpenThermGatewayTCP) || (htype == HTYPE_LimitlessLights) ||
-				(htype == HTYPE_SolarEdgeTCP) || (htype == HTYPE_WOL) || (htype == HTYPE_ECODEVICES) || (htype == HTYPE_Mochad) || (htype == HTYPE_MySensorsTCP) || (htype == HTYPE_MQTT) || (htype == HTYPE_FRITZBOX) ||
+				(htype == HTYPE_SolarEdgeTCP) || (htype == HTYPE_WOL) || (htype == HTYPE_ECODEVICES) || (htype == HTYPE_Mochad) || (htype == HTYPE_MySensorsTCP) || (htype == HTYPE_MySensorsMQTT) || (htype == HTYPE_MQTT) || (htype == HTYPE_FRITZBOX) ||
 				(htype == HTYPE_ETH8020) || (htype == HTYPE_Sterbox) || (htype == HTYPE_KMTronicTCP) || (htype == HTYPE_SOLARMAXTCP) || (htype == HTYPE_SatelIntegra) || (htype == HTYPE_RFLINKTCP) || (htype == HTYPE_Comm5TCP) || (htype == HTYPE_CurrentCostMeterLAN) ||
 				(htype == HTYPE_NefitEastLAN) || (htype == HTYPE_DenkoviSmartdenLan) || (htype == HTYPE_Ec3kMeterTCP) || (htype == HTYPE_MultiFun) || (htype == HTYPE_ZIBLUETCP)
 				) {
@@ -1235,7 +1242,7 @@ namespace http {
 			{
 				mode1 = 30;
 				mode2 = 1000;
-			}			
+			}
 			else if (htype == HTYPE_Tellstick)
 			{
 				mode1 = 4;
@@ -1263,6 +1270,8 @@ namespace http {
 			{
 				std::vector<std::string> sd = result[0];
 				int ID = atoi(sd[0].c_str());
+
+				root["idx"] = sd[0].c_str(); // OTO output the created ID for easier management on the caller side (if automated)
 
 				m_mainworker.AddHardwareFromParams(ID, name, (senabled == "true") ? true : false, htype, address, port, sport, username, password, extra, mode1, mode2, mode3, mode4, mode5, mode6, iDataTimeout, true);
 			}
@@ -1316,7 +1325,7 @@ namespace http {
 				(htype == HTYPE_RFXLAN) || (htype == HTYPE_P1SmartMeterLAN) ||
 				(htype == HTYPE_YouLess) || (htype == HTYPE_RazberryZWave) || (htype == HTYPE_OpenThermGatewayTCP) || (htype == HTYPE_LimitlessLights) ||
 				(htype == HTYPE_SolarEdgeTCP) || (htype == HTYPE_WOL) || (htype == HTYPE_S0SmartMeterTCP) || (htype == HTYPE_ECODEVICES) || (htype == HTYPE_Mochad) ||
-				(htype == HTYPE_MySensorsTCP) || (htype == HTYPE_MQTT) || (htype == HTYPE_FRITZBOX) || (htype == HTYPE_ETH8020) || (htype == HTYPE_Sterbox) ||
+				(htype == HTYPE_MySensorsTCP) || (htype == HTYPE_MySensorsMQTT) || (htype == HTYPE_MQTT) || (htype == HTYPE_FRITZBOX) || (htype == HTYPE_ETH8020) || (htype == HTYPE_Sterbox) ||
 				(htype == HTYPE_KMTronicTCP) || (htype == HTYPE_SOLARMAXTCP) || (htype == HTYPE_SatelIntegra) || (htype == HTYPE_RFLINKTCP) ||
 				(htype == HTYPE_Comm5TCP || (htype == HTYPE_CurrentCostMeterLAN)) ||
 				(htype == HTYPE_NefitEastLAN) || (htype == HTYPE_DenkoviSmartdenLan) || (htype == HTYPE_Ec3kMeterTCP) || (htype == HTYPE_MultiFun) || (htype == HTYPE_ZIBLUETCP)
@@ -1468,7 +1477,7 @@ namespace http {
 			}
 			else
 				return;
-			
+
 			int mode1 = atoi(request::findValue(&req, "Mode1").c_str());
 			int mode2 = atoi(request::findValue(&req, "Mode2").c_str());
 			int mode3 = atoi(request::findValue(&req, "Mode3").c_str());
@@ -2490,7 +2499,7 @@ namespace http {
 
 			std::stringstream sstr;
 
-			unsigned long long ulIdx;
+			uint64_t ulIdx;
 			sstr << idx;
 			sstr >> ulIdx;
 
@@ -3305,7 +3314,6 @@ namespace http {
 						case pTypeRadiator1:
 						case pTypeGeneralSwitch:
 						case pTypeHomeConfort:
-						case pTypeYeelight:
 							bdoAdd = true;
 							if (!used)
 							{
@@ -3403,7 +3411,6 @@ namespace http {
 							case pTypeRemote:
 							case pTypeGeneralSwitch:
 							case pTypeHomeConfort:
-							case pTypeYeelight:
 								root["result"][ii]["type"] = 0;
 								root["result"][ii]["idx"] = ID;
 								root["result"][ii]["Name"] = "[Light/Switch] " + Name;
@@ -3962,6 +3969,18 @@ namespace http {
 							)
 							return;
 					}
+					else if (lighttype == 306) {
+						//Light Openwebnet
+						dtype = pTypeGeneralSwitch;
+						subtype = sSwitchLightT1;
+						devid = request::findValue(&req, "id");
+						sunitcode = request::findValue(&req, "unitcode");
+						if (
+							(devid == "") ||
+							(sunitcode == "")
+							)
+							return;
+					}
 				}
        // ----------- If needed convert to GeneralSwitch type (for o.a. RFlink) -----------
 				CDomoticzHardwareBase *pBaseHardware = reinterpret_cast<CDomoticzHardwareBase*>(m_mainworker.GetHardware(atoi(hwdid.c_str())));
@@ -4425,6 +4444,19 @@ namespace http {
 							)
 							return;
 					}
+					else if (lighttype == 306)
+					{
+						//Light Openwebnet
+						dtype = pTypeGeneralSwitch;
+						subtype = sSwitchLightT1;
+						devid = request::findValue(&req, "id");
+						sunitcode = request::findValue(&req, "unitcode");
+						if (
+							(devid == "") ||
+							(sunitcode == "")
+							)
+							return;
+					}
 				}
 
 				//check if switch is unique
@@ -4526,7 +4558,6 @@ namespace http {
 					(dType == pTypeLighting5) ||
 					(dType == pTypeLighting6) ||
 					(dType == pTypeLimitlessLights) ||
-					(dType == pTypeYeelight) ||
 					(dType == pTypeSecurity1) ||
 					(dType == pTypeSecurity2) ||
 					(dType == pTypeEvohome) ||
@@ -5438,7 +5469,6 @@ namespace http {
 					(dType != pTypeLighting6) &&
 					(dType != pTypeFan) &&
 					(dType != pTypeLimitlessLights) &&
-					(dType != pTypeYeelight) &&
 					(dType != pTypeSecurity1) &&
 					(dType != pTypeSecurity2) &&
 					(dType != pTypeEvohome) &&
@@ -5502,7 +5532,7 @@ namespace http {
 				if (bReceivedSwitch)
 				{
 					//check if used
-					result = m_sql.safe_query("SELECT Name, Used, nValue FROM DeviceStatus WHERE (ID==%llu)",
+					result = m_sql.safe_query("SELECT Name, Used, nValue FROM DeviceStatus WHERE (ID==%" PRIu64 ")",
 						m_sql.m_LastSwitchRowID);
 					if (result.size() > 0)
 					{
@@ -5855,7 +5885,7 @@ namespace http {
 				{
 					return;
 				}
-				unsigned long long ID;
+				uint64_t ID;
 				std::stringstream s_strid;
 				s_strid << idx;
 				s_strid >> ID;
@@ -5920,7 +5950,7 @@ namespace http {
 					return;
 				}
 
-				unsigned long long ID;
+				uint64_t ID;
 				std::stringstream s_strid;
 				s_strid << idx;
 				s_strid >> ID;
@@ -5936,7 +5966,7 @@ namespace http {
 					return;
 				}
 
-				unsigned long long ID;
+				uint64_t ID;
 				std::stringstream s_strid;
 				s_strid << idx;
 				s_strid >> ID;
@@ -5952,7 +5982,7 @@ namespace http {
 					return;
 				}
 
-				unsigned long long ID;
+				uint64_t ID;
 				std::stringstream s_strid;
 				s_strid << idx;
 				s_strid >> ID;
@@ -5968,7 +5998,7 @@ namespace http {
 					return;
 				}
 
-				unsigned long long ID;
+				uint64_t ID;
 				std::stringstream s_strid;
 				s_strid << idx;
 				s_strid >> ID;
@@ -5984,7 +6014,7 @@ namespace http {
 					return;
 				}
 
-				unsigned long long ID;
+				uint64_t ID;
 				std::stringstream s_strid;
 				s_strid << idx;
 				s_strid >> ID;
@@ -6000,7 +6030,7 @@ namespace http {
 					return;
 				}
 
-				unsigned long long ID;
+				uint64_t ID;
 				std::stringstream s_strid;
 				s_strid << idx;
 				s_strid >> ID;
@@ -6016,7 +6046,7 @@ namespace http {
 					return;
 				}
 
-				unsigned long long ID;
+				uint64_t ID;
 				std::stringstream s_strid;
 				s_strid << idx;
 				s_strid >> ID;
@@ -6032,7 +6062,7 @@ namespace http {
 					return;
 				}
 
-				unsigned long long ID;
+				uint64_t ID;
 				std::stringstream s_strid;
 				s_strid << idx;
 				s_strid >> ID;
@@ -6048,7 +6078,7 @@ namespace http {
 					return;
 				}
 
-				unsigned long long ID;
+				uint64_t ID;
 				std::stringstream s_strid;
 				s_strid << idx;
 				s_strid >> ID;
@@ -6064,7 +6094,7 @@ namespace http {
 					return;
 				}
 
-				unsigned long long ID;
+				uint64_t ID;
 				std::stringstream s_strid;
 				s_strid << idx;
 				s_strid >> ID;
@@ -6080,7 +6110,7 @@ namespace http {
 					return;
 				}
 
-				unsigned long long ID;
+				uint64_t ID;
 				std::stringstream s_strid;
 				s_strid << idx;
 				s_strid >> ID;
@@ -6096,7 +6126,7 @@ namespace http {
 					return;
 				}
 
-				unsigned long long ID;
+				uint64_t ID;
 				std::stringstream s_strid;
 				s_strid << idx;
 				s_strid >> ID;
@@ -6873,17 +6903,18 @@ namespace http {
 		} tHardwareList;
 
 		void CWebServer::GetJSonDevices(
-			Json::Value &root, 
-			const std::string &rused, 
-			const std::string &rfilter, 
-			const std::string &order, 
-			const std::string &rowid, 
-			const std::string &planID, 
-			const std::string &floorID, 
-			const bool bDisplayHidden, 
+			Json::Value &root,
+			const std::string &rused,
+			const std::string &rfilter,
+			const std::string &order,
+			const std::string &rowid,
+			const std::string &planID,
+			const std::string &floorID,
+			const bool bDisplayHidden,
 			const bool bFetchFavorites,
 			const time_t LastUpdate, 
-			const std::string &username)
+			const std::string &username,
+			const std::string &hardwareid)
 		{
 			std::vector<std::vector<std::string> > result;
 
@@ -6922,7 +6953,6 @@ namespace http {
 
 			root["ActTime"] = static_cast<int>(now);
 
-			char szData[250];
 			char szTmp[300];
 
 			if (!m_mainworker.m_LastSunriseSet.empty())
@@ -7030,14 +7060,8 @@ namespace http {
 
 							if (iLastUpdate != 0)
 							{
-								tLastUpdate.tm_isdst = tm1.tm_isdst;
-								tLastUpdate.tm_year = atoi(sLastUpdate.substr(0, 4).c_str()) - 1900;
-								tLastUpdate.tm_mon = atoi(sLastUpdate.substr(5, 2).c_str()) - 1;
-								tLastUpdate.tm_mday = atoi(sLastUpdate.substr(8, 2).c_str());
-								tLastUpdate.tm_hour = atoi(sLastUpdate.substr(11, 2).c_str());
-								tLastUpdate.tm_min = atoi(sLastUpdate.substr(14, 2).c_str());
-								tLastUpdate.tm_sec = atoi(sLastUpdate.substr(17, 2).c_str());
-								time_t cLastUpdate = mktime(&tLastUpdate);
+								time_t cLastUpdate;
+								ParseSQLdatetime(cLastUpdate, tLastUpdate, sLastUpdate, tm1.tm_isdst);
 								if (cLastUpdate <= iLastUpdate)
 									continue;
 							}
@@ -7094,7 +7118,7 @@ namespace http {
 							else
 								root["result"][ii]["Status"] = "Mixed";
 							root["result"][ii]["Data"] = root["result"][ii]["Status"];
-							unsigned long long camIDX = m_mainworker.m_cameras.IsDevSceneInCamera(1, sd[0]);
+							uint64_t camIDX = m_mainworker.m_cameras.IsDevSceneInCamera(1, sd[0]);
 							root["result"][ii]["UsedByCamera"] = (camIDX != 0) ? true : false;
 							if (camIDX != 0) {
 								std::stringstream scidx;
@@ -7109,6 +7133,7 @@ namespace http {
 				}
 			}
 
+			char szData[250];
 			if (totUserDevices == 0)
 			{
 				//All
@@ -7188,18 +7213,35 @@ namespace http {
 						sprintf(szOrderBy, "A.[Order],A.%s ASC", order.c_str());
 					}
 					//_log.Log(LOG_STATUS, "Getting all devices: order by %s ", szOrderBy);
-					result = m_sql.safe_query(
-						"SELECT A.ID, A.DeviceID, A.Unit, A.Name, A.Used,A.Type, A.SubType,"
-						" A.SignalLevel, A.BatteryLevel, A.nValue, A.sValue,"
-						" A.LastUpdate, A.Favorite, A.SwitchType, A.HardwareID,"
-						" A.AddjValue, A.AddjMulti, A.AddjValue2, A.AddjMulti2,"
-						" A.LastLevel, A.CustomImage, A.StrParam1, A.StrParam2,"
-						" A.Protected, IFNULL(B.XOffset,0), IFNULL(B.YOffset,0), IFNULL(B.PlanID,0), A.Description,"
-						" A.Options "
-						"FROM DeviceStatus as A LEFT OUTER JOIN DeviceToPlansMap as B "
-						"ON (B.DeviceRowID==a.ID) AND (B.DevSceneType==0) "
-						"ORDER BY %q",
-						szOrderBy);
+					if(hardwareid != "") {
+	 					result = m_sql.safe_query(
+							"SELECT A.ID, A.DeviceID, A.Unit, A.Name, A.Used,A.Type, A.SubType,"
+							" A.SignalLevel, A.BatteryLevel, A.nValue, A.sValue,"
+							" A.LastUpdate, A.Favorite, A.SwitchType, A.HardwareID,"
+							" A.AddjValue, A.AddjMulti, A.AddjValue2, A.AddjMulti2,"
+							" A.LastLevel, A.CustomImage, A.StrParam1, A.StrParam2,"
+							" A.Protected, IFNULL(B.XOffset,0), IFNULL(B.YOffset,0), IFNULL(B.PlanID,0), A.Description,"
+							" A.Options "
+							"FROM DeviceStatus as A LEFT OUTER JOIN DeviceToPlansMap as B "
+							"ON (B.DeviceRowID==a.ID) AND (B.DevSceneType==0) "
+							"WHERE (A.HardwareID == %q) "
+							"ORDER BY %q",
+							hardwareid.c_str(), szOrderBy);
+					}
+					else {
+	 					result = m_sql.safe_query(
+							"SELECT A.ID, A.DeviceID, A.Unit, A.Name, A.Used,A.Type, A.SubType,"
+							" A.SignalLevel, A.BatteryLevel, A.nValue, A.sValue,"
+							" A.LastUpdate, A.Favorite, A.SwitchType, A.HardwareID,"
+							" A.AddjValue, A.AddjMulti, A.AddjValue2, A.AddjMulti2,"
+							" A.LastLevel, A.CustomImage, A.StrParam1, A.StrParam2,"
+							" A.Protected, IFNULL(B.XOffset,0), IFNULL(B.YOffset,0), IFNULL(B.PlanID,0), A.Description,"
+							" A.Options "
+							"FROM DeviceStatus as A LEFT OUTER JOIN DeviceToPlansMap as B "
+							"ON (B.DeviceRowID==a.ID) AND (B.DevSceneType==0) "
+							"ORDER BY %q",
+							szOrderBy);
+ 					}
 				}
 			}
 			else
@@ -7345,9 +7387,9 @@ namespace http {
 						}
 					}
 
-					unsigned char dType = atoi(sd[5].c_str());
-					unsigned char dSubType = atoi(sd[6].c_str());
-					unsigned char used = atoi(sd[4].c_str());
+					unsigned int dType = atoi(sd[5].c_str());
+					unsigned int dSubType = atoi(sd[6].c_str());
+					unsigned int used = atoi(sd[4].c_str());
 					int nValue = atoi(sd[9].c_str());
 					std::string sValue = sd[10];
 					std::string sLastUpdate = sd[11];
@@ -7356,14 +7398,8 @@ namespace http {
 
 					if (iLastUpdate != 0)
 					{
-						tLastUpdate.tm_isdst = tm1.tm_isdst;
-						tLastUpdate.tm_year = atoi(sLastUpdate.substr(0, 4).c_str()) - 1900;
-						tLastUpdate.tm_mon = atoi(sLastUpdate.substr(5, 2).c_str()) - 1;
-						tLastUpdate.tm_mday = atoi(sLastUpdate.substr(8, 2).c_str());
-						tLastUpdate.tm_hour = atoi(sLastUpdate.substr(11, 2).c_str());
-						tLastUpdate.tm_min = atoi(sLastUpdate.substr(14, 2).c_str());
-						tLastUpdate.tm_sec = atoi(sLastUpdate.substr(17, 2).c_str());
-						time_t cLastUpdate = mktime(&tLastUpdate);
+						time_t cLastUpdate;
+						ParseSQLdatetime(cLastUpdate, tLastUpdate, sLastUpdate, tm1.tm_isdst);
 						if (cLastUpdate <= iLastUpdate)
 							continue;
 					}
@@ -7385,14 +7421,8 @@ namespace http {
 					std::map<std::string, std::string> options = m_sql.BuildDeviceOptions(sOptions);
 
 					struct tm ntime;
-					ntime.tm_isdst = tm1.tm_isdst;
-					ntime.tm_year = atoi(sLastUpdate.substr(0, 4).c_str()) - 1900;
-					ntime.tm_mon = atoi(sLastUpdate.substr(5, 2).c_str()) - 1;
-					ntime.tm_mday = atoi(sLastUpdate.substr(8, 2).c_str());
-					ntime.tm_hour = atoi(sLastUpdate.substr(11, 2).c_str());
-					ntime.tm_min = atoi(sLastUpdate.substr(14, 2).c_str());
-					ntime.tm_sec = atoi(sLastUpdate.substr(17, 2).c_str());
-					time_t checktime = mktime(&ntime);
+					time_t checktime;
+					ParseSQLdatetime(checktime, ntime, sLastUpdate, tm1.tm_isdst);
 					bool bHaveTimeout = (now - checktime >= SensorTimeOut * 60);
 
 					if (dType == pTypeTEMP_RAIN)
@@ -7419,7 +7449,6 @@ namespace http {
 								(dType != pTypeLighting6) &&
 								(dType != pTypeFan) &&
 								(dType != pTypeLimitlessLights) &&
-								(dType != pTypeYeelight) &&
 								(dType != pTypeSecurity1) &&
 								(dType != pTypeSecurity2) &&
 								(dType != pTypeEvohome) &&
@@ -7690,7 +7719,6 @@ namespace http {
 						(dType == pTypeLighting6) ||
 						(dType == pTypeFan) ||
 						(dType == pTypeLimitlessLights) ||
-						(dType == pTypeYeelight) ||
 						(dType == pTypeCurtain) ||
 						(dType == pTypeBlinds) ||
 						(dType == pTypeRFY) ||
@@ -7751,7 +7779,7 @@ namespace http {
 							root["result"][ii]["Level"] = LastLevel;
 							int iLevel = round((float(maxDimLevel) / 100.0f)*LastLevel);
 							root["result"][ii]["LevelInt"] = iLevel;
-							if ((dType == pTypeLimitlessLights) || (dType == pTypeYeelight))
+							if (dType == pTypeLimitlessLights)
 							{
 								llevel = LastLevel;
 								if (lstatus == "Set Level")
@@ -7771,7 +7799,7 @@ namespace http {
 						root["result"][ii]["HaveGroupCmd"] = bHaveGroupCmd;
 						root["result"][ii]["SwitchType"] = Switch_Type_Desc(switchtype);
 						root["result"][ii]["SwitchTypeVal"] = switchtype;
-						unsigned long long camIDX = m_mainworker.m_cameras.IsDevSceneInCamera(0, sd[0]);
+						uint64_t camIDX = m_mainworker.m_cameras.IsDevSceneInCamera(0, sd[0]);
 						root["result"][ii]["UsedByCamera"] = (camIDX != 0) ? true : false;
 						if (camIDX != 0) {
 							std::stringstream scidx;
@@ -8405,7 +8433,7 @@ namespace http {
 							s_str2 >> total_max;
 							total_real = total_max - total_min;
 							sprintf(szTmp, "%llu", total_real);
-							
+
 							float musage = 0;
 							switch (metertype)
 							{
@@ -9305,13 +9333,14 @@ namespace http {
 						}
 						else if (dSubType == sTypeBaro)
 						{
-							sprintf(szData, "%.1f hPa", atof(sValue.c_str()));
+							std::vector<std::string> tstrarray;
+							StringSplit(sValue, ";", tstrarray);
+							if (tstrarray.empty())
+								continue;
+							sprintf(szData, "%.1f hPa", atof(tstrarray[0].c_str()));
 							root["result"][ii]["Data"] = szData;
 							root["result"][ii]["TypeImg"] = "gauge";
 							root["result"][ii]["HaveTimeout"] = bHaveTimeout;
-
-							std::vector<std::string> tstrarray;
-							StringSplit(sValue, ";", tstrarray);
 							if (tstrarray.size() > 1)
 							{
 								root["result"][ii]["Barometer"] = atof(tstrarray[0].c_str());
@@ -9493,7 +9522,7 @@ namespace http {
 							else
 								root["result"][ii]["Image"] = "Light";
 
-							unsigned long long camIDX = m_mainworker.m_cameras.IsDevSceneInCamera(0, sd[0]);
+							uint64_t camIDX = m_mainworker.m_cameras.IsDevSceneInCamera(0, sd[0]);
 							root["result"][ii]["UsedByCamera"] = (camIDX != 0) ? true : false;
 							if (camIDX != 0) {
 								std::stringstream scidx;
@@ -9872,14 +9901,8 @@ namespace http {
 					std::string sLastUpdate = sd[6].c_str();
 					if (LastUpdate != 0)
 					{
-						tLastUpdate.tm_isdst = tm1.tm_isdst;
-						tLastUpdate.tm_year = atoi(sLastUpdate.substr(0, 4).c_str()) - 1900;
-						tLastUpdate.tm_mon = atoi(sLastUpdate.substr(5, 2).c_str()) - 1;
-						tLastUpdate.tm_mday = atoi(sLastUpdate.substr(8, 2).c_str());
-						tLastUpdate.tm_hour = atoi(sLastUpdate.substr(11, 2).c_str());
-						tLastUpdate.tm_min = atoi(sLastUpdate.substr(14, 2).c_str());
-						tLastUpdate.tm_sec = atoi(sLastUpdate.substr(17, 2).c_str());
-						time_t cLastUpdate = mktime(&tLastUpdate);
+						time_t cLastUpdate;
+						ParseSQLdatetime(cLastUpdate, tLastUpdate, sLastUpdate, tm1.tm_isdst);
 						if (cLastUpdate <= LastUpdate)
 							continue;
 					}
@@ -9917,7 +9940,7 @@ namespace http {
 					else
 						root["result"][ii]["Status"] = "Mixed";
 					root["result"][ii]["Timers"] = (m_sql.HasSceneTimers(sd[0]) == true) ? "true" : "false";
-					unsigned long long camIDX = m_mainworker.m_cameras.IsDevSceneInCamera(1, sd[0]);
+					uint64_t camIDX = m_mainworker.m_cameras.IsDevSceneInCamera(1, sd[0]);
 					root["result"][ii]["UsedByCamera"] = (camIDX != 0) ? true : false;
 					if (camIDX != 0) {
 						std::stringstream scidx;
@@ -10004,7 +10027,7 @@ namespace http {
 							else
 								root["result"][ii]["version"] = sd[11];
 						}
-						else if ((pHardware->HwdType == HTYPE_MySensorsUSB) || (pHardware->HwdType == HTYPE_MySensorsTCP))
+						else if ((pHardware->HwdType == HTYPE_MySensorsUSB) || (pHardware->HwdType == HTYPE_MySensorsTCP) || (pHardware->HwdType == HTYPE_MySensorsMQTT))
 						{
 							MySensorsBase *pMyHardware = reinterpret_cast<MySensorsBase*>(pHardware);
 							root["result"][ii]["version"] = pMyHardware->GetGatewayVersion();
@@ -10049,6 +10072,7 @@ namespace http {
 			bool bDisplayHidden = (sDisplayHidden == "1");
 			bool bFetchFavorites = (sFetchFavorites == "1");
 			std::string sLastUpdate = request::findValue(&req, "lastupdate");
+			std::string hwidx = request::findValue(&req, "hwidx"); // OTO
 
 			time_t LastUpdate = 0;
 			if (sLastUpdate != "")
@@ -10061,7 +10085,7 @@ namespace http {
 			root["status"] = "OK";
 			root["title"] = "Devices";
 
-			GetJSonDevices(root, rused, rfilter, order, rid, planid, floorid, bDisplayHidden, bFetchFavorites, LastUpdate, session.username);
+			GetJSonDevices(root, rused, rfilter, order, rid, planid, floorid, bDisplayHidden, bFetchFavorites, LastUpdate, session.username, hwidx);
 		}
 
 		void CWebServer::RType_Users(WebEmSession & session, const request& req, Json::Value &root)
@@ -10193,7 +10217,7 @@ namespace http {
 							GetLightStatus(devType, subType, switchtype, nValue, sValue, lstatus, llevel, bHaveDimmer, maxDimLevel, bHaveGroupCmd);
 						}
 						std::stringstream sstr;
-						unsigned long long dID;
+						uint64_t dID;
 						sstr << sID;
 						sstr >> dID;
 						root["result"][ii]["idx"] = dID;
@@ -10675,7 +10699,7 @@ namespace http {
 			root["status"] = "OK";
 			root["title"] = "GetTransfers";
 
-			unsigned long long idx = 0;
+			uint64_t idx = 0;
 			if (request::findValue(&req, "idx") != "")
 			{
 				std::stringstream s_str(request::findValue(&req, "idx"));
@@ -10683,7 +10707,7 @@ namespace http {
 			}
 
 			std::vector<std::vector<std::string> > result;
-			result = m_sql.safe_query("SELECT Type, SubType FROM DeviceStatus WHERE (ID==%llu)",
+			result = m_sql.safe_query("SELECT Type, SubType FROM DeviceStatus WHERE (ID==%" PRIu64 ")",
 				idx);
 			if (result.size() > 0)
 			{
@@ -10694,13 +10718,13 @@ namespace http {
 					)
 				{
 					result = m_sql.safe_query(
-						"SELECT ID, Name FROM DeviceStatus WHERE (Type=='%q') AND (ID!=%llu)",
+						"SELECT ID, Name FROM DeviceStatus WHERE (Type=='%q') AND (ID!=%" PRIu64 ")",
 						result[0][0].c_str(), idx);
 				}
 				else
 				{
 					result = m_sql.safe_query(
-						"SELECT ID, Name FROM DeviceStatus WHERE (Type=='%q') AND (SubType=='%q') AND (ID!=%llu)",
+						"SELECT ID, Name FROM DeviceStatus WHERE (Type=='%q') AND (SubType=='%q') AND (ID!=%" PRIu64 ")",
 						result[0][0].c_str(), result[0][1].c_str(), idx);
 				}
 
@@ -10749,24 +10773,9 @@ namespace http {
 			std::string sLastUpdate_A = result[0][0];
 			std::string sLastUpdate_B = result[0][1];
 
-			LastUpdateTime_A.tm_isdst = tm1.tm_isdst;
-			LastUpdateTime_A.tm_year = atoi(sLastUpdate_A.substr(0, 4).c_str()) - 1900;
-			LastUpdateTime_A.tm_mon = atoi(sLastUpdate_A.substr(5, 2).c_str()) - 1;
-			LastUpdateTime_A.tm_mday = atoi(sLastUpdate_A.substr(8, 2).c_str());
-			LastUpdateTime_A.tm_hour = atoi(sLastUpdate_A.substr(11, 2).c_str());
-			LastUpdateTime_A.tm_min = atoi(sLastUpdate_A.substr(14, 2).c_str());
-			LastUpdateTime_A.tm_sec = atoi(sLastUpdate_A.substr(17, 2).c_str());
-
-			LastUpdateTime_B.tm_isdst = tm1.tm_isdst;
-			LastUpdateTime_B.tm_year = atoi(sLastUpdate_B.substr(0, 4).c_str()) - 1900;
-			LastUpdateTime_B.tm_mon = atoi(sLastUpdate_B.substr(5, 2).c_str()) - 1;
-			LastUpdateTime_B.tm_mday = atoi(sLastUpdate_B.substr(8, 2).c_str());
-			LastUpdateTime_B.tm_hour = atoi(sLastUpdate_B.substr(11, 2).c_str());
-			LastUpdateTime_B.tm_min = atoi(sLastUpdate_B.substr(14, 2).c_str());
-			LastUpdateTime_B.tm_sec = atoi(sLastUpdate_B.substr(17, 2).c_str());
-
-			time_t timeA = mktime(&LastUpdateTime_A);
-			time_t timeB = mktime(&LastUpdateTime_B);
+			time_t timeA, timeB;
+			ParseSQLdatetime(timeA, LastUpdateTime_A, sLastUpdate_A, tm1.tm_isdst);
+			ParseSQLdatetime(timeB, LastUpdateTime_B, sLastUpdate_B, tm1.tm_isdst);
 
 			if (timeA < timeB)
 			{
@@ -10811,7 +10820,7 @@ namespace http {
 				}
 			}
 
-			unsigned long long idx = 0;
+			uint64_t idx = 0;
 			if (request::findValue(&req, "idx") != "")
 			{
 				std::stringstream s_str(request::findValue(&req, "idx"));
@@ -10950,7 +10959,7 @@ namespace http {
 			description = stdstring_trim(description);
 
 			std::stringstream sstridx(idx);
-			unsigned long long ullidx;
+			uint64_t ullidx;
 			sstridx >> ullidx;
 			m_mainworker.m_eventsystem.WWWUpdateSingleState(ullidx, name);
 
@@ -11507,7 +11516,7 @@ namespace http {
 
 		void CWebServer::RType_LightLog(WebEmSession & session, const request& req, Json::Value &root)
 		{
-			unsigned long long idx = 0;
+			uint64_t idx = 0;
 			if (request::findValue(&req, "idx") != "")
 			{
 				std::stringstream s_str(request::findValue(&req, "idx"));
@@ -11515,7 +11524,7 @@ namespace http {
 			}
 			std::vector<std::vector<std::string> > result;
 			//First get Device Type/SubType
-			result = m_sql.safe_query("SELECT Type, SubType, SwitchType, Options FROM DeviceStatus WHERE (ID == %llu)",
+			result = m_sql.safe_query("SELECT Type, SubType, SwitchType, Options FROM DeviceStatus WHERE (ID == %" PRIu64 ")",
 				idx);
 			if (result.size() < 1)
 				return;
@@ -11534,7 +11543,6 @@ namespace http {
 				(dType != pTypeLighting6) &&
 				(dType != pTypeFan) &&
 				(dType != pTypeLimitlessLights) &&
-				(dType != pTypeYeelight) &&
 				(dType != pTypeSecurity1) &&
 				(dType != pTypeSecurity2) &&
 				(dType != pTypeEvohome) &&
@@ -11556,7 +11564,7 @@ namespace http {
 			root["status"] = "OK";
 			root["title"] = "LightLog";
 
-			result = m_sql.safe_query("SELECT ROWID, nValue, sValue, Date FROM LightingLog WHERE (DeviceRowID==%llu) ORDER BY Date DESC", idx);
+			result = m_sql.safe_query("SELECT ROWID, nValue, sValue, Date FROM LightingLog WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date DESC", idx);
 			if (result.size() > 0)
 			{
 				std::map<std::string, std::string> selectorStatuses;
@@ -11625,7 +11633,7 @@ namespace http {
 
 		void CWebServer::RType_TextLog(WebEmSession & session, const request& req, Json::Value &root)
 		{
-			unsigned long long idx = 0;
+			uint64_t idx = 0;
 			if (request::findValue(&req, "idx") != "")
 			{
 				std::stringstream s_str(request::findValue(&req, "idx"));
@@ -11636,7 +11644,7 @@ namespace http {
 			root["status"] = "OK";
 			root["title"] = "TextLog";
 
-			result = m_sql.safe_query("SELECT ROWID, sValue, Date FROM LightingLog WHERE (DeviceRowID==%llu) ORDER BY Date DESC",
+			result = m_sql.safe_query("SELECT ROWID, sValue, Date FROM LightingLog WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date DESC",
 				idx);
 			if (result.size() > 0)
 			{
@@ -11656,7 +11664,7 @@ namespace http {
 
 		void CWebServer::RType_SceneLog(WebEmSession & session, const request& req, Json::Value &root)
 		{
-			unsigned long long idx = 0;
+			uint64_t idx = 0;
 			if (request::findValue(&req, "idx") != "")
 			{
 				std::stringstream s_str(request::findValue(&req, "idx"));
@@ -11667,7 +11675,7 @@ namespace http {
 			root["status"] = "OK";
 			root["title"] = "SceneLog";
 
-			result = m_sql.safe_query("SELECT ROWID, nValue, Date FROM SceneLog WHERE (SceneRowID==%llu) ORDER BY Date DESC", idx);
+			result = m_sql.safe_query("SELECT ROWID, nValue, Date FROM SceneLog WHERE (SceneRowID==%" PRIu64 ") ORDER BY Date DESC", idx);
 			if (result.size() > 0)
 			{
 				std::vector<std::vector<std::string> >::const_iterator itt;
@@ -11687,7 +11695,7 @@ namespace http {
 
 		void CWebServer::RType_HandleGraph(WebEmSession & session, const request& req, Json::Value &root)
 		{
-			unsigned long long idx = 0;
+			uint64_t idx = 0;
 			if (request::findValue(&req, "idx") != "")
 			{
 				std::stringstream s_str(request::findValue(&req, "idx"));
@@ -11708,7 +11716,7 @@ namespace http {
 			struct tm tm1;
 			localtime_r(&now, &tm1);
 
-			result = m_sql.safe_query("SELECT Type, SubType, SwitchType, AddjValue, AddjMulti, Options FROM DeviceStatus WHERE (ID == %llu)",
+			result = m_sql.safe_query("SELECT Type, SubType, SwitchType, AddjValue, AddjMulti, Options FROM DeviceStatus WHERE (ID == %" PRIu64 ")",
 				idx);
 			if (result.size() < 1)
 				return;
@@ -11816,7 +11824,7 @@ namespace http {
 					root["status"] = "OK";
 					root["title"] = "Graph " + sensor + " " + srange;
 
-					result = m_sql.safe_query("SELECT Temperature, Chill, Humidity, Barometer, Date, SetPoint FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+					result = m_sql.safe_query("SELECT Temperature, Chill, Humidity, Barometer, Date, SetPoint FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 					if (result.size() > 0)
 					{
 						std::vector<std::vector<std::string> >::const_iterator itt;
@@ -11901,7 +11909,7 @@ namespace http {
 					root["status"] = "OK";
 					root["title"] = "Graph " + sensor + " " + srange;
 
-					result = m_sql.safe_query("SELECT Percentage, Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+					result = m_sql.safe_query("SELECT Percentage, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 					if (result.size() > 0)
 					{
 						std::vector<std::vector<std::string> >::const_iterator itt;
@@ -11920,7 +11928,7 @@ namespace http {
 					root["status"] = "OK";
 					root["title"] = "Graph " + sensor + " " + srange;
 
-					result = m_sql.safe_query("SELECT Speed, Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+					result = m_sql.safe_query("SELECT Speed, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 					if (result.size() > 0)
 					{
 						std::vector<std::vector<std::string> >::const_iterator itt;
@@ -11943,7 +11951,7 @@ namespace http {
 						root["status"] = "OK";
 						root["title"] = "Graph " + sensor + " " + srange;
 
-						result = m_sql.safe_query("SELECT Value1, Value2, Value3, Value4, Value5, Value6, Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+						result = m_sql.safe_query("SELECT Value1, Value2, Value3, Value4, Value5, Value6, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -11979,15 +11987,7 @@ namespace http {
 									std::string stime = sd[6];
 									struct tm ntime;
 									time_t atime;
-									ntime.tm_isdst = -1;
-									ntime.tm_year = atoi(stime.substr(0, 4).c_str()) - 1900;
-									ntime.tm_mon = atoi(stime.substr(5, 2).c_str()) - 1;
-									ntime.tm_mday = atoi(stime.substr(8, 2).c_str());
-									ntime.tm_hour = atoi(stime.substr(11, 2).c_str());
-									ntime.tm_min = atoi(stime.substr(14, 2).c_str());
-									ntime.tm_sec = atoi(stime.substr(17, 2).c_str());
-									atime = mktime(&ntime);
-
+									ParseSQLdatetime(atime, ntime, stime, -1);
 									if (lastDay != ntime.tm_mday)
 									{
 										lastDay = ntime.tm_mday;
@@ -12013,7 +12013,7 @@ namespace http {
 										if ((curDeliv2 < 0) || (curDeliv2>100000))
 											curDeliv2 = 0;
 
-										time_t tdiff = atime - lastTime;
+										time_t tdiff = difftime(atime,lastTime);
 										if (tdiff == 0)
 											tdiff = 1;
 										float tlaps = 3600.0f / tdiff;
@@ -12065,7 +12065,7 @@ namespace http {
 											sprintf(szTmp, "%04d-%02d-%02d", year, mon, day);
 											std::vector<std::vector<std::string> > result2;
 											result2 = m_sql.safe_query(
-												"SELECT Counter1, Counter2, Counter3, Counter4 FROM Multimeter_Calendar WHERE (DeviceRowID==%llu) AND (Date=='%q')",
+												"SELECT Counter1, Counter2, Counter3, Counter4 FROM Multimeter_Calendar WHERE (DeviceRowID==%" PRIu64 ") AND (Date=='%q')",
 												idx, szTmp);
 											if (!result2.empty())
 											{
@@ -12113,7 +12113,7 @@ namespace http {
 						root["status"] = "OK";
 						root["title"] = "Graph " + sensor + " " + srange;
 
-						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -12133,7 +12133,7 @@ namespace http {
 						root["status"] = "OK";
 						root["title"] = "Graph " + sensor + " " + srange;
 
-						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -12168,7 +12168,7 @@ namespace http {
 						{
 							vdiv = 1000.0f;
 						}
-						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -12197,7 +12197,7 @@ namespace http {
 						root["status"] = "OK";
 						root["title"] = "Graph " + sensor + " " + srange;
 
-						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -12217,7 +12217,7 @@ namespace http {
 						root["status"] = "OK";
 						root["title"] = "Graph " + sensor + " " + srange;
 
-						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -12237,7 +12237,7 @@ namespace http {
 						root["status"] = "OK";
 						root["title"] = "Graph " + sensor + " " + srange;
 
-						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -12258,7 +12258,7 @@ namespace http {
 						root["status"] = "OK";
 						root["title"] = "Graph " + sensor + " " + srange;
 
-						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -12286,7 +12286,7 @@ namespace http {
 
 						root["displaytype"] = displaytype;
 
-						result = m_sql.safe_query("SELECT Value1, Value2, Value3, Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+						result = m_sql.safe_query("SELECT Value1, Value2, Value3, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -12361,7 +12361,7 @@ namespace http {
 
 						root["displaytype"] = displaytype;
 
-						result = m_sql.safe_query("SELECT Value1, Value2, Value3, Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+						result = m_sql.safe_query("SELECT Value1, Value2, Value3, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -12453,7 +12453,7 @@ namespace http {
 
 						//First check if we had any usage in the short log, if not, its probably a meter without usage
 						bool bHaveUsage = true;
-						result = m_sql.safe_query("SELECT MIN([Usage]), MAX([Usage]) FROM %s WHERE (DeviceRowID==%llu)", dbasetable.c_str(), idx);
+						result = m_sql.safe_query("SELECT MIN([Usage]), MAX([Usage]) FROM %s WHERE (DeviceRowID==%" PRIu64 ")", dbasetable.c_str(), idx);
 						if (result.size() > 0)
 						{
 							std::stringstream s_str1(result[0][0]);
@@ -12469,7 +12469,7 @@ namespace http {
 						}
 
 						int ii = 0;
-						result = m_sql.safe_query("SELECT Value,[Usage], Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+						result = m_sql.safe_query("SELECT Value,[Usage], Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 
 						int method = 0;
 						std::string sMethod = request::findValue(&req, "method");
@@ -12627,7 +12627,7 @@ namespace http {
 							EnergyDivider *= 100.0f;
 
 						int ii = 0;
-						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 
 						int method = 0;
 						std::string sMethod = request::findValue(&req, "method");
@@ -12673,9 +12673,8 @@ namespace http {
 											ntime.tm_hour = atoi(actDateTimeHour.substr(11, 2).c_str());
 											ntime.tm_min = 0;
 											ntime.tm_sec = 0;
+											ntime.tm_hour -= 1;
 											atime = mktime(&ntime);
-											atime -= 3600; //subtract one hour
-											localtime_r(&atime, &ntime);
 											char szTime[50];
 											sprintf(szTime, "%04d-%02d-%02d %02d:00", ntime.tm_year + 1900, ntime.tm_mon + 1, ntime.tm_mday, ntime.tm_hour);
 											root["result"][ii]["d"] = szTime;
@@ -12725,20 +12724,12 @@ namespace http {
 									std::string stime = sd[1];
 									struct tm ntime;
 									time_t atime;
-									ntime.tm_isdst = -1;
-									ntime.tm_year = atoi(stime.substr(0, 4).c_str()) - 1900;
-									ntime.tm_mon = atoi(stime.substr(5, 2).c_str()) - 1;
-									ntime.tm_mday = atoi(stime.substr(8, 2).c_str());
-									ntime.tm_hour = atoi(stime.substr(11, 2).c_str());
-									ntime.tm_min = atoi(stime.substr(14, 2).c_str());
-									ntime.tm_sec = atoi(stime.substr(17, 2).c_str());
-									atime = mktime(&ntime);
-
+									ParseSQLdatetime(atime, ntime, stime, -1);
 									if (bHaveFirstRealValue)
 									{
 										long long curValue = actValue - ulLastValue;
 
-										time_t tdiff = atime - lastTime;
+										time_t tdiff = difftime(atime,lastTime);
 										if (tdiff == 0)
 											tdiff = 1;
 										float tlaps = 3600.0f / tdiff;
@@ -12814,7 +12805,7 @@ namespace http {
 					root["status"] = "OK";
 					root["title"] = "Graph " + sensor + " " + srange;
 
-					result = m_sql.safe_query("SELECT Level, Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+					result = m_sql.safe_query("SELECT Level, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 					if (result.size() > 0)
 					{
 						std::vector<std::vector<std::string> >::const_iterator itt;
@@ -12839,7 +12830,7 @@ namespace http {
 					float LastValue = -1;
 					std::string LastDate = "";
 
-					result = m_sql.safe_query("SELECT Total, Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+					result = m_sql.safe_query("SELECT Total, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 					if (result.size() > 0)
 					{
 						std::vector<std::vector<std::string> >::const_iterator itt;
@@ -12886,7 +12877,7 @@ namespace http {
 					root["status"] = "OK";
 					root["title"] = "Graph " + sensor + " " + srange;
 
-					result = m_sql.safe_query("SELECT Direction, Speed, Gust, Date FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+					result = m_sql.safe_query("SELECT Direction, Speed, Gust, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 					if (result.size() > 0)
 					{
 						std::vector<std::vector<std::string> >::const_iterator itt;
@@ -12924,7 +12915,7 @@ namespace http {
 					root["status"] = "OK";
 					root["title"] = "Graph " + sensor + " " + srange;
 
-					result = m_sql.safe_query("SELECT Direction, Speed, Gust FROM %s WHERE (DeviceRowID==%llu) ORDER BY Date ASC", dbasetable.c_str(), idx);
+					result = m_sql.safe_query("SELECT Direction, Speed, Gust FROM %s WHERE (DeviceRowID==%" PRIu64 ") ORDER BY Date ASC", dbasetable.c_str(), idx);
 					if (result.size() > 0)
 					{
 						std::vector<std::vector<std::string> >::const_iterator itt;
@@ -13138,7 +13129,8 @@ namespace http {
 
 					struct tm ltime;
 					ltime.tm_isdst = tm1.tm_isdst;
-					ltime.tm_hour = 0;
+//GB3:	Use a midday hour to avoid a clash with possible DST jump
+					ltime.tm_hour = 14;
 					ltime.tm_min = 0;
 					ltime.tm_sec = 0;
 					ltime.tm_year = tm1.tm_year;
@@ -13156,7 +13148,7 @@ namespace http {
 
 					sprintf(szDateStart, "%04d-%02d-%02d", tm2.tm_year + 1900, tm2.tm_mon + 1, tm2.tm_mday);
 
-					result = m_sql.safe_query("SELECT Total, Rate, Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
+					result = m_sql.safe_query("SELECT Total, Rate, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
 					int ii = 0;
 					if (result.size() > 0)
 					{
@@ -13177,13 +13169,13 @@ namespace http {
 					if (dSubType != sTypeRAINWU)
 					{
 						result = m_sql.safe_query(
-							"SELECT MIN(Total), MAX(Total), MAX(Rate) FROM Rain WHERE (DeviceRowID=%llu AND Date>='%q')",
+							"SELECT MIN(Total), MAX(Total), MAX(Rate) FROM Rain WHERE (DeviceRowID=%" PRIu64 " AND Date>='%q')",
 							idx, szDateEnd);
 					}
 					else
 					{
 						result = m_sql.safe_query(
-							"SELECT Total, Total, Rate FROM Rain WHERE (DeviceRowID=%llu AND Date>='%q') ORDER BY ROWID DESC LIMIT 1",
+							"SELECT Total, Total, Rate FROM Rain WHERE (DeviceRowID=%" PRIu64 " AND Date>='%q') ORDER BY ROWID DESC LIMIT 1",
 							idx, szDateEnd);
 					}
 					if (result.size() > 0)
@@ -13245,7 +13237,8 @@ namespace http {
 
 					struct tm ltime;
 					ltime.tm_isdst = tm1.tm_isdst;
-					ltime.tm_hour = 0;
+//GB3:	Use a midday hour to avoid a clash with possible DST jump
+					ltime.tm_hour = 14;
 					ltime.tm_min = 0;
 					ltime.tm_sec = 0;
 					ltime.tm_year = tm1.tm_year;
@@ -13265,7 +13258,7 @@ namespace http {
 					int ii = 0;
 					if (dType == pTypeP1Power)
 					{
-						result = m_sql.safe_query("SELECT Value1,Value2,Value5,Value6,Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
+						result = m_sql.safe_query("SELECT Value1,Value2,Value5,Value6,Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
 						if (result.size() > 0)
 						{
 							bool bHaveDeliverd = false;
@@ -13304,7 +13297,7 @@ namespace http {
 					}
 					else
 					{
-						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
+						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -13339,7 +13332,7 @@ namespace http {
 					if (dType == pTypeP1Power)
 					{
 						result = m_sql.safe_query(
-							"SELECT MIN(Value1), MAX(Value1), MIN(Value2), MAX(Value2),MIN(Value5), MAX(Value5), MIN(Value6), MAX(Value6) FROM MultiMeter WHERE (DeviceRowID==%llu AND Date>='%q')",
+							"SELECT MIN(Value1), MAX(Value1), MIN(Value2), MAX(Value2),MIN(Value5), MAX(Value5), MIN(Value6), MAX(Value6) FROM MultiMeter WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q')",
 							idx, szDateEnd);
 						if (result.size() > 0)
 						{
@@ -13405,7 +13398,7 @@ namespace http {
 					}
 					else
 					{
-						result = m_sql.safe_query("SELECT MIN(Value), MAX(Value) FROM Meter WHERE (DeviceRowID==%llu AND Date>='%q')",
+						result = m_sql.safe_query("SELECT MIN(Value), MAX(Value) FROM Meter WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q')",
 							idx, szDateEnd);
 						if (result.size() > 0)
 						{
@@ -13482,7 +13475,8 @@ namespace http {
 				{
 					struct tm ltime;
 					ltime.tm_isdst = tm1.tm_isdst;
-					ltime.tm_hour = 0;
+//GB3:	Use a midday hour to avoid a clash with possible DST jump
+					ltime.tm_hour = 14;
 					ltime.tm_min = 0;
 					ltime.tm_sec = 0;
 					ltime.tm_year = tm1.tm_year;
@@ -13520,7 +13514,7 @@ namespace http {
 						"SELECT Temp_Min, Temp_Max, Chill_Min, Chill_Max,"
 						" Humidity, Barometer, Temp_Avg, Date, SetPoint_Min,"
 						" SetPoint_Max, SetPoint_Avg "
-						"FROM %s WHERE (DeviceRowID==%llu AND Date>='%q'"
+						"FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q'"
 						" AND Date<='%q') ORDER BY Date ASC",
 						dbasetable.c_str(), idx, szDateStart, szDateEnd);
 					int ii = 0;
@@ -13617,7 +13611,7 @@ namespace http {
 						" MIN(Chill), MAX(Chill), AVG(Humidity),"
 						" AVG(Barometer), AVG(Temperature), MIN(SetPoint),"
 						" MAX(SetPoint), AVG(SetPoint) "
-						"FROM Temperature WHERE (DeviceRowID==%llu"
+						"FROM Temperature WHERE (DeviceRowID==%" PRIu64 ""
 						" AND Date>='%q')",
 						idx, szDateEnd);
 					if (result.size() > 0)
@@ -13698,7 +13692,7 @@ namespace http {
 						"SELECT Temp_Min, Temp_Max, Chill_Min, Chill_Max,"
 						" Humidity, Barometer, Temp_Avg, Date, SetPoint_Min,"
 						" SetPoint_Max, SetPoint_Avg "
-						"FROM %s WHERE (DeviceRowID==%llu AND Date>='%q'"
+						"FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q'"
 						" AND Date<='%q') ORDER BY Date ASC",
 						dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
 					if (result.size() > 0)
@@ -13793,7 +13787,7 @@ namespace http {
 					root["status"] = "OK";
 					root["title"] = "Graph " + sensor + " " + srange;
 
-					result = m_sql.safe_query("SELECT Percentage_Min, Percentage_Max, Percentage_Avg, Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
+					result = m_sql.safe_query("SELECT Percentage_Min, Percentage_Max, Percentage_Avg, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
 					int ii = 0;
 					if (result.size() > 0)
 					{
@@ -13811,7 +13805,7 @@ namespace http {
 					}
 					//add today (have to calculate it)
 					result = m_sql.safe_query(
-						"SELECT MIN(Percentage), MAX(Percentage), AVG(Percentage) FROM Percentage WHERE (DeviceRowID=%llu AND Date>='%q')",
+						"SELECT MIN(Percentage), MAX(Percentage), AVG(Percentage) FROM Percentage WHERE (DeviceRowID=%" PRIu64 " AND Date>='%q')",
 						idx, szDateEnd);
 					if (result.size() > 0)
 					{
@@ -13828,7 +13822,7 @@ namespace http {
 					root["status"] = "OK";
 					root["title"] = "Graph " + sensor + " " + srange;
 
-					result = m_sql.safe_query("SELECT Speed_Min, Speed_Max, Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
+					result = m_sql.safe_query("SELECT Speed_Min, Speed_Max, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
 					int ii = 0;
 					if (result.size() > 0)
 					{
@@ -13844,7 +13838,7 @@ namespace http {
 						}
 					}
 					//add today (have to calculate it)
-					result = m_sql.safe_query("SELECT MIN(Speed), MAX(Speed) FROM Fan WHERE (DeviceRowID=%llu AND Date>='%q')",
+					result = m_sql.safe_query("SELECT MIN(Speed), MAX(Speed) FROM Fan WHERE (DeviceRowID=%" PRIu64 " AND Date>='%q')",
 						idx, szDateEnd);
 					if (result.size() > 0)
 					{
@@ -13860,7 +13854,7 @@ namespace http {
 					root["status"] = "OK";
 					root["title"] = "Graph " + sensor + " " + srange;
 
-					result = m_sql.safe_query("SELECT Level, Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
+					result = m_sql.safe_query("SELECT Level, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
 					int ii = 0;
 					if (result.size() > 0)
 					{
@@ -13876,7 +13870,7 @@ namespace http {
 					}
 					//add today (have to calculate it)
 					result = m_sql.safe_query(
-						"SELECT MAX(Level) FROM UV WHERE (DeviceRowID=%llu AND Date>='%q')",
+						"SELECT MAX(Level) FROM UV WHERE (DeviceRowID=%" PRIu64 " AND Date>='%q')",
 						idx, szDateEnd);
 					if (result.size() > 0)
 					{
@@ -13887,7 +13881,7 @@ namespace http {
 						ii++;
 					}
 					//Previous Year
-					result = m_sql.safe_query("SELECT Level, Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
+					result = m_sql.safe_query("SELECT Level, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
 					if (result.size() > 0)
 					{
 						int iPrev = 0;
@@ -13906,7 +13900,7 @@ namespace http {
 					root["status"] = "OK";
 					root["title"] = "Graph " + sensor + " " + srange;
 
-					result = m_sql.safe_query("SELECT Total, Rate, Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
+					result = m_sql.safe_query("SELECT Total, Rate, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
 					int ii = 0;
 					if (result.size() > 0)
 					{
@@ -13927,13 +13921,13 @@ namespace http {
 					if (dSubType != sTypeRAINWU)
 					{
 						result = m_sql.safe_query(
-							"SELECT MIN(Total), MAX(Total), MAX(Rate) FROM Rain WHERE (DeviceRowID=%llu AND Date>='%q')",
+							"SELECT MIN(Total), MAX(Total), MAX(Rate) FROM Rain WHERE (DeviceRowID=%" PRIu64 " AND Date>='%q')",
 							idx, szDateEnd);
 					}
 					else
 					{
 						result = m_sql.safe_query(
-							"SELECT Total, Total, Rate FROM Rain WHERE (DeviceRowID=%llu AND Date>='%q') ORDER BY ROWID DESC LIMIT 1",
+							"SELECT Total, Total, Rate FROM Rain WHERE (DeviceRowID=%" PRIu64 " AND Date>='%q') ORDER BY ROWID DESC LIMIT 1",
 							idx, szDateEnd);
 					}
 					if (result.size() > 0)
@@ -13961,7 +13955,7 @@ namespace http {
 					}
 					//Previous Year
 					result = m_sql.safe_query(
-						"SELECT Total, Rate, Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
+						"SELECT Total, Rate, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
 					if (result.size() > 0)
 					{
 						int iPrev = 0;
@@ -13988,7 +13982,7 @@ namespace http {
 					int nValue = 0;
 					std::string sValue = "";
 
-					result = m_sql.safe_query("SELECT nValue, sValue FROM DeviceStatus WHERE (ID==%llu)",
+					result = m_sql.safe_query("SELECT nValue, sValue FROM DeviceStatus WHERE (ID==%" PRIu64 ")",
 						idx);
 					if (result.size() > 0)
 					{
@@ -14028,7 +14022,7 @@ namespace http {
 						result = m_sql.safe_query(
 							"SELECT Value1,Value2,Value5,Value6, Date,"
 							" Counter1, Counter2, Counter3, Counter4 "
-							"FROM %s WHERE (DeviceRowID==%llu AND Date>='%q'"
+							"FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q'"
 							" AND Date<='%q') ORDER BY Date ASC",
 							dbasetable.c_str(), idx, szDateStart, szDateEnd);
 						if (result.size() > 0)
@@ -14117,7 +14111,7 @@ namespace http {
 						//Previous Year
 						result = m_sql.safe_query(
 							"SELECT Value1,Value2,Value5,Value6, Date "
-							"FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC",
+							"FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC",
 							dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
 						if (result.size() > 0)
 						{
@@ -14162,7 +14156,7 @@ namespace http {
 						root["status"] = "OK";
 						root["title"] = "Graph " + sensor + " " + srange;
 
-						result = m_sql.safe_query("SELECT Value1,Value2,Value3,Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
+						result = m_sql.safe_query("SELECT Value1,Value2,Value3,Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -14177,7 +14171,7 @@ namespace http {
 								ii++;
 							}
 						}
-						result = m_sql.safe_query("SELECT Value2,Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
+						result = m_sql.safe_query("SELECT Value2,Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
 						if (result.size() > 0)
 						{
 							ii = 0;
@@ -14200,7 +14194,7 @@ namespace http {
 						root["status"] = "OK";
 						root["title"] = "Graph " + sensor + " " + srange;
 
-						result = m_sql.safe_query("SELECT Value1,Value2, Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
+						result = m_sql.safe_query("SELECT Value1,Value2, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -14237,7 +14231,7 @@ namespace http {
 							vdiv = 1000.0f;
 						}
 
-						result = m_sql.safe_query("SELECT Value1,Value2,Value3,Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
+						result = m_sql.safe_query("SELECT Value1,Value2,Value3,Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -14286,7 +14280,7 @@ namespace http {
 						root["status"] = "OK";
 						root["title"] = "Graph " + sensor + " " + srange;
 
-						result = m_sql.safe_query("SELECT Value1,Value2,Value3, Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
+						result = m_sql.safe_query("SELECT Value1,Value2,Value3, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -14308,7 +14302,7 @@ namespace http {
 						root["title"] = "Graph " + sensor + " " + srange;
 
 						result = m_sql.safe_query(
-							"SELECT Value1,Value2, Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
+							"SELECT Value1,Value2, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -14331,7 +14325,7 @@ namespace http {
 						root["title"] = "Graph " + sensor + " " + srange;
 
 						result = m_sql.safe_query(
-							"SELECT Value1,Value2, Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
+							"SELECT Value1,Value2, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -14348,7 +14342,7 @@ namespace http {
 					}
 					else if (dType == pTypeCURRENT)
 					{
-						result = m_sql.safe_query("SELECT Value1,Value2,Value3,Value4,Value5,Value6, Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
+						result = m_sql.safe_query("SELECT Value1,Value2,Value3,Value4,Value5,Value6, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
 						if (result.size() > 0)
 						{
 							//CM113
@@ -14435,7 +14429,7 @@ namespace http {
 					}
 					else if (dType == pTypeCURRENTENERGY)
 					{
-						result = m_sql.safe_query("SELECT Value1,Value2,Value3,Value4,Value5,Value6, Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
+						result = m_sql.safe_query("SELECT Value1,Value2,Value3,Value4,Value5,Value6, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
 						if (result.size() > 0)
 						{
 							//CM180i
@@ -14604,7 +14598,7 @@ namespace http {
 							root["counter"] = szTmp;
 						}
 						//Actual Year
-						result = m_sql.safe_query("SELECT Value, Date, Counter FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
+						result = m_sql.safe_query("SELECT Value, Date, Counter FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -14662,7 +14656,7 @@ namespace http {
 							}
 						}
 						//Past Year
-						result = m_sql.safe_query("SELECT Value, Date, Counter FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
+						result = m_sql.safe_query("SELECT Value, Date, Counter FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -14729,7 +14723,7 @@ namespace http {
 							"SELECT MIN(Value1), MAX(Value1), MIN(Value2),"
 							" MAX(Value2), MIN(Value5), MAX(Value5),"
 							" MIN(Value6), MAX(Value6) "
-							"FROM MultiMeter WHERE (DeviceRowID=%llu"
+							"FROM MultiMeter WHERE (DeviceRowID=%" PRIu64 ""
 							" AND Date>='%q')",
 							idx, szDateEnd);
 						bool bHaveDeliverd = false;
@@ -14798,7 +14792,7 @@ namespace http {
 					else if (dType == pTypeAirQuality)
 					{
 						result = m_sql.safe_query(
-							"SELECT MIN(Value), MAX(Value), AVG(Value) FROM Meter WHERE (DeviceRowID==%llu AND Date>='%q')",
+							"SELECT MIN(Value), MAX(Value), AVG(Value) FROM Meter WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q')",
 							idx, szDateEnd);
 						if (result.size() > 0)
 						{
@@ -14815,7 +14809,7 @@ namespace http {
 						)
 					{
 						result = m_sql.safe_query(
-							"SELECT MIN(Value), MAX(Value) FROM Meter WHERE (DeviceRowID==%llu AND Date>='%q')",
+							"SELECT MIN(Value), MAX(Value) FROM Meter WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q')",
 							idx, szDateEnd);
 						if (result.size() > 0)
 						{
@@ -14845,7 +14839,7 @@ namespace http {
 						}
 
 						result = m_sql.safe_query(
-							"SELECT MIN(Value), MAX(Value) FROM Meter WHERE (DeviceRowID==%llu AND Date>='%q')",
+							"SELECT MIN(Value), MAX(Value) FROM Meter WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q')",
 							idx, szDateEnd);
 						if (result.size() > 0)
 						{
@@ -14878,7 +14872,7 @@ namespace http {
 					else if (dType == pTypeLux)
 					{
 						result = m_sql.safe_query(
-							"SELECT MIN(Value), MAX(Value), AVG(Value) FROM Meter WHERE (DeviceRowID==%llu AND Date>='%q')",
+							"SELECT MIN(Value), MAX(Value), AVG(Value) FROM Meter WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q')",
 							idx, szDateEnd);
 						if (result.size() > 0)
 						{
@@ -14892,7 +14886,7 @@ namespace http {
 					else if (dType == pTypeWEIGHT)
 					{
 						result = m_sql.safe_query(
-							"SELECT MIN(Value), MAX(Value) FROM Meter WHERE (DeviceRowID==%llu AND Date>='%q')",
+							"SELECT MIN(Value), MAX(Value) FROM Meter WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q')",
 							idx, szDateEnd);
 						if (result.size() > 0)
 						{
@@ -14907,7 +14901,7 @@ namespace http {
 					else if (dType == pTypeUsage)
 					{
 						result = m_sql.safe_query(
-							"SELECT MIN(Value), MAX(Value) FROM Meter WHERE (DeviceRowID=%llu AND Date>='%q')",
+							"SELECT MIN(Value), MAX(Value) FROM Meter WHERE (DeviceRowID=%" PRIu64 " AND Date>='%q')",
 							idx, szDateEnd);
 						if (result.size() > 0)
 						{
@@ -14920,7 +14914,7 @@ namespace http {
 					else
 					{
 						result = m_sql.safe_query(
-							"SELECT MIN(Value), MAX(Value) FROM Meter WHERE (DeviceRowID==%llu AND Date>='%q')",
+							"SELECT MIN(Value), MAX(Value) FROM Meter WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q')",
 							idx, szDateEnd);
 						if (result.size() > 0)
 						{
@@ -14990,7 +14984,7 @@ namespace http {
 					result = m_sql.safe_query(
 						"SELECT Direction, Speed_Min, Speed_Max, Gust_Min,"
 						" Gust_Max, Date "
-						"FROM %s WHERE (DeviceRowID==%llu AND Date>='%q'"
+						"FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q'"
 						" AND Date<='%q') ORDER BY Date ASC",
 						dbasetable.c_str(), idx, szDateStart, szDateEnd);
 					if (result.size() > 0)
@@ -15028,7 +15022,7 @@ namespace http {
 					result = m_sql.safe_query(
 						"SELECT AVG(Direction), MIN(Speed), MAX(Speed),"
 						" MIN(Gust), MAX(Gust) "
-						"FROM Wind WHERE (DeviceRowID==%llu AND Date>='%q') ORDER BY Date ASC",
+						"FROM Wind WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q') ORDER BY Date ASC",
 						idx, szDateEnd);
 					if (result.size() > 0)
 					{
@@ -15062,7 +15056,7 @@ namespace http {
 					result = m_sql.safe_query(
 						"SELECT Direction, Speed_Min, Speed_Max, Gust_Min,"
 						" Gust_Max, Date "
-						"FROM %s WHERE (DeviceRowID==%llu AND Date>='%q'"
+						"FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q'"
 						" AND Date<='%q') ORDER BY Date ASC",
 						dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
 					if (result.size() > 0)
@@ -15171,7 +15165,7 @@ namespace http {
 						result = m_sql.safe_query(
 							"SELECT Temperature, Chill, Humidity, Barometer,"
 							" Date, DewPoint, SetPoint "
-							"FROM Temperature WHERE (DeviceRowID==%llu"
+							"FROM Temperature WHERE (DeviceRowID==%" PRIu64 ""
 							" AND Date>='%q' AND Date<='%q 23:59:59') ORDER BY Date ASC",
 							idx, szDateStart.c_str(), szDateEnd.c_str());
 						int ii = 0;
@@ -15245,7 +15239,7 @@ namespace http {
 							" Humidity, Barometer, Date, DewPoint, Temp_Avg,"
 							" SetPoint_Min, SetPoint_Max, SetPoint_Avg "
 							"FROM Temperature_Calendar "
-							"WHERE (DeviceRowID==%llu AND Date>='%q'"
+							"WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q'"
 							" AND Date<='%q') ORDER BY Date ASC",
 							idx, szDateStart.c_str(), szDateEnd.c_str());
 						int ii = 0;
@@ -15330,7 +15324,7 @@ namespace http {
 							" MIN(Chill), MAX(Chill), AVG(Humidity),"
 							" AVG(Barometer), MIN(DewPoint), AVG(Temperature),"
 							" MIN(SetPoint), MAX(SetPoint), AVG(SetPoint) "
-							"FROM Temperature WHERE (DeviceRowID==%llu AND Date>='%q')",
+							"FROM Temperature WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q')",
 							idx, szDateEnd.c_str());
 						if (result.size() > 0)
 						{
@@ -15405,7 +15399,7 @@ namespace http {
 					root["title"] = "Graph " + sensor + " " + srange;
 
 					result = m_sql.safe_query(
-						"SELECT Level, Date FROM %s WHERE (DeviceRowID==%llu"
+						"SELECT Level, Date FROM %s WHERE (DeviceRowID==%" PRIu64 ""
 						" AND Date>='%q' AND Date<='%q') ORDER BY Date ASC",
 						dbasetable.c_str(), idx, szDateStart.c_str(), szDateEnd.c_str());
 					int ii = 0;
@@ -15423,7 +15417,7 @@ namespace http {
 					}
 					//add today (have to calculate it)
 					result = m_sql.safe_query(
-						"SELECT MAX(Level) FROM UV WHERE (DeviceRowID==%llu AND Date>='%q')",
+						"SELECT MAX(Level) FROM UV WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q')",
 						idx, szDateEnd.c_str());
 					if (result.size() > 0)
 					{
@@ -15440,7 +15434,7 @@ namespace http {
 
 					result = m_sql.safe_query(
 						"SELECT Total, Rate, Date FROM %s "
-						"WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC",
+						"WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC",
 						dbasetable.c_str(), idx, szDateStart.c_str(), szDateEnd.c_str());
 					int ii = 0;
 					if (result.size() > 0)
@@ -15459,13 +15453,13 @@ namespace http {
 					if (dSubType != sTypeRAINWU)
 					{
 						result = m_sql.safe_query(
-							"SELECT MIN(Total), MAX(Total), MAX(Rate) FROM Rain WHERE (DeviceRowID==%llu AND Date>='%q')",
+							"SELECT MIN(Total), MAX(Total), MAX(Rate) FROM Rain WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q')",
 							idx, szDateEnd.c_str());
 					}
 					else
 					{
 						result = m_sql.safe_query(
-							"SELECT Total, Total, Rate FROM Rain WHERE (DeviceRowID==%llu AND Date>='%q') ORDER BY ROWID DESC LIMIT 1",
+							"SELECT Total, Total, Rate FROM Rain WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q') ORDER BY ROWID DESC LIMIT 1",
 							idx, szDateEnd.c_str());
 					}
 					if (result.size() > 0)
@@ -15523,7 +15517,7 @@ namespace http {
 					{
 						result = m_sql.safe_query(
 							"SELECT Value1,Value2,Value5,Value6, Date "
-							"FROM %s WHERE (DeviceRowID==%llu AND Date>='%q'"
+							"FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q'"
 							" AND Date<='%q') ORDER BY Date ASC",
 							dbasetable.c_str(), idx, szDateStart.c_str(), szDateEnd.c_str());
 						if (result.size() > 0)
@@ -15560,7 +15554,7 @@ namespace http {
 					}
 					else
 					{
-						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%llu AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart.c_str(), szDateEnd.c_str());
+						result = m_sql.safe_query("SELECT Value, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart.c_str(), szDateEnd.c_str());
 						if (result.size() > 0)
 						{
 							std::vector<std::vector<std::string> >::const_iterator itt;
@@ -15598,7 +15592,7 @@ namespace http {
 							"SELECT MIN(Value1), MAX(Value1), MIN(Value2),"
 							" MAX(Value2),MIN(Value5), MAX(Value5),"
 							" MIN(Value6), MAX(Value6) "
-							"FROM MultiMeter WHERE (DeviceRowID==%llu AND Date>='%q')",
+							"FROM MultiMeter WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q')",
 							idx, szDateEnd.c_str());
 						bool bHaveDeliverd = false;
 						if (result.size() > 0)
@@ -15652,7 +15646,7 @@ namespace http {
 					else
 					{
 						result = m_sql.safe_query(
-							"SELECT MIN(Value), MAX(Value) FROM Meter WHERE (DeviceRowID==%llu AND Date>='%q')",
+							"SELECT MIN(Value), MAX(Value) FROM Meter WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q')",
 							idx, szDateEnd.c_str());
 						if (result.size() > 0)
 						{
@@ -15699,7 +15693,7 @@ namespace http {
 					result = m_sql.safe_query(
 						"SELECT Direction, Speed_Min, Speed_Max, Gust_Min,"
 						" Gust_Max, Date "
-						"FROM %s WHERE (DeviceRowID==%llu AND Date>='%q'"
+						"FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q'"
 						" AND Date<='%q') ORDER BY Date ASC",
 						dbasetable.c_str(), idx, szDateStart.c_str(), szDateEnd.c_str());
 					if (result.size() > 0)
@@ -15735,7 +15729,7 @@ namespace http {
 					}
 					//add today (have to calculate it)
 					result = m_sql.safe_query(
-						"SELECT AVG(Direction), MIN(Speed), MAX(Speed), MIN(Gust), MAX(Gust) FROM Wind WHERE (DeviceRowID==%llu AND Date>='%q') ORDER BY Date ASC",
+						"SELECT AVG(Direction), MIN(Speed), MAX(Speed), MIN(Gust), MAX(Gust) FROM Wind WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q') ORDER BY Date ASC",
 						idx, szDateEnd.c_str());
 					if (result.size() > 0)
 					{
@@ -15791,15 +15785,7 @@ namespace http {
 					struct tm tm1;
 					localtime_r(&now, &tm1);
 					struct tm tExpirationDate;
-					tExpirationDate.tm_isdst = tm1.tm_isdst;
-					tExpirationDate.tm_year = atoi(sExpirationDate.substr(0, 4).c_str()) - 1900;
-					tExpirationDate.tm_mon = atoi(sExpirationDate.substr(5, 2).c_str()) - 1;
-					tExpirationDate.tm_mday = atoi(sExpirationDate.substr(8, 2).c_str());
-					tExpirationDate.tm_hour = atoi(sExpirationDate.substr(11, 2).c_str());
-					tExpirationDate.tm_min = atoi(sExpirationDate.substr(14, 2).c_str());
-					tExpirationDate.tm_sec = atoi(sExpirationDate.substr(17, 2).c_str());
-					session.expires = mktime(&tExpirationDate);
-
+					ParseSQLdatetime(session.expires, tExpirationDate, sExpirationDate, tm1.tm_isdst);
 					// RemoteHost is not used to restore the session
 					// LastUpdate is not used to restore the session
 				}
@@ -15869,3 +15855,4 @@ namespace http {
 
 	} //server
 }//http
+

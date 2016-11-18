@@ -288,6 +288,7 @@ hardware/MultiFun.cpp
 hardware/MySensorsBase.cpp
 hardware/MySensorsSerial.cpp
 hardware/MySensorsTCP.cpp
+hardware/MySensorsMQTT.cpp
 hardware/NefitEasy.cpp
 hardware/Nest.cpp
 hardware/Netatmo.cpp

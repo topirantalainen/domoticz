@@ -163,8 +163,12 @@
 #define sSwitchTypeSteffen			0x61
 #define sSwitchTypeAlectoSA			0x62
 #define sSwitchTypeGPIOset			0x63
+<<<<<<< HEAD
 #define sSwitchIHCAirRelay			0x64
 #define sSwitchIHCAirDimmer			0x65 
+=======
+#define sSwitchLightT1				0x64
+>>>>>>> origin/master
 
 //Switch commands
 #define gswitch_sOff				0x00
@@ -243,11 +247,6 @@
 
 //#define sTypeEvohomeOutside 0x30 //If connected
 //#define sTypeEvohomeStatus 0x40 //Not sure if we can do this in 1 sensor would be for things like zone valve status, boiler relay status (maybe OT values too) and comms errors (maybe seperature sensor or switch for each is easiest)
-
-//types for Yeelight
-#define pTypeYeelight	0x61
-#define sTypeYeelightColor	0x00
-#define sTypeYeelightWhite	0x01
 
 typedef struct _tThermostat {
 	uint8_t len;
@@ -512,6 +511,7 @@ typedef struct _tLimitlessLights {
 #define Limitless_DiscoSpeedFasterLong 22 //exclude RGB
 #define Limitless_SetHEXColour 23
 
+<<<<<<< HEAD
 typedef struct _tYeelight {
 	uint8_t len;
 	uint8_t type;
@@ -581,6 +581,8 @@ typedef struct _tIHC {
 #define IHC_On 1
 
 
+=======
+>>>>>>> origin/master
 typedef union tREVOBUF {
 	struct _tEVOHOME1 {
 		uint8_t len;
