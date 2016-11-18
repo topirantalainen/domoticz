@@ -69,7 +69,6 @@ define(['app'], function (app) {
                 });
             }
             else if (
-<<<<<<< HEAD
                 (text.indexOf("Panasonic") >= 0) ||
                 (text.indexOf("BleBox") >= 0) ||
                 (text.indexOf("TE923") >= 0) ||
@@ -89,27 +88,6 @@ define(['app'], function (app) {
         if (hardwaretype == 1000) {
                     hardwaretype = $("#hardwareparamsi2clocal #comboi2clocal").find('option:selected').val();
         }
-=======
-				(text.indexOf("Panasonic") >= 0) ||
-				(text.indexOf("BleBox") >= 0) ||
-				(text.indexOf("TE923") >= 0) ||
-				(text.indexOf("Volcraft") >= 0) ||
-				(text.indexOf("GPIO") >= 0) ||
-				(text.indexOf("Local I2C sensor") >= 0) ||
-				(text.indexOf("Dummy") >= 0) ||
-				(text.indexOf("System Alive") >= 0) ||
-				(text.indexOf("PiFace") >= 0) ||
-				(text.indexOf("Motherboard") >= 0) ||
-				(text.indexOf("Kodi") >= 0) ||
-				(text.indexOf("Evohome") >= 0 && text.indexOf("script") >= 0) ||
-                (text.indexOf("YeeLight") >= 0)
-				)
-            {
-				// if hardwaretype == 1000 => I2C sensors grouping
-				if (hardwaretype == 1000) {
-							hardwaretype = $("#hardwareparamsi2clocal #comboi2clocal").find('option:selected').val();
-				}
->>>>>>> origin/master
 
                 $.ajax({
                      url: "json.htm?type=command&param=updatehardware&htype=" + hardwaretype +
@@ -349,13 +327,6 @@ define(['app'], function (app) {
                 var username=$("#hardwarecontent #divlogin #username").val();
                 var password=$("#hardwarecontent #divlogin #password").val();
                 var extra="";
-<<<<<<< HEAD
-                var Mode1="";
-                if ((text.indexOf("MQTT") >= 0)) {
-                    extra=$("#hardwarecontent #divmqtt #filename").val();
-                    Mode1 = $("#hardwarecontent #divmqtt #combotopicselect").val();
-                }
-=======
                 var Mode1 = "";
                 if ((text.indexOf("MySensors Gateway with MQTT") >= 0)) {
                     extra = $("#hardwarecontent #divmysensorsmqtt #filename").val();
@@ -364,7 +335,6 @@ define(['app'], function (app) {
 					extra=$("#hardwarecontent #divmqtt #filename").val();
 					Mode1 = $("#hardwarecontent #divmqtt #combotopicselect").val();
 				}
->>>>>>> origin/master
                 $.ajax({
                      url: "json.htm?type=command&param=updatehardware&htype=" + hardwaretype +
                         "&address=" + address +
@@ -958,7 +928,6 @@ define(['app'], function (app) {
                 });
             }
             else if (
-<<<<<<< HEAD
                 (text.indexOf("Panasonic") >= 0) ||
                 (text.indexOf("BleBox") >= 0) ||
                 (text.indexOf("TE923") >= 0) ||
@@ -973,22 +942,6 @@ define(['app'], function (app) {
                 (text.indexOf("Motherboard") >= 0) ||
                 (text.indexOf("Yeelight") >= 0)
                 )
-=======
-				(text.indexOf("Panasonic") >= 0) ||
-				(text.indexOf("BleBox") >= 0) ||
-				(text.indexOf("TE923") >= 0) ||
-				(text.indexOf("Volcraft") >= 0) ||
-				(text.indexOf("Dummy") >= 0) ||
-				(text.indexOf("System Alive") >= 0) ||
-				(text.indexOf("Kodi") >= 0) ||
-				(text.indexOf("PiFace") >= 0) ||
-				(text.indexOf("GPIO") >= 0) ||
-				(text.indexOf("Evohome") >= 0 && text.indexOf("script") >= 0) ||
-				(text.indexOf("Tellstick") >= 0) ||
-				(text.indexOf("Motherboard") >= 0) ||
-                (text.indexOf("YeeLight") >= 0)
-				)
->>>>>>> origin/master
             {
                 $.ajax({
                      url: "json.htm?type=command&param=addhardware&htype=" + hardwaretype + "&name=" + encodeURIComponent(name) + "&enabled=" + bEnabled + "&datatimeout=" + datatimeout,
@@ -1230,14 +1183,10 @@ define(['app'], function (app) {
                 var password = encodeURIComponent($("#hardwarecontent #divlogin #password").val());
                 var extra = "";
                 var mode1 = "";
-<<<<<<< HEAD
-                if (text.indexOf("MQTT") >= 0) {
-=======
                 if (text.indexOf("MySensors Gateway with MQTT") >= 0) {
                     extra = encodeURIComponent($("#hardwarecontent #divmysensorsmqtt #filename").val());
                 }
                 else if (text.indexOf("MQTT") >= 0) {
->>>>>>> origin/master
                     extra = encodeURIComponent($("#hardwarecontent #divmqtt #filename").val());
                     mode1 = $("#hardwarecontent #divmqtt #combotopicselect").val();
                 }
@@ -4544,9 +4493,6 @@ RefreshLKIHCNodeTable = function()
             OnDummySensorTypeChange();
         }
 
-<<<<<<< HEAD
-        ReloadPiFace = function(idx,name)
-=======
         AddYeeLight = function(idx,name)
         {
 			$.devIdx=idx;
@@ -4613,7 +4559,6 @@ RefreshLKIHCNodeTable = function()
         }
 
 		ReloadPiFace = function(idx,name)
->>>>>>> origin/master
         {
           $.post("reloadpiface.webem", { 'idx':idx }, function(data) {
             ShowNotify($.t('PiFace config reloaded!'), 2500);
@@ -4991,11 +4936,7 @@ RefreshLKIHCNodeTable = function()
                                 $("#hardwarecontent #divcrcp1 #disablecrcp1").prop("checked",data["Mode2"]==0);
                             }
                         }
-<<<<<<< HEAD
-                        else if (((data["Type"].indexOf("LAN") >= 0) && (data["Type"].indexOf("YouLess") >= 0)) || (data["Type"].indexOf("Domoticz") >= 0) || (data["Type"].indexOf("Denkovi") >= 0) ||(data["Type"].indexOf("Harmony") >= 0) ||(data["Type"].indexOf("Satel Integra") >= 0) ||(data["Type"].indexOf("Logitech Media Server") >= 0) ||(data["Type"].indexOf("HEOS by DENON") >= 0) ||(data["Type"].indexOf("LK IHC Controller") >= 0)){
-=======
-                        else if ((((data["Type"].indexOf("LAN") >= 0) || data["Type"].indexOf("MySensors Gateway with MQTT") >= 0) && (data["Type"].indexOf("YouLess") >= 0)) || (data["Type"].indexOf("Domoticz") >= 0) || (data["Type"].indexOf("Denkovi") >= 0) || (data["Type"].indexOf("Harmony") >= 0) || (data["Type"].indexOf("Satel Integra") >= 0) || (data["Type"].indexOf("Logitech Media Server") >= 0) || (data["Type"].indexOf("HEOS by DENON") >= 0)) {
->>>>>>> origin/master
+                        else if ((((data["Type"].indexOf("LAN") >= 0) || data["Type"].indexOf("MySensors Gateway with MQTT") >= 0) && (data["Type"].indexOf("YouLess") >= 0)) || (data["Type"].indexOf("Domoticz") >= 0) || (data["Type"].indexOf("Denkovi") >= 0) || (data["Type"].indexOf("Harmony") >= 0) || (data["Type"].indexOf("Satel Integra") >= 0) || (data["Type"].indexOf("Logitech Media Server") >= 0) || (data["Type"].indexOf("HEOS by DENON") >= 0)) || (data["Type"].indexOf("LK IHC Controller") >= 0))  {
                             $("#hardwarecontent #hardwareparamsremote #tcpaddress").val(data["Address"]);
                             $("#hardwarecontent #hardwareparamsremote #tcpport").val(data["Port"]);
                             $("#hardwarecontent #hardwareparamslogin #password").val(data["Password"]);
@@ -5036,12 +4977,6 @@ RefreshLKIHCNodeTable = function()
                             $("#hardwarecontent #hardwareparamswinddelen #combomillselect").val(data["Mode1"]);
                             $("#hardwarecontent #hardwareparamswinddelen #nrofwinddelen").val(data["Port"]);
                         }
-<<<<<<< HEAD
-            else if (data["Type"].indexOf("Goodwe solar inverter via Web") >= 0) {
-                $("#hardwarecontent #hardwareparamsgoodweweb #username").val(data["Username"]);
-            }
-                        if (data["Type"].indexOf("MQTT") >= 0) {
-=======
 			else if (data["Type"].indexOf("Goodwe solar inverter via Web") >= 0) {
 			    $("#hardwarecontent #hardwareparamsgoodweweb #username").val(data["Username"]);
 			}
@@ -5049,7 +4984,6 @@ RefreshLKIHCNodeTable = function()
                             $("#hardwarecontent #hardwareparamsmysensorsmqtt #filename").val(data["Extra"]);
                         }
                         else if (data["Type"].indexOf("MQTT") >= 0) {
->>>>>>> origin/master
                             $("#hardwarecontent #hardwareparamsmqtt #filename").val(data["Extra"]);
                             $("#hardwarecontent #hardwareparamsmqtt #combotopicselect").val(data["Mode1"]);
                         }

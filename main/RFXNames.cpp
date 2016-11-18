@@ -239,12 +239,8 @@ const char *Hardware_Type_Desc(int hType)
 		{ HTYPE_MultiFun, "MultiFun LAN" },
 		{ HTYPE_ZIBLUEUSB, "ZiBlue RFPlayer USB" },
 		{ HTYPE_ZIBLUETCP, "ZiBlue RFPlayer with LAN interface" },
-<<<<<<< HEAD
 		{ HTYPE_Yeelight, "Yeelight LED" },
 		{ HTYPE_IHC, "LK IHC Controller" },
-=======
-		{ HTYPE_Yeelight, "YeeLight LED" },
->>>>>>> origin/master
 
 		{ 0, NULL, NULL }
 	};
@@ -825,13 +821,8 @@ const char *RFX_Type_SubType_Desc(const unsigned char dType, const unsigned char
 		{ pTypeGeneralSwitch, sSwitchMiLightv1, "MiLightv1" },
 		{ pTypeGeneralSwitch, sSwitchMiLightv2, "MiLightv2" },
 		{ pTypeGeneralSwitch, sSwitchHT6P20, "HT6P20" },
-<<<<<<< HEAD
 		{ pTypeGeneralSwitch, sSwitchIHCAirRelay, "IHC Air Relay" },
 		{ pTypeGeneralSwitch, sSwitchIHCAirDimmer, "IHC Air Dimmer" },
-		{ pTypeYeelight, sTypeYeelightColor, "RGBW" },
-		{ pTypeYeelight, sTypeYeelightWhite, "White" },
-=======
->>>>>>> origin/master
 		{ pTypeGeneralSwitch, sSwitchTypeDoitrand, "Doitrand" },
 		{ pTypeGeneralSwitch, sSwitchTypeWarema, "Warema" },
 		{ pTypeGeneralSwitch, sSwitchTypeAnsluta, "Ansluta" },
@@ -1794,23 +1785,6 @@ void GetLightStatus(
 			break;
 		}
 		break;
-<<<<<<< HEAD
-	case pTypeYeelight:
-		bHaveDimmer = true;
-		maxDimLevel = 100;
-		switch (nValue)
-		{
-		case Yeelight_LedOff:
-			lstatus = "Off";
-			break;
-		case Yeelight_LedOn:
-			lstatus = "On";
-			break;
-		case Yeelight_SetBrightnessLevel:
-			lstatus = "Set Level";
-			break;
-		}
-		break;
 	case pTypeIHC:
 		std::cout << "IHC\n";
 			bHaveDimmer=true;
@@ -1828,8 +1802,6 @@ void GetLightStatus(
 				break;
 			}
 			break;
-=======
->>>>>>> origin/master
 	case pTypeSecurity1:
 		llevel=0;
 		switch (nValue)

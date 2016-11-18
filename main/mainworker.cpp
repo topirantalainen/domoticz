@@ -2258,15 +2258,9 @@ void MainWorker::ProcessRXMessage(const CDomoticzHardwareBase *pHardware, const 
 		case pTypeHomeConfort:
 			decode_HomeConfort(HwdID, HwdType, reinterpret_cast<const tRBUF *>(pRXCommand), procResult);
 			break;
-<<<<<<< HEAD
-		case pTypeYeelight:
-			decode_Yeelight(HwdID, HwdType, reinterpret_cast<const tRBUF *>(pRXCommand), procResult);
-			break;
 		case pTypeIHC:
 			decode_IHC(HwdID, HwdType, reinterpret_cast<const tRBUF *>(pRXCommand), procResult);
 			break;
-=======
->>>>>>> origin/master
 		default:
 			_log.Log(LOG_ERROR, "UNHANDLED PACKET TYPE:      FS20 %02X", pRXCommand[1]);
 			return;

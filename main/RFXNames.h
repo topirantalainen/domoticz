@@ -172,11 +172,8 @@ enum _eHardwareTypes {
 	HTYPE_ZIBLUEUSB,			//89
 	HTYPE_ZIBLUETCP,			//90
 	HTYPE_Yeelight,				//91
-<<<<<<< HEAD
-	HTYPE_IHC,                  //92
-=======
 	HTYPE_MySensorsMQTT,		//92
->>>>>>> origin/master
+	HTYPE_IHC,                   //93
 	HTYPE_END
 };
 
