@@ -17,7 +17,7 @@
 #include "../json/json.h"
 
 #define RESOURCE_NOTIFICATION_TIMEOUT_S 5
-
+/* Comment */
 CLKIHC::CLKIHC(const int ID, const std::string &IPAddress, const unsigned short Port, const std::string &Username, const std::string &Password) :
 m_IPAddress(IPAddress),
 m_UserName(Username),
