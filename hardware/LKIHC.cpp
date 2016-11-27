@@ -16,6 +16,8 @@
 #include <string.h>
 #include "../json/json.h"
 
+#define RESOURCE_NOTIFICATION_TIMEOUT_S 5
+
 CLKIHC::CLKIHC(const int ID, const std::string &IPAddress, const unsigned short Port, const std::string &Username, const std::string &Password) :
 m_IPAddress(IPAddress),
 m_UserName(Username),
@@ -42,13 +44,13 @@ bool CLKIHC::StartHardware()
 {
 	Init();
 	//Start worker thread
-	m_thread = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&CLKIHC::Do_Work, this)));
+
 	m_bIsStarted=true;
 	sOnConnected(this);
 	ihcC = new ihcClient(m_IPAddress, m_UserName, m_Password);
 	ihcC->openConnection();
-
-	GetDevices();
+	m_thread = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&CLKIHC::Do_Work, this)));
+	//GetDevices();
 	return (m_thread!=NULL);
 }
 
@@ -66,7 +68,7 @@ bool CLKIHC::StopHardware()
 
 void CLKIHC::Do_Work()
 {
-	_log.Log(LOG_STATUS,"LK IHC: Worker started...");
+	_log.Log(LOG_STATUS,"LK IHC: Worksser started...");
 	/*ihcClient ihcClient(m_IPAddress, m_UserName, m_Password);
 
 	ihcClient.openConnection();
@@ -94,16 +96,67 @@ void CLKIHC::Do_Work()
 	//m_sql.UpdateValue(1    , ID, 0, pTypeIHCWireless, sTypeRelay, 10, 255, 0, asd);
 	std::string devname;
 	//m_sql.UpdateValue(m_HwdID, ID   , 0, pTypeGeneralSwitch, sSwitchIHCAirRelay, 10, 255, 0, "Normal", devname);
+	//sleep_seconds(5);
+	std::vector<int> resourceIdLis;
+	resourceIdLis.push_back(1270878);
+	ihcC->enableRuntimeValueNotification();
 
 	int sec_counter = 0;
+
 	while (!m_stoprequested)
 	{
-	sleep_seconds(1);
+		sleep_seconds(1);
 		sec_counter++;
 
-		if (sec_counter  % 12 == 0) {
-			m_LastHeartbeat=mytime(NULL);
+		std::vector<boost::shared_ptr<ResourceValue> > ress;
+		ress = ihcC->waitResourceValueNotifications(RESOURCE_NOTIFICATION_TIMEOUT_S);
 
+		for (std::vector<boost::shared_ptr<ResourceValue> >::iterator itt = ress.begin(); itt != ress.end(); ++itt)
+		{
+			ResourceValue & obj = *(*itt);/*
+			_log.Log(LOG_NORM, "LKIHC Plugin: Object changed status (%s).", obj.toString().c_str());
+			sprintf(ID, "%08X", (unsigned int)0x13645e); // 1270878
+			m_sql.safe_query("UPDATE DeviceStatus SET nValue=%d WHERE(HardwareID == %d) AND (DeviceID == '%08X')",
+						obj.intValue(), m_HwdID, obj.ID);
+			_log.Log(LOG_NORM, "UPDATE DeviceStatus SET nValue=%d WHERE(HardwareID == %d) AND (DeviceID == '%08X')",
+					obj.intValue(), m_HwdID, obj.ID);*/
+
+
+
+			{
+
+					int nvalue = obj.intValue();
+					bool tIsOn = (nvalue != 0);
+					int lastLevel = 0;
+					int value = obj.intValue();
+					//if ((bIsOn != tIsOn) || (value != lastLevel))
+					{
+						int cmd = light1_sOn;
+						int level = 100;
+						if (!tIsOn) {
+							cmd = IHC_Off;
+							level = 0;
+						}
+						_tGeneralSwitch ycmd;
+						ycmd.len = sizeof(pTypeGeneralSwitch) - 1;
+						ycmd.type = pTypeGeneralSwitch;
+						ycmd.subtype = sSwitchIHCAirRelay;
+						ycmd.id = obj.ID;
+						//ycmd.unitcode
+						ycmd.cmnd = obj.intValue();
+
+						m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, NULL, -1);
+					}
+				}
+
+			std::cout << obj.toString() << std::endl;//(*itt)->id;
+		}
+
+
+	//	if (ress.size() > 0)
+
+		if (sec_counter % 2 == 0) {
+			m_LastHeartbeat=mytime(NULL);
 		}
 
 	}
@@ -127,6 +180,7 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 		ResourceValue const t(general->id, general->cmnd == gswitch_sOn ? true : false);
 	    if (ihcC->resourceUpdate(t))
 	    {
+
 		_log.Log(LOG_STATUS, "Resource update was successful");
 	    }
 	    else
@@ -179,6 +233,7 @@ std::cout << sd[0] << std::endl;
 
 void CLKIHC::AddDevice(const std::string nodeID, const std::string &Name, const std::string type, const std::string location)
 {
+	std::cout << __func__ << std::endl;
 	std::vector<std::vector<std::string> > result;
 /*
 	//Check if exists

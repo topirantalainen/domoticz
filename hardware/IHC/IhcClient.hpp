@@ -538,6 +538,21 @@ public:
 		std::cout << __func__ << std::endl;
 			return resourceInteractionService->resourceUpdate2(value);
 		}
+void enableRuntimeValueNotification(void)
+{
+	std::cout << __func__ << std::endl;
+	std::vector<int> resourceIdLis;
+		resourceIdLis.push_back(1270878);
+
+		resourceInteractionService->enableRuntimeValueNotifications2(resourceIdLis);
+}
+
+std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(int const timeout)
+	{
+		std::cout << __func__ << std::endl;
+		return resourceInteractionService->waitResourceValueNotifications2(timeout);
+	}
+
 
 };
 

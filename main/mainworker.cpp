@@ -1792,18 +1792,22 @@ void MainWorker::DecodeRXMessage(const CDomoticzHardwareBase *pHardware, const u
 
 void MainWorker::PushRxMessage(const CDomoticzHardwareBase *pHardware, const unsigned char *pRXCommand, const char *defaultName, const int BatteryLevel)
 {
+	std::cout << "h2\n";
 	// Check command, submit it without waiting for it to be processed
 	CheckAndPushRxMessage(pHardware, pRXCommand, defaultName, BatteryLevel, false);
 }
 
 void MainWorker::PushAndWaitRxMessage(const CDomoticzHardwareBase *pHardware, const unsigned char *pRXCommand, const char *defaultName, const int BatteryLevel)
 {
+	std::cout << "h1\n";
 	// Check command, submit it and wait for it to be processed
 	CheckAndPushRxMessage(pHardware, pRXCommand, defaultName, BatteryLevel, true);
 }
 
 void MainWorker::CheckAndPushRxMessage(const CDomoticzHardwareBase *pHardware, const unsigned char *pRXCommand, const char *defaultName, const int BatteryLevel, const bool wait)
 {
+	std::cout << "here\n";
+	std::cout << pHardware->HwdType << " - " << pHardware->m_HwdID << "\n";
 	if ((pHardware == NULL) || (pRXCommand == NULL)) {
 		_log.Log(LOG_ERROR, "RxQueue: cannot push message with undefined hardware (%s) or command (%s)",
 				(pHardware == NULL) ? "null" : "not null",
@@ -1817,7 +1821,7 @@ void MainWorker::CheckAndPushRxMessage(const CDomoticzHardwareBase *pHardware, c
 				pHardware->Name.c_str());
 		return;
 	}
-
+std::cout << "and here\n";
 	// Build queue item
 	_tRxQueueItem rxMessage;
 	if (defaultName != NULL)
@@ -1849,7 +1853,7 @@ void MainWorker::CheckAndPushRxMessage(const CDomoticzHardwareBase *pHardware, c
 		rxMessage.trigger = new queue_element_trigger();
 	}
 
-#ifdef DEBUG_RXQUEUE
+//#ifdef DEBUG_RXQUEUE
 		_log.Log(LOG_STATUS, "RxQueue: push a rxMessage(%lu) (hrdwId=%d, hrdwType=%d, hrdwName=%s, type=%02X, subtype=%02X)",
 				rxMessage.rxMessageIdx,
 				pHardware->m_HwdID,
@@ -1857,7 +1861,7 @@ void MainWorker::CheckAndPushRxMessage(const CDomoticzHardwareBase *pHardware, c
 				pHardware->Name.c_str(),
 				pRXCommand[1],
 				pRXCommand[2]);
-#endif
+//#endif
 
 	// Push item to queue
 	m_rxMessageQueue.push(rxMessage);
@@ -11123,6 +11127,7 @@ std::cout << switchcmd << std::endl;
 		if (!IsTesting) {
 			_log.Log(LOG_STATUS,"   no");
 			//send to internal for now (later we use the ACK)
+			std::cout << "asd666\n";
 			PushAndWaitRxMessage(m_hardwaredevices[hindex],(const unsigned char *)&lcmd, NULL, -1);
 		}
 		else
@@ -11132,6 +11137,7 @@ std::cout << switchcmd << std::endl;
 	break;
 	case pTypeGeneralSwitch:
 		{
+			std::cout << "jj2\nID: " << ID << "\ndType: " << boost::to_string((unsigned int)dType) << "\ndSubType: " << boost::to_string((unsigned int)dSubType) << "\nseqnbr: " << boost::to_string(m_hardwaredevices[hindex]->m_SeqNr + 1) << "\n" ;
 			_tGeneralSwitch gswitch;
 			gswitch.type = dType;
 			gswitch.subtype = dSubType;
@@ -11140,7 +11146,7 @@ std::cout << switchcmd << std::endl;
 			gswitch.unitcode = Unit;
 			if (!GetLightCommand(dType, dSubType, switchtype, switchcmd, gswitch.cmnd, options))
 				return false;
-
+std::cout << "cmd: " << boost::to_string((int)gswitch.cmnd) << "\n";
 			if ((switchtype != STYPE_Selector) && (dSubType != sSwitchGeneralSwitch)) {
 				level = (level > 99) ? 99 : level;
 			}

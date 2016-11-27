@@ -1681,7 +1681,7 @@ define(['app'], function (app) {
                  async: false,
                  dataType: 'json',
                  success: function(data) {
-                    RefreshWOLNodeTable();
+                    RefreshIHCNodeTable();
                  },
                  error: function(){
                     ShowNotify($.t('Problem Adding Node!'), 2500, true);

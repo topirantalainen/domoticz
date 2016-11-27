@@ -25,6 +25,30 @@ struct RangedInteger {
 
 /**/
 
+struct valueVisitor : boost::static_visitor<int> {
+	int ID;
+
+	valueVisitor()
+	{}
+
+    int operator()(bool const value) const{
+    	int const val = (value) ? 1 : 0;
+    	return val;
+    }
+
+    int operator()(RangedInteger const value) const{
+    	//std::string const out = value.value;
+        return value.value;
+    }
+
+    template<typename T>
+    int operator()(T const&) const
+    {
+    	//std::string const out = 0;
+        return 0;
+    }
+};
+
 struct ToStringVisitor : boost::static_visitor<std::string> {
 	int ID;
 
@@ -50,6 +74,7 @@ struct ToStringVisitor : boost::static_visitor<std::string> {
         return out;
     }
 };
+
 
 struct XmlVisitor : boost::static_visitor<std::string> {
 	int ID;
@@ -126,6 +151,11 @@ struct ResourceValue {
     {
         return boost::apply_visitor(ToStringVisitor(ID), value);
 //        return boost::apply_visitor(ToStringVisitor{}, value);
+    }
+
+    int intValue() const
+    {
+    	return boost::apply_visitor(valueVisitor(), value);
     }
 
     std::string toXml( ) const

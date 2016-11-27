@@ -311,7 +311,7 @@ boost::shared_ptr<WSResourceValue> parseResourceValue(TiXmlElement* xmlRes, int 
 public:
 void enableRuntimeValueNotifications(std::vector <int> items)
 {
-	std::cout << __func__ << std::endl;
+	std::cout << __func__ << "b" << std::endl;
 	std::string queryPrefix = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 	queryPrefix += "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">";
 	queryPrefix += "<soap:Body><enableRuntimeValueNotifications1 xmlns=\"utcs\">";
@@ -319,7 +319,7 @@ void enableRuntimeValueNotifications(std::vector <int> items)
 	std::string const querySuffix = "</enableRuntimeValueNotifications1></soap:Body></soap:Envelope>";
 
 	std::string query = queryPrefix;
-
+std::cout << "here\n";
 	for (std::vector<int>::const_iterator itt = items.begin(); itt != items.end(); ++itt)
 	{
 	//for( auto&& pointer : items ) {
@@ -333,6 +333,7 @@ void enableRuntimeValueNotifications(std::vector <int> items)
 void enableRuntimeValueNotifications2(std::vector<int> items)
 {
 	std::cout << __func__ << std::endl;
+	std::cout << "her \n";
 	std::string queryPrefix = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 	queryPrefix += "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">";
 	queryPrefix += "<soap:Body><enableRuntimeValueNotifications1 xmlns=\"utcs\">";
@@ -346,7 +347,7 @@ void enableRuntimeValueNotifications2(std::vector<int> items)
 	}
 
 	query += querySuffix;
-
+std::cout << "her2\n";
 	TiXmlDocument doc;
 
 	std::string sResult;
