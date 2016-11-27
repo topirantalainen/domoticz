@@ -239,7 +239,7 @@ const char *Hardware_Type_Desc(int hType)
 		{ HTYPE_MultiFun, "MultiFun LAN" },
 		{ HTYPE_ZIBLUEUSB, "ZiBlue RFPlayer USB" },
 		{ HTYPE_ZIBLUETCP, "ZiBlue RFPlayer with LAN interface" },
-		{ HTYPE_Yeelight, "Yeelight LED" },
+		{ HTYPE_Yeelight, "YeeLight LED" },
 		{ HTYPE_IHC, "LK IHC Controller" },
 
 		{ 0, NULL, NULL }
