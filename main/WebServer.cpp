@@ -1161,8 +1161,6 @@ namespace http {
 			}
 			else if (htype == HTYPE_HARMONY_HUB) {
 				if (
-					(username == "") ||
-					(password == "") ||
 					(address == "" || port == 0)
 					)
 					return;
@@ -1434,8 +1432,6 @@ namespace http {
 			}
 			else if (htype == HTYPE_HARMONY_HUB) {
 				if (
-					(username == "") ||
-					(password == "") ||
 					(address == "")
 					)
 					return;
@@ -8312,18 +8308,8 @@ namespace http {
 						{
 							//get lowest value of today, and max rate
 							time_t now = mytime(NULL);
-							struct tm tm1;
-							localtime_r(&now, &tm1);
-
 							struct tm ltime;
-							ltime.tm_isdst = tm1.tm_isdst;
-							ltime.tm_hour = 0;
-							ltime.tm_min = 0;
-							ltime.tm_sec = 0;
-							ltime.tm_year = tm1.tm_year;
-							ltime.tm_mon = tm1.tm_mon;
-							ltime.tm_mday = tm1.tm_mday;
-
+							localtime_r(&now, &ltime);
 							char szDate[40];
 							sprintf(szDate, "%04d-%02d-%02d", ltime.tm_year + 1900, ltime.tm_mon + 1, ltime.tm_mday);
 
@@ -8402,18 +8388,8 @@ namespace http {
 
 						//get value of today
 						time_t now = mytime(NULL);
-						struct tm tm1;
-						localtime_r(&now, &tm1);
-
 						struct tm ltime;
-						ltime.tm_isdst = tm1.tm_isdst;
-						ltime.tm_hour = 0;
-						ltime.tm_min = 0;
-						ltime.tm_sec = 0;
-						ltime.tm_year = tm1.tm_year;
-						ltime.tm_mon = tm1.tm_mon;
-						ltime.tm_mday = tm1.tm_mday;
-
+						localtime_r(&now, &ltime);
 						char szDate[40];
 						sprintf(szDate, "%04d-%02d-%02d", ltime.tm_year + 1900, ltime.tm_mon + 1, ltime.tm_mday);
 
@@ -8521,18 +8497,8 @@ namespace http {
 
                         //get value of today
                         time_t now = mytime(NULL);
-                        struct tm tm1;
-                        localtime_r(&now, &tm1);
-
-                        struct tm ltime;
-                        ltime.tm_isdst = tm1.tm_isdst;
-                        ltime.tm_hour = 0;
-                        ltime.tm_min = 0;
-                        ltime.tm_sec = 0;
-                        ltime.tm_year = tm1.tm_year;
-                        ltime.tm_mon = tm1.tm_mon;
-                        ltime.tm_mday = tm1.tm_mday;
-
+			struct tm ltime;
+			localtime_r(&now, &ltime);
                         char szDate[40];
                         sprintf(szDate, "%04d-%02d-%02d", ltime.tm_year + 1900, ltime.tm_mon + 1, ltime.tm_mday);
 
@@ -8639,18 +8605,8 @@ namespace http {
 
 						//get value of today
 						time_t now = mytime(NULL);
-						struct tm tm1;
-						localtime_r(&now, &tm1);
-
 						struct tm ltime;
-						ltime.tm_isdst = tm1.tm_isdst;
-						ltime.tm_hour = 0;
-						ltime.tm_min = 0;
-						ltime.tm_sec = 0;
-						ltime.tm_year = tm1.tm_year;
-						ltime.tm_mon = tm1.tm_mon;
-						ltime.tm_mday = tm1.tm_mday;
-
+						localtime_r(&now, &ltime);
 						char szDate[40];
 						sprintf(szDate, "%04d-%02d-%02d", ltime.tm_year + 1900, ltime.tm_mon + 1, ltime.tm_mday);
 
@@ -8836,18 +8792,8 @@ namespace http {
 
 						//get value of today
 						time_t now = mytime(NULL);
-						struct tm tm1;
-						localtime_r(&now, &tm1);
-
 						struct tm ltime;
-						ltime.tm_isdst = tm1.tm_isdst;
-						ltime.tm_hour = 0;
-						ltime.tm_min = 0;
-						ltime.tm_sec = 0;
-						ltime.tm_year = tm1.tm_year;
-						ltime.tm_mon = tm1.tm_mon;
-						ltime.tm_mday = tm1.tm_mday;
-
+						localtime_r(&now, &ltime);
 						char szDate[40];
 						sprintf(szDate, "%04d-%02d-%02d", ltime.tm_year + 1900, ltime.tm_mon + 1, ltime.tm_mday);
 
@@ -8893,18 +8839,8 @@ namespace http {
 						float GasDivider = 1000.0f;
 						//get lowest value of today
 						time_t now = mytime(NULL);
-						struct tm tm1;
-						localtime_r(&now, &tm1);
-
 						struct tm ltime;
-						ltime.tm_isdst = tm1.tm_isdst;
-						ltime.tm_hour = 0;
-						ltime.tm_min = 0;
-						ltime.tm_sec = 0;
-						ltime.tm_year = tm1.tm_year;
-						ltime.tm_mon = tm1.tm_mon;
-						ltime.tm_mday = tm1.tm_mday;
-
+						localtime_r(&now, &ltime);
 						char szDate[40];
 						sprintf(szDate, "%04d-%02d-%02d", ltime.tm_year + 1900, ltime.tm_mon + 1, ltime.tm_mday);
 
@@ -9028,18 +8964,8 @@ namespace http {
 							double total = atof(strarray[1].c_str()) / 1000;
 
 							time_t now = mytime(NULL);
-							struct tm tm1;
-							localtime_r(&now, &tm1);
-
 							struct tm ltime;
-							ltime.tm_isdst = tm1.tm_isdst;
-							ltime.tm_hour = 0;
-							ltime.tm_min = 0;
-							ltime.tm_sec = 0;
-							ltime.tm_year = tm1.tm_year;
-							ltime.tm_mon = tm1.tm_mon;
-							ltime.tm_mday = tm1.tm_mday;
-
+							localtime_r(&now, &ltime);
 							char szDate[40];
 							sprintf(szDate, "%04d-%02d-%02d", ltime.tm_year + 1900, ltime.tm_mon + 1, ltime.tm_mday);
 
@@ -9538,18 +9464,8 @@ namespace http {
 						{
 							//get value of today
 							time_t now = mytime(NULL);
-							struct tm tm1;
-							localtime_r(&now, &tm1);
-
 							struct tm ltime;
-							ltime.tm_isdst = tm1.tm_isdst;
-							ltime.tm_hour = 0;
-							ltime.tm_min = 0;
-							ltime.tm_sec = 0;
-							ltime.tm_year = tm1.tm_year;
-							ltime.tm_mon = tm1.tm_mon;
-							ltime.tm_mday = tm1.tm_mday;
-
+							localtime_r(&now, &ltime);
 							char szDate[40];
 							sprintf(szDate, "%04d-%02d-%02d", ltime.tm_year + 1900, ltime.tm_mon + 1, ltime.tm_mday);
 
@@ -10666,7 +10582,7 @@ namespace http {
 			else
 			{
 				//Update
-				time_t now = time(0);
+				time_t now = mytime(NULL);
 				struct tm ltime;
 				localtime_r(&now, &ltime);
 				m_sql.safe_query("UPDATE MobileDevices SET SenderID='%q', LastUpdate='%04d-%02d-%02d %02d:%02d:%02d' WHERE (UUID == '%q')",
@@ -11817,6 +11733,7 @@ namespace http {
 					return;
 			}
 			unsigned char tempsign = m_sql.m_tempsign[0];
+			int iPrev;
 
 			if (srange == "day")
 			{
@@ -12013,7 +11930,7 @@ namespace http {
 										if ((curDeliv2 < 0) || (curDeliv2>100000))
 											curDeliv2 = 0;
 
-										time_t tdiff = difftime(atime,lastTime);
+										float tdiff = static_cast<float>(difftime(atime,lastTime));
 										if (tdiff == 0)
 											tdiff = 1;
 										float tlaps = 3600.0f / tdiff;
@@ -12056,9 +11973,9 @@ namespace http {
 										bHaveFirstValue = true;
 										if ((ntime.tm_hour != 0) && (ntime.tm_min != 0))
 										{
-											atime -= 24 * 60 * 60;
 											struct tm ltime;
-											localtime_r(&atime, &ltime);
+											localtime_r(&atime, &tm1);
+											getNoon(atime,ltime,ntime.tm_year+1900,ntime.tm_mon+1,ntime.tm_mday-1); // We're only interested in finding the date
 											int year = ltime.tm_year+1900;
 											int mon = ltime.tm_mon+1;
 											int day = ltime.tm_mday;
@@ -12666,15 +12583,15 @@ namespace http {
 										{
 											struct tm ntime;
 											time_t atime;
-											ntime.tm_isdst = -1;
-											ntime.tm_year = atoi(actDateTimeHour.substr(0, 4).c_str()) - 1900;
-											ntime.tm_mon = atoi(actDateTimeHour.substr(5, 2).c_str()) - 1;
-											ntime.tm_mday = atoi(actDateTimeHour.substr(8, 2).c_str());
-											ntime.tm_hour = atoi(actDateTimeHour.substr(11, 2).c_str());
-											ntime.tm_min = 0;
-											ntime.tm_sec = 0;
-											ntime.tm_hour -= 1;
-											atime = mktime(&ntime);
+											if (actDateTimeHour.size() == 10)
+												actDateTimeHour += " 00";
+											constructTime(atime,ntime,
+												atoi(actDateTimeHour.substr(0, 4).c_str()),
+												atoi(actDateTimeHour.substr(5, 2).c_str()),
+												atoi(actDateTimeHour.substr(8, 2).c_str()),
+												atoi(actDateTimeHour.substr(11, 2).c_str())-1,
+												0,0,-1);
+
 											char szTime[50];
 											sprintf(szTime, "%04d-%02d-%02d %02d:00", ntime.tm_year + 1900, ntime.tm_mon + 1, ntime.tm_mday, ntime.tm_hour);
 											root["result"][ii]["d"] = szTime;
@@ -12729,7 +12646,7 @@ namespace http {
 									{
 										long long curValue = actValue - ulLastValue;
 
-										time_t tdiff = difftime(atime,lastTime);
+										float tdiff = static_cast<float>(difftime(atime,lastTime));
 										if (tdiff == 0)
 											tdiff = 1;
 										float tlaps = 3600.0f / tdiff;
@@ -13126,26 +13043,12 @@ namespace http {
 
 					char szDateStart[40];
 					char szDateEnd[40];
-
-					struct tm ltime;
-					ltime.tm_isdst = tm1.tm_isdst;
-//GB3:	Use a midday hour to avoid a clash with possible DST jump
-					ltime.tm_hour = 14;
-					ltime.tm_min = 0;
-					ltime.tm_sec = 0;
-					ltime.tm_year = tm1.tm_year;
-					ltime.tm_mon = tm1.tm_mon;
-					ltime.tm_mday = tm1.tm_mday;
-
-					sprintf(szDateEnd, "%04d-%02d-%02d", ltime.tm_year + 1900, ltime.tm_mon + 1, ltime.tm_mday);
+					sprintf(szDateEnd, "%04d-%02d-%02d", tm1.tm_year + 1900, tm1.tm_mon + 1, tm1.tm_mday);
 
 					//Subtract one week
-
-					ltime.tm_mday -= 7;
-					time_t later = mktime(&ltime);
+					time_t weekbefore;
 					struct tm tm2;
-					localtime_r(&later, &tm2);
-
+					getNoon(weekbefore,tm2,tm1.tm_year+1900, tm1.tm_mon+1,tm1.tm_mday-7); // We only want the date
 					sprintf(szDateStart, "%04d-%02d-%02d", tm2.tm_year + 1900, tm2.tm_mon + 1, tm2.tm_mday);
 
 					result = m_sql.safe_query("SELECT Total, Rate, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStart, szDateEnd);
@@ -13234,25 +13137,12 @@ namespace http {
 
 					char szDateStart[40];
 					char szDateEnd[40];
-
-					struct tm ltime;
-					ltime.tm_isdst = tm1.tm_isdst;
-//GB3:	Use a midday hour to avoid a clash with possible DST jump
-					ltime.tm_hour = 14;
-					ltime.tm_min = 0;
-					ltime.tm_sec = 0;
-					ltime.tm_year = tm1.tm_year;
-					ltime.tm_mon = tm1.tm_mon;
-					ltime.tm_mday = tm1.tm_mday;
-
-					sprintf(szDateEnd, "%04d-%02d-%02d", ltime.tm_year + 1900, ltime.tm_mon + 1, ltime.tm_mday);
+					sprintf(szDateEnd, "%04d-%02d-%02d", tm1.tm_year + 1900, tm1.tm_mon + 1, tm1.tm_mday);
 
 					//Subtract one week
-
-					ltime.tm_mday -= 7;
-					time_t later = mktime(&ltime);
+					time_t weekbefore;
 					struct tm tm2;
-					localtime_r(&later, &tm2);
+					getNoon(weekbefore,tm2,tm1.tm_year+1900, tm1.tm_mon+1,tm1.tm_mday-7); // We only want the date
 					sprintf(szDateStart, "%04d-%02d-%02d", tm2.tm_year + 1900, tm2.tm_mon + 1, tm2.tm_mday);
 
 					int ii = 0;
@@ -13473,33 +13363,22 @@ namespace http {
 				}
 				else
 				{
-					struct tm ltime;
-					ltime.tm_isdst = tm1.tm_isdst;
-//GB3:	Use a midday hour to avoid a clash with possible DST jump
-					ltime.tm_hour = 14;
-					ltime.tm_min = 0;
-					ltime.tm_sec = 0;
-					ltime.tm_year = tm1.tm_year;
-					ltime.tm_mon = tm1.tm_mon;
-					ltime.tm_mday = tm1.tm_mday;
+					sprintf(szDateEnd, "%04d-%02d-%02d", tm1.tm_year + 1900, tm1.tm_mon + 1, tm1.tm_mday);
+					sprintf(szDateEndPrev, "%04d-%02d-%02d", tm1.tm_year + 1900 - 1, tm1.tm_mon + 1, tm1.tm_mday);
 
-					sprintf(szDateEnd, "%04d-%02d-%02d", ltime.tm_year + 1900, ltime.tm_mon + 1, ltime.tm_mday);
-					sprintf(szDateEndPrev, "%04d-%02d-%02d", ltime.tm_year + 1900 - 1, ltime.tm_mon + 1, ltime.tm_mday);
-
+					struct tm tm2;
 					if (srange == "month")
 					{
 						//Subtract one month
-						ltime.tm_mon -= 1;
+						time_t monthbefore;
+						getNoon(monthbefore,tm2,tm1.tm_year+1900,tm1.tm_mon,tm1.tm_mday);
 					}
 					else
 					{
 						//Subtract one year
-						ltime.tm_year -= 1;
+						time_t yearbefore;
+						getNoon(yearbefore,tm2,tm1.tm_year+1900-1,tm1.tm_mon+1,tm1.tm_mday);
 					}
-
-					time_t later = mktime(&ltime);
-					struct tm tm2;
-					localtime_r(&later, &tm2);
 
 					sprintf(szDateStart, "%04d-%02d-%02d", tm2.tm_year + 1900, tm2.tm_mon + 1, tm2.tm_mday);
 					sprintf(szDateStartPrev, "%04d-%02d-%02d", tm2.tm_year + 1900 - 1, tm2.tm_mon + 1, tm2.tm_mday);
@@ -13697,7 +13576,7 @@ namespace http {
 						dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
 					if (result.size() > 0)
 					{
-						int iPrev = 0;
+						iPrev = 0;
 						std::vector<std::vector<std::string> >::const_iterator itt;
 						for (itt = result.begin(); itt != result.end(); ++itt)
 						{
@@ -13884,7 +13763,7 @@ namespace http {
 					result = m_sql.safe_query("SELECT Level, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
 					if (result.size() > 0)
 					{
-						int iPrev = 0;
+						iPrev = 0;
 						std::vector<std::vector<std::string> >::const_iterator itt;
 						for (itt = result.begin(); itt != result.end(); ++itt)
 						{
@@ -13958,7 +13837,7 @@ namespace http {
 						"SELECT Total, Rate, Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
 					if (result.size() > 0)
 					{
-						int iPrev = 0;
+						iPrev = 0;
 						std::vector<std::vector<std::string> >::const_iterator itt;
 						for (itt = result.begin(); itt != result.end(); ++itt)
 						{
@@ -14015,7 +13894,7 @@ namespace http {
 					//				EnergyDivider*=1000.0f;
 
 					int ii = 0;
-					int iPrev = 0;
+					iPrev = 0;
 					if (dType == pTypeP1Power)
 					{
 						//Actual Year
@@ -14116,6 +13995,7 @@ namespace http {
 						if (result.size() > 0)
 						{
 							bool bHaveDeliverd = false;
+							iPrev = 0;
 							std::vector<std::vector<std::string> >::const_iterator itt;
 							for (itt = result.begin(); itt != result.end(); ++itt)
 							{
@@ -14174,15 +14054,15 @@ namespace http {
 						result = m_sql.safe_query("SELECT Value2,Date FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
 						if (result.size() > 0)
 						{
-							ii = 0;
+							iPrev = 0;
 							std::vector<std::vector<std::string> >::const_iterator itt;
 							for (itt = result.begin(); itt != result.end(); ++itt)
 							{
 								std::vector<std::string> sd = *itt;
 
-								root["resultprev"][ii]["d"] = sd[1].substr(0, 16);
-								root["resultprev"][ii]["co2_max"] = sd[0];
-								ii++;
+								root["resultprev"][iPrev]["d"] = sd[1].substr(0, 16);
+								root["resultprev"][iPrev]["co2_max"] = sd[0];
+								iPrev++;
 							}
 						}
 					}
@@ -14659,6 +14539,7 @@ namespace http {
 						result = m_sql.safe_query("SELECT Value, Date, Counter FROM %s WHERE (DeviceRowID==%" PRIu64 " AND Date>='%q' AND Date<='%q') ORDER BY Date ASC", dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
 						if (result.size() > 0)
 						{
+							iPrev = 0;
 							std::vector<std::vector<std::string> >::const_iterator itt;
 							for (itt = result.begin(); itt != result.end(); ++itt)
 							{
@@ -15052,7 +14933,6 @@ namespace http {
 						ii++;
 					}
 					//Previous Year
-					ii = 0;
 					result = m_sql.safe_query(
 						"SELECT Direction, Speed_Min, Speed_Max, Gust_Min,"
 						" Gust_Max, Date "
@@ -15061,33 +14941,34 @@ namespace http {
 						dbasetable.c_str(), idx, szDateStartPrev, szDateEndPrev);
 					if (result.size() > 0)
 					{
+						iPrev = 0;
 						std::vector<std::vector<std::string> >::const_iterator itt;
 						for (itt = result.begin(); itt != result.end(); ++itt)
 						{
 							std::vector<std::string> sd = *itt;
 
-							root["resultprev"][ii]["d"] = sd[5].substr(0, 16);
-							root["resultprev"][ii]["di"] = sd[0];
+							root["resultprev"][iPrev]["d"] = sd[5].substr(0, 16);
+							root["resultprev"][iPrev]["di"] = sd[0];
 
 							int intSpeed = atoi(sd[2].c_str());
 							int intGust = atoi(sd[4].c_str());
 							if (m_sql.m_windunit != WINDUNIT_Beaufort)
 							{
 								sprintf(szTmp, "%.1f", float(intSpeed) * m_sql.m_windscale);
-								root["resultprev"][ii]["sp"] = szTmp;
+								root["resultprev"][iPrev]["sp"] = szTmp;
 								sprintf(szTmp, "%.1f", float(intGust) * m_sql.m_windscale);
-								root["resultprev"][ii]["gu"] = szTmp;
+								root["resultprev"][iPrev]["gu"] = szTmp;
 							}
 							else
 							{
 								float windspeedms = float(intSpeed)*0.1f;
 								float windgustms = float(intGust)*0.1f;
 								sprintf(szTmp, "%d", MStoBeaufort(windspeedms));
-								root["resultprev"][ii]["sp"] = szTmp;
+								root["resultprev"][iPrev]["sp"] = szTmp;
 								sprintf(szTmp, "%d", MStoBeaufort(windgustms));
-								root["resultprev"][ii]["gu"] = szTmp;
+								root["resultprev"][iPrev]["gu"] = szTmp;
 							}
-							ii++;
+							iPrev++;
 						}
 					}
 				}
@@ -15782,10 +15663,8 @@ namespace http {
 
 					std::string sExpirationDate = result[0][3];
 					time_t now = mytime(NULL);
-					struct tm tm1;
-					localtime_r(&now, &tm1);
 					struct tm tExpirationDate;
-					ParseSQLdatetime(session.expires, tExpirationDate, sExpirationDate, tm1.tm_isdst);
+					ParseSQLdatetime(session.expires, tExpirationDate, sExpirationDate);
 					// RemoteHost is not used to restore the session
 					// LastUpdate is not used to restore the session
 				}
