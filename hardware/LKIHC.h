@@ -45,7 +45,6 @@ private:
 	volatile bool m_stoprequested;
 	boost::shared_ptr<boost::thread> m_thread;
 
-
 	void Init();
 	bool StartHardware();
 	bool StopHardware();

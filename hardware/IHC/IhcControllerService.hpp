@@ -20,7 +20,7 @@ private:
 public:
 	IhcControllerService(std::string hostname)
 	{
-		url = "https://" + hostname + "/ws/ControllerService";
+		url = "http://" + hostname + "/ws/ControllerService";
 	}
 
 public:
@@ -108,7 +108,7 @@ public:
 
 	void getRF()
 		{
-		std::string url2 = url = "https://192.168.1.99/ws/AirlinkManagementService";
+		std::string url2 = url = "http://192.168.1.99/ws/AirlinkManagementService";
 			std::string sResult;
 			TiXmlDocument doc;
 

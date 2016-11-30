@@ -17,7 +17,7 @@ public:
 
 	IhcAuthenticationService(std::string hostname)
 	{
-		url = "https://" + hostname + "/ws/AuthenticationService";
+		url = "http://" + hostname + "/ws/AuthenticationService";
 	}
 
 	IhcAuthenticationService(std::string host, int timeout)
@@ -29,9 +29,6 @@ public:
 
 	WSLoginResult* authenticate(std::string username, std::string password, std::string application)
 	{
-	    std::stringstream sstr;
-	    std::string httpData = sstr.str();
-
 	    TiXmlDocument doc;
 
 	    std::string sResult;
@@ -48,21 +45,14 @@ public:
 	    query += "</x:Envelope>\r\n\r\n";
 
 	    sResult = sendQuery(url, query);
-	    //std::cout << "sResult: " << sResult << "END:\n\n"<< std::endl;
-	    if (doc.Parse(sResult.c_str()))
-	    {
-	        std::cout << "---------------------aa----------\n";
-	        doc.Print();
-	        std::cout << "-------------------------------\n";
 
-	    }
+	    doc.Parse(sResult.c_str());
 
 	    WSLoginResult * loginResult = new WSLoginResult;
 	    loginResult->encodeData(doc);
+
 	    return loginResult;
 	}
 };
-
-
 
 #endif /* IHC_IHCAUTHENTICATIONSERVICE_HPP_ */

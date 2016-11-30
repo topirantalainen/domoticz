@@ -23,7 +23,7 @@ public:
 IhcResourceInteractionService(std::string hostname)
 {
 	std::cout << __func__ << std::endl;
-	url = "https://" + hostname + "/ws/ResourceInteractionService";
+	url = "http://" + hostname + "/ws/ResourceInteractionService";
 }
 
 
@@ -131,22 +131,14 @@ ResourceValue resourceQuery(int resourceId)
 
 std::string getValue( TiXmlElement* a, std::string t)
 {
-	std::cout << __func__ << std::endl;
-
-	//std::cout << "getValue   " << t << std::endl;
-
 	TinyXPath::xpath_processor proc(a, t.c_str());
-	/*std::cout << "getValue   " << t << std::endl;
-	std::cout << proc.S_compute_xpath().c_str() << std::endl;*/
+
 	if (1 == proc.u_compute_xpath_node_set())
 	{
-
-		//std::cout << "getValue   " << t << std::endl;
 		TiXmlNode* thisNode = proc.XNp_get_xpath_node(0);
 
-		//TiXmlAttribute* thisNod = proc.XNp_get_xpath_node(0);
 		std::string res = thisNode->ToElement()->GetText();
-		std::cout << res << std::endl;
+
 		return res;
 	}
 	return "";

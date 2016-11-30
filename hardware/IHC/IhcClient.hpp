@@ -113,16 +113,15 @@ pthread_t Thread::self() {
 
 
 class ihcClient
-{/*
+{
+
 public:
 	enum ConnectionState {
 		DISCONNECTED,
 		CONNECTING,
 		CONNECTED
-	};
+	} connState;
 
-private:
-	static ConnectionState connState = ConnectionState::DISCONNECTED;*/
 private:
 	std::string username;
 	std::string password;
@@ -130,74 +129,52 @@ private:
 	std::string projectFile;
 	std::string dumpResourceToFile;
 
-
-
-
 	IhcAuthenticationService* authenticationService;
 	IhcResourceInteractionService* resourceInteractionService;
 	IhcControllerService* controllerService;
 
 	WSControllerState controllerState;
+
 public:
-
-
 	ihcClient(std::string const ip, std::string const username, std::string const password)
-{
+	{
 		this->ip = ip;
 		this->username = username;
 		this->password = password;
-}
-	std::string getUsername()
-	{
-		return username;
+		this->connState = DISCONNECTED;
 	}
+
+	std::string getUsername()
+	{ return username; }
 
 	void setUsernae(std::string username)
-	{
-		this->username = username;
-	}
+	{ this->username = username; }
 
 	std::string getPassword()
-	{
-		return password;
-	}
+	{ return password; }
 
 	void setPassword(std::string password)
-	{
-		this->password = password;
-	}
+	{ this->password = password; }
 
 	std::string getIp()
-	{
-		return ip;
-	}
+	{ return ip; }
 
 	void setIp(std::string ip)
-	{
-		this->ip = ip;
-	}
+	{ this->ip = ip; }
 
 	std::string getProjectFile()
-	{
-		return projectFile;
-	}
+	{ return projectFile; }
 
 	void setProjectFile(std::string path)
-	{
-		this->projectFile = path;
-	}
+	{ this->projectFile = path; }
 
 	std::string getDumpResourceInformationToFile()
-	{
-		return dumpResourceToFile;
-	}
+	{ return dumpResourceToFile; }
 
 	void setDumpResourcesInformationToFile(std::string const value)
-	{
-		this->dumpResourceToFile = value;
-	}
+	{ this->dumpResourceToFile = value; }
 
-	/*synchronized ConnectionState getConnectionState()
+	/*ConnectionState ConnectionState getConnectionState()
 	{
 		return connState;
 	}*/
@@ -226,9 +203,6 @@ public:
 
 	void enableRuntimeValueNotifications(std::vector<int> resourceIdList)
 	{
-		std::cout << __func__ << std::endl;
-		/*resourceIdList.push_back(1271644);
-		resourceIdList.push_back(1271900);*/
 		resourceInteractionService->enableRuntimeValueNotifications(resourceIdList);
 	}
 
@@ -252,21 +226,24 @@ public:
 */
 	void openConnection()
 	{
+		connState = CONNECTING;
 		std::cout << __func__ << std::endl;
-		authenticationService = new IhcAuthenticationService("192.168.1.99");
-		WSLoginResult* loginResult = authenticationService->authenticate("admin", "jalling", "treeview");
-
+		authenticationService = new IhcAuthenticationService(ip);
+		WSLoginResult* loginResult = authenticationService->authenticate(username, password, "treeview");
+		std::cout << __func__ << std::endl;
 		if (!loginResult->isLoginWasSuccessful())
 		{
 			//Todo: Fill out reasons why connection was not established
-			std::cout << "Fejl\n";
+			throw "cant connect/authenticate\n";
+			connState = DISCONNECTED;
 			return;
 		}
 
 		std::cout << "Connection established\n";
+		connState = CONNECTED;
 
-		resourceInteractionService = new IhcResourceInteractionService("192.168.1.99");
-		controllerService = new IhcControllerService("192.168.1.99");
+		resourceInteractionService = new IhcResourceInteractionService(ip);
+		controllerService = new IhcControllerService(ip);
 		controllerState = controllerService->getControllerState();
 		//loadProject(); //Todo: insert again
 		//startIhcListeners();

@@ -49,6 +49,7 @@ bool CLKIHC::StartHardware()
     sOnConnected(this);
     ihcC = new ihcClient(m_IPAddress, m_UserName, m_Password);
     ihcC->openConnection();
+    std::cout << __func__ << std::endl;
     m_thread = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&CLKIHC::Do_Work, this)));
     //GetDevices();
     return (m_thread!=NULL);
@@ -68,14 +69,15 @@ bool CLKIHC::StopHardware()
 
 void CLKIHC::Do_Work()
 {
-    _log.Log(LOG_STATUS,"LK IHC: Worksser started...");
+	std::cout << __func__ << std::endl;
+    _log.Log(LOG_STATUS,"LK IHC: Worker started...");
 
     char ID[40];
     sprintf(ID, "%lu", (long unsigned int)0x13645e); // 1270878
     //m_sql.UpdateValue(1    , ID, 0, pTypeIHCWireless, sTypeRelay, 10, 255, 0, asd);
     std::string devname;
     //m_sql.UpdateValue(m_HwdID, ID   , 0, pTypeGeneralSwitch, sSwitchIHCAirRelay, 10, 255, 0, "Normal", devname);
-    //sleep_seconds(5);
+    sleep_seconds(5);
     std::vector<int> resourceIdLis;
     resourceIdLis.push_back(1270878);
     ihcC->enableRuntimeValueNotification();
