@@ -200,30 +200,24 @@ public:
 		std::cout << __func__ << std::endl;
 		return resourceInteractionService->resourceQuery(res);
 	}
-
+/*
 	void enableRuntimeValueNotifications(std::vector<int> resourceIdList)
 	{
 		resourceInteractionService->enableRuntimeValueNotifications(resourceIdList);
-	}
+	}*/
 
 	void enableRuntimeValueNotifications2(std::vector<int> resourceIdList)
 	{
 		std::cout << __func__ << std::endl;
-		resourceInteractionService->enableRuntimeValueNotifications2(resourceIdList);
+		resourceInteractionService->enableRuntimeValueNotifications(resourceIdList);
 	}
 
-	std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications2(int const timeout)
-	{
-		std::cout << __func__ << std::endl;
-		return resourceInteractionService->waitResourceValueNotifications2(timeout);
-	}
-/*
-	std::vector<std::unique_ptr<WSResourceValue>>  waitResourceValueNotifications(int timeout)
+	std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(int const timeout)
 	{
 		std::cout << __func__ << std::endl;
 		return resourceInteractionService->waitResourceValueNotifications(timeout);
 	}
-*/
+
 	void openConnection()
 	{
 		connState = CONNECTING;
@@ -513,7 +507,7 @@ public:
 	template <typename T> bool resourceUpdate(T value)
 		{
 		std::cout << __func__ << std::endl;
-			return resourceInteractionService->resourceUpdate2(value);
+			return resourceInteractionService->resourceUpdate(value);
 		}
 void enableRuntimeValueNotification(void)
 {
@@ -521,15 +515,15 @@ void enableRuntimeValueNotification(void)
 	std::vector<int> resourceIdLis;
 		resourceIdLis.push_back(1270878);
 
-		resourceInteractionService->enableRuntimeValueNotifications2(resourceIdLis);
+		resourceInteractionService->enableRuntimeValueNotifications(resourceIdLis);
 }
-
+/*
 std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(int const timeout)
 	{
 		std::cout << __func__ << std::endl;
-		return resourceInteractionService->waitResourceValueNotifications2(timeout);
+		return resourceInteractionService->waitResourceValueNotifications(timeout);
 	}
-
+*/
 
 };
 
