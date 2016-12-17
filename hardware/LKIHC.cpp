@@ -104,6 +104,7 @@ void CLKIHC::Do_Work()
 
             {
 
+
                 int nvalue = obj.intValue();
                 bool tIsOn = (nvalue != 0);
                 int lastLevel = 0;
@@ -119,21 +120,20 @@ void CLKIHC::Do_Work()
                     _tGeneralSwitch ycmd;
                     //ycmd.len = sizeof(pTypeGeneralSwitch) - 1;
                     //ycmd.type = pTypeGeneralSwitch;
-                    ycmd.subtype = sSwitchIHCAirRelay;
+                    //ycmd.subtype = sSwitchIHCAirRelay;
                     std::cout << "ID: " << obj.ID << "\n";
-                    char szID[10];
-                    std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
+                    /*char szID[10];
+                    std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);*/
 
-                    ycmd.id =  (long unsigned int)obj.ID;//obj.ID;
+                    ycmd.id =  /*static_cast<long unsigned int>*/(obj.ID);//obj.ID;
                     ycmd.unitcode = 0;
-                    ycmd.battery_level = 10;
+                    //ycmd.battery_level = 10;
                     std::cout << "new value : " << obj.intValue() << std::endl;
                     ycmd.cmnd = obj.intValue();
-                    ycmd.level=0;
-                    ycmd.rssi = 12;
-
-                    m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, "wc", 12);
-                    //m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&gswitch, pDevice->label.c_str(), BatLevel);
+                    ////ycmd.level=0;
+                    //ycmd.rssi = 12;
+                    //sDecodeRXMessage(this, (const unsigned char *)&ycmd, NULL, 255);
+                    m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, NULL, -1);
                 }
             }
 
