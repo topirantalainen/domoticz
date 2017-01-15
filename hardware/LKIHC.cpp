@@ -137,7 +137,8 @@ void CLKIHC::Do_Work()
             //	if (ress.size() > 0)
             sleep_seconds(1);
             sec_counter++;
-            if (sec_counter % 2 == 0) {
+            if (sec_counter % 2 == 0)
+            {
                 m_LastHeartbeat=mytime(NULL);
             }
 
