@@ -223,17 +223,25 @@ public:
 		connState = CONNECTING;
 		std::cout << __func__ << std::endl;
 		authenticationService = new IhcAuthenticationService(ip);
-		WSLoginResult* loginResult = authenticationService->authenticate(username, password, "treeview");
+		WSLoginResult* loginResult = authenticationService->authenticate(username, password);
 		std::cout << __func__ << std::endl;
 		if (!loginResult->isLoginWasSuccessful())
 		{
-			//Todo: Fill out reasons why connection was not established
-			throw "cant connect/authenticate\n";
-			connState = DISCONNECTED;
-			return;
+		    connState = DISCONNECTED;
+
+		    if (loginResult->isLoginFailedDueToAccountInvalid())
+		    { throw "invalid username or password"; }
+
+		    if (loginResult->isLoginFailedDueToConnectionRestrictions())
+		    { throw "connection restrictions"; }
+
+		    if (loginResult->isLoginFailedDueToInsufficientUserRights())
+		    { throw "insufficient user rights"; }
+
+		    throw "unknown connection error";
+
 		}
 
-		std::cout << "Connection established\n";
 		connState = CONNECTED;
 
 		resourceInteractionService = new IhcResourceInteractionService(ip);

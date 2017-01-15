@@ -27,7 +27,7 @@ public:
 		//Todo: Set connection Timeout
 	}
 
-	WSLoginResult* authenticate(std::string username, std::string password, std::string application)
+	WSLoginResult* authenticate(std::string username, std::string password, std::string application = "treeview")
 	{
 	    TiXmlDocument doc;
 

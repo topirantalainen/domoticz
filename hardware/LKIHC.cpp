@@ -15,6 +15,7 @@
 #include "IHC/IhcClient.hpp"
 #include <string.h>
 #include "../json/json.h"
+#include <exception>
 
 #define RESOURCE_NOTIFICATION_TIMEOUT_S 5
 
@@ -42,13 +43,12 @@ ihcClient* ihcC;
 bool CLKIHC::StartHardware()
 {
     Init();
-
     //Start worker thread
 
     m_bIsStarted=true;
     sOnConnected(this);
     ihcC = new ihcClient(m_IPAddress, m_UserName, m_Password);
-    ihcC->openConnection();
+
     std::cout << __func__ << std::endl;
     m_thread = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&CLKIHC::Do_Work, this)));
     //GetDevices();
@@ -72,89 +72,84 @@ void CLKIHC::Do_Work()
 	std::cout << __func__ << std::endl;
     _log.Log(LOG_STATUS,"LK IHC: Worker started...");
 
-    char ID[40];
-    sprintf(ID, "%lu", (long unsigned int)0x13645e); // 1270878
-    //m_sql.UpdateValue(1    , ID, 0, pTypeIHCWireless, sTypeRelay, 10, 255, 0, asd);
-    std::string devname;
-    //m_sql.UpdateValue(m_HwdID, ID   , 0, pTypeGeneralSwitch, sSwitchIHCAirRelay, 10, 255, 0, "Normal", devname);
-    sleep_seconds(5);
-    std::vector<int> resourceIdLis;
-    resourceIdLis.push_back(1270878);
-    ihcC->enableRuntimeValueNotification();
-
-    int sec_counter = 0;
-
-    while (!m_stoprequested)
+    try
     {
-        sleep_seconds(1);
-        sec_counter++;
+        ihcC->openConnection();
+    }
+    catch (const char* msg)
+    {
+        _log.Log(LOG_ERROR, "LKIHC Plugin: Exception: '%s' connecting to '%s'", msg, m_IPAddress.c_str());
+    }
 
-        std::vector<boost::shared_ptr<ResourceValue> > ress;
-        ress = ihcC->waitResourceValueNotifications(RESOURCE_NOTIFICATION_TIMEOUT_S);
+    if (ihcC->CONNECTED == ihcC->connState)
+    {
+        char ID[40];
+        sprintf(ID, "%lu", (long unsigned int)0x13645e); // 1270878
+        //m_sql.UpdateValue(1    , ID, 0, pTypeIHCWireless, sTypeRelay, 10, 255, 0, asd);
+        std::string devname;
+        //m_sql.UpdateValue(m_HwdID, ID   , 0, pTypeGeneralSwitch, sSwitchIHCAirRelay, 10, 255, 0, "Normal", devname);
+        std::vector<int> resourceIdLis;
+        resourceIdLis.push_back(1270878);
+        ihcC->enableRuntimeValueNotification();
 
-        for (std::vector<boost::shared_ptr<ResourceValue> >::iterator itt = ress.begin(); itt != ress.end(); ++itt)
+        int sec_counter = 0;
+
+        while (!m_stoprequested)
         {
-            ResourceValue & obj = *(*itt);/*
-			_log.Log(LOG_NORM, "LKIHC Plugin: Object changed status (%s).", obj.toString().c_str());
-			sprintf(ID, "%08X", (unsigned int)0x13645e); // 1270878
-			m_sql.safe_query("UPDATE DeviceStatus SET nValue=%d WHERE(HardwareID == %d) AND (DeviceID == '%08X')",
-						obj.intValue(), m_HwdID, obj.ID);
-			_log.Log(LOG_NORM, "UPDATE DeviceStatus SET nValue=%d WHERE(HardwareID == %d) AND (DeviceID == '%08X')",
-					obj.intValue(), m_HwdID, obj.ID);*/
 
+
+            std::vector<boost::shared_ptr<ResourceValue> > updatedResources;
+            updatedResources = ihcC->waitResourceValueNotifications(RESOURCE_NOTIFICATION_TIMEOUT_S);
+
+            // Handle object state changes
+            for (std::vector<boost::shared_ptr<ResourceValue> >::iterator it = updatedResources.begin(); it != updatedResources.end(); ++it)
             {
+                ResourceValue & obj = *(*it);
 
 
                 int nvalue = obj.intValue();
                 bool tIsOn = (nvalue != 0);
                 int lastLevel = 0;
                 int value = obj.intValue();
-                //if ((bIsOn != tIsOn) || (value != lastLevel))
-                {
-                    int cmd = light1_sOn;
-                    int level = 100;
-                    if (!tIsOn) {
-                        cmd = IHC_Off;
-                        level = 0;
-                    }
-                    _tGeneralSwitch ycmd;
-                    //ycmd.len = sizeof(pTypeGeneralSwitch) - 1;
-                    //ycmd.type = pTypeGeneralSwitch;
-                    //ycmd.subtype = sSwitchIHCAirRelay;
-                    std::cout << "ID: " << obj.ID << "\n";
-                    /*char szID[10];
-                    std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);*/
 
-                    ycmd.id =  /*static_cast<long unsigned int>*/(obj.ID);//obj.ID;
-                    ycmd.unitcode = 0;
-                    //ycmd.battery_level = 10;
-                    std::cout << "new value : " << obj.intValue() << std::endl;
-                    ycmd.cmnd = obj.intValue();
-                    ////ycmd.level=0;
-                    //ycmd.rssi = 12;
-                    //sDecodeRXMessage(this, (const unsigned char *)&ycmd, NULL, 255);
-                    m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, NULL, -1);
-                }
+                _tGeneralSwitch ycmd;
+                ycmd.subtype = sSwitchIHCAirRelay;
+                std::cout << "ID: " << obj.ID << "\n";
+                char szID[10];
+                std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
+
+                ycmd.id =  (long unsigned int)obj.ID;
+                ycmd.unitcode = 0;
+                ycmd.battery_level = 10;
+                std::cout << "new value : " << obj.intValue() << std::endl;
+                ycmd.cmnd = obj.intValue();
+                ycmd.level=0;
+                ycmd.rssi = 12;
+
+                m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, NULL, 12);
+                //m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&gswitch, pDevice->label.c_str(), BatLevel);
+
+
+
+                std::cout << obj.toString() << std::endl;//(*itt)->id;
             }
 
-            std::cout << obj.toString() << std::endl;//(*itt)->id;
+
+            //	if (ress.size() > 0)
+            sleep_seconds(1);
+            sec_counter++;
+            if (sec_counter % 2 == 0)
+            {
+                m_LastHeartbeat=mytime(NULL);
+            }
+
         }
-
-
-        //	if (ress.size() > 0)
-
-        if (sec_counter % 2 == 0) {
-            m_LastHeartbeat=mytime(NULL);
-        }
-
     }
     _log.Log(LOG_STATUS,"LK IHC: Worker stopped...");
 }
 
 bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 {
-    _log.Log(LOG_STATUS, "asdasd");
-
     _log.Log(LOG_STATUS, __FUNCTION__);
 
     const tRBUF *pSen = reinterpret_cast<const tRBUF*>(pdata);
@@ -176,7 +171,7 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
     }
     else
     {
-        std::cout << "Got relay with ID: " << std::endl;
+        std::cout << "Got non-relay with ID: " << std::endl;
         const _tGeneralSwitch *general = reinterpret_cast<const _tGeneralSwitch*>(pdata);
 
         std::cout << general->id << std::endl;

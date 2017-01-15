@@ -6,31 +6,7 @@
 
 class CLKIHC : public CDomoticzHardwareBase
 {
-	enum _eHueLightType
-	{
-		HLTYPE_NORMAL,
-		HLTYPE_DIM,
-		HLTYPE_RGBW,
-		HLTYPE_SCENE
-	};
-	struct _tHueLight
-	{
-		bool on;
-		int level;
-		int sat;
-		int hue;
-	};
-	struct _tHueGroup
-	{
-		_tHueLight gstate;
-		std::vector<int> lights;
-	};
-	struct _tHueScene
-	{
-		std::string id;
-		std::string name;
-		std::string lastupdated;
-	};
+
 public:
 	CLKIHC(const int ID, const std::string &IPAddress, const unsigned short Port, const std::string &Username, const std::string &Password);
 	~CLKIHC(void);
