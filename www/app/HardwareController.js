@@ -4545,6 +4545,13 @@ RefreshLKIHCNodeTable = function()
             $( "#dialog-addyeelight" ).dialog( "open" );
         }
 
+        ReloadLKIhc = function(idx,name)
+        {
+          $.post("reloadlkihc.webem", { 'idx':idx }, function(data) {
+            ShowNotify($.t('Device list updated!'), 2500);
+          });
+        }
+
 		ReloadPiFace = function(idx,name)
         {
           $.post("reloadpiface.webem", { 'idx':idx }, function(data) {
@@ -4724,7 +4731,7 @@ RefreshLKIHCNodeTable = function()
                         HwTypeStr += ' <span class="label label-info lcursor" onclick="EditHEOS by DENON(' + item.idx + ',\'' + item.Name + '\',' + item.Mode1 + ',' + item.Mode2 + ',' + item.Mode3 + ',' + item.Mode4 + ',' + item.Mode5 + ',' + item.Mode6 + ');">' + $.t("Setup") + '</span>';
                     }
                     else if (HwTypeStr.indexOf("LK IHC Controller") >= 0) {
-                        HwTypeStr += ' <span class="label label-info lcursor" onclick="EditLKIHC(' + item.idx + ',\'' + item.Name + '\',' + item.Mode1 + ',' + item.Mode2 + ',' + item.Mode3 + ',' + item.Mode4 + ',' + item.Mode5 + ',' + item.Mode6 + ');">' + $.t("Setup") + '</span>';
+                        HwTypeStr += ' <span class="label label-info lcursor" onclick="ReloadLKIhc(' + item.idx + ',\'' + item.Name + '\',' + item.Mode1 + ',' + item.Mode2 + ',' + item.Mode3 + ',' + item.Mode4 + ',' + item.Mode5 + ',' + item.Mode6 + ');">' + $.t("Get devices") + '</span>';
                     }
                     else if (HwTypeStr.indexOf("Dummy") >= 0) {
                         HwTypeStr+=' <span class="label label-info lcursor" onclick="CreateDummySensors(' + item.idx + ',\'' + item.Name + '\');">' + $.t("Create Virtual Sensors") + '</span>';

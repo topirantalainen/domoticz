@@ -16,6 +16,9 @@
 #include <string.h>
 #include "../json/json.h"
 #include <exception>
+#include <cstdlib>
+#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
 
 #define RESOURCE_NOTIFICATION_TIMEOUT_S 5
 
@@ -83,21 +86,28 @@ void CLKIHC::Do_Work()
 
     if (ihcC->CONNECTED == ihcC->connState)
     {
-        char ID[40];
-        sprintf(ID, "%lu", (long unsigned int)0x13645e); // 1270878
-        //m_sql.UpdateValue(1    , ID, 0, pTypeIHCWireless, sTypeRelay, 10, 255, 0, asd);
-        std::string devname;
-        //m_sql.UpdateValue(m_HwdID, ID   , 0, pTypeGeneralSwitch, sSwitchIHCAirRelay, 10, 255, 0, "Normal", devname);
         std::vector<int> resourceIdLis;
-        resourceIdLis.push_back(1270878);
-        ihcC->enableRuntimeValueNotification();
+
+        std::vector<std::vector<std::string> > result;
+        result = m_sql.safe_query("SELECT DeviceID FROM DeviceStatus WHERE HardwareID==%d AND Used == 1", m_HwdID);
+
+        if (result.size() > 0)
+        {
+            std::vector<std::vector<std::string> >::const_iterator itt;
+            for (itt = result.begin(); itt != result.end(); ++itt)
+            {
+                std::vector<std::string> sd = *itt;
+                std::cout << sd[0] << std::endl;
+                resourceIdLis.push_back(std::strtoul(sd[0].c_str(), NULL, 16));
+            }
+        }
+
+        ihcC->enableRuntimeValueNotification(resourceIdLis);
 
         int sec_counter = 0;
 
         while (!m_stoprequested)
         {
-
-
             std::vector<boost::shared_ptr<ResourceValue> > updatedResources;
             updatedResources = ihcC->waitResourceValueNotifications(RESOURCE_NOTIFICATION_TIMEOUT_S);
 
@@ -106,7 +116,6 @@ void CLKIHC::Do_Work()
             {
                 ResourceValue & obj = *(*it);
 
-
                 int nvalue = obj.intValue();
                 bool tIsOn = (nvalue != 0);
                 int lastLevel = 0;
@@ -114,7 +123,6 @@ void CLKIHC::Do_Work()
 
                 _tGeneralSwitch ycmd;
                 ycmd.subtype = sSwitchIHCAirRelay;
-                std::cout << "ID: " << obj.ID << "\n";
                 char szID[10];
                 std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
 
@@ -129,20 +137,14 @@ void CLKIHC::Do_Work()
                 m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, NULL, 12);
                 //m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&gswitch, pDevice->label.c_str(), BatLevel);
 
-
-
-                std::cout << obj.toString() << std::endl;//(*itt)->id;
             }
 
-
-            //	if (ress.size() > 0)
             sleep_seconds(1);
             sec_counter++;
             if (sec_counter % 2 == 0)
             {
                 m_LastHeartbeat=mytime(NULL);
             }
-
         }
     }
     _log.Log(LOG_STATUS,"LK IHC: Worker stopped...");
@@ -150,15 +152,11 @@ void CLKIHC::Do_Work()
 
 bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 {
-    _log.Log(LOG_STATUS, __FUNCTION__);
 
     const tRBUF *pSen = reinterpret_cast<const tRBUF*>(pdata);
     if (pSen->ICMND.packettype == pTypeGeneralSwitch && pSen->ICMND.subtype == sSwitchIHCAirRelay)
     {
-        _log.Log(LOG_STATUS, "Got relay with ID: ");
         const _tGeneralSwitch *general = reinterpret_cast<const _tGeneralSwitch*>(pdata);
-
-        std::cout << general->id << std::endl;
 
         ResourceValue const t(general->id, general->cmnd == gswitch_sOn ? true : false);
         if (ihcC->resourceUpdate(t))
@@ -187,6 +185,65 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 
 
     return true;
+}
+
+void CLKIHC::GetDevicesFromController()
+{
+	TiXmlDocument doc2 = ihcC->loadProject();
+	TiXmlElement * nod;
+
+	    nod = doc2.RootElement();
+
+	    TinyXPath::xpath_processor processor ( doc2.RootElement(), "/utcs_project/groups/*/product_airlink");
+
+	    unsigned nummer = processor.u_compute_xpath_node_set();
+
+		for (int i = 0; i < nummer; i++)
+		{
+
+
+			TiXmlNode* thisNode = processor.XNp_get_xpath_node(i);
+			TiXmlNode* parent = thisNode->Parent();
+			std::string  room = parent->ToElement()->Attribute("name");
+			std::string roomid = parent->ToElement()->Attribute("id");
+			std::string device = thisNode->ToElement()->Attribute("position");
+			std::string deviceid = thisNode->ToElement()->Attribute("id");
+			std::string devType = (thisNode->ToElement()->Attribute("device_type"));
+			//int de = std::stoi(devType.substr(1),nullptr,16);
+			if (strcmp(devType.c_str(), "_0x812") == 0)
+			{
+				std::string devID = thisNode->ToElement()->FirstChild()->ToElement()->Attribute("id");
+				std::string d = devID.substr(3);
+				std::cout << boost::format("%1$08X\n") % std::strtoul(d.c_str(), NULL, 16) ;
+				std::cout << boost::format("writing %1%,  x=%2% : %3%-th try") % "toto" % 40.23 % 50;
+				std::string navn = "Navn";
+			std::cout << room << " (" << roomid.substr(3) << ") - " << device << " (" << deviceid << ") - ";
+			std::cout << devType << std::endl;
+
+
+			_tGeneralSwitch ycmd;
+			ycmd.subtype = sSwitchIHCAirRelay;
+
+			char szID[10];
+			//std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
+
+			ycmd.id =  std::strtoul(d.c_str(), NULL, 16);//(long unsigned int)obj.ID;
+			ycmd.unitcode = 0;
+			ycmd.battery_level = 10;
+			//std::cout << "new value : " << obj.intValue() << std::endl;
+			ycmd.cmnd = 0;
+			ycmd.level=0;
+			ycmd.rssi = 12;
+
+			m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, device.c_str(), 12);
+
+			//m_sql.UpdateValue(m_HwdID, str(boost::format("%1$08X\n") % std::strtoul(d.c_str(), NULL, 16)).c_str() , 0, pTypeGeneralSwitch, sSwitchIHCAirRelay, 10, 255, 0, "Normal", navn);
+			}
+			//std::cout << de << std::endl;
+
+		}
+
+
 }
 
 bool CLKIHC::GetDevices()
@@ -255,6 +312,38 @@ void CLKIHC::AddDevice(const std::string nodeID, const std::string &Name, const 
 //Webserver helpers
 namespace http {
 namespace server {
+
+void CWebServer::ReloadLKIHC(WebEmSession & session, const request& req, std::string & redirect_uri)
+{
+	std::cout << "Get nodes from controller" << std::endl;
+    redirect_uri = "/index.html";
+    if (session.rights != 2)
+    {
+        //No admin user, and not allowed to be here
+        return;
+    }
+
+    std::string idx = request::findValue(&req, "idx");
+    if (idx == "") {
+        return;
+    }
+
+    int iHardwareID = atoi(idx.c_str());
+    			CDomoticzHardwareBase *pBaseHardware = m_mainworker.GetHardware(iHardwareID);
+    			if (pBaseHardware == NULL)
+    				return;
+    			if (pBaseHardware->HwdType != HTYPE_IHC)
+    				return;
+    			CLKIHC *pHardware = reinterpret_cast<CLKIHC*>(pBaseHardware);
+
+
+    			pHardware->GetDevicesFromController();
+
+
+
+    //m_mainworker.RestartHardware(idx);
+}
+
 void CWebServer::Cmd_LKIHCGetNodes(WebEmSession & session, const request& req, Json::Value &root)
 {
     if (session.rights != 2)

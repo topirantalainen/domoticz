@@ -375,7 +375,7 @@ public:
 		return controllerService->getProjectInfo();
 	}
 
-	void loadProject()
+	TiXmlDocument loadProject()
 	{
 		std::cout << __func__ << std::endl;
 
@@ -393,6 +393,7 @@ public:
 		{
 			std::cout << "Loading IHC /ELKO LS project file from controller...\n";
 			TiXmlDocument doc = LoadProjectFileFromController();
+			return doc;
 			/*try
 			 {
 
@@ -458,7 +459,7 @@ public:
 private:
 	TiXmlDocument LoadProjectFileFromController()
 	{
-		std::cout << __func__ << std::endl;
+	/*	std::cout << __func__ << std::endl;
 		WSProjectInfo projectInfo = getProjectInfo();
 		int numberOfSegments = controllerService->getProjectNumberOfSegments();
 		int segmentationSize = controllerService->getProjectSegmentationSize();
@@ -495,6 +496,40 @@ std::string extracted;
 		TiXmlDocument doc;
 		doc.Parse(extracted.c_str());
 		return doc;
+*/
+
+
+
+	    // Open the file and read it into a vector
+	    std::ifstream ifs("output.txt", std::ios::in | std::ios::binary | std::ios::ate);
+	    std::ifstream::pos_type fsize = ifs.tellg();
+	    ifs.seekg(0, std::ios::beg);
+	    std::vector<char> bytes(fsize);
+	    ifs.read(&bytes[0], fsize);
+
+	    // Create string from vector
+	    std::string xml_str(&bytes[0], fsize);
+
+	    // Skip unsupported statements
+	    size_t pos = 0;
+	    while (true) {
+	        pos = xml_str.find_first_of("<", pos);
+	        if (xml_str[pos + 1] == '?' || // <?xml...
+	            xml_str[pos + 1] == '!') { // <!DOCTYPE... or [<!ENTITY...
+	            // Skip this line
+	            pos = xml_str.find_first_of("\n", pos);
+	        } else
+	            break;
+	    }
+	    xml_str = xml_str.substr(pos);
+
+	    // Parse document as usual
+	    TiXmlDocument doc1;
+	    doc1.Parse(xml_str.c_str());
+
+
+
+return doc1;
 
 		/*std::string sResult;
 
@@ -512,27 +547,16 @@ public:
 		return resourceInteractionService->resourceUpdate(value);
 	}*/
 
-	template <typename T> bool resourceUpdate(T value)
-		{
-		std::cout << __func__ << std::endl;
-			return resourceInteractionService->resourceUpdate(value);
-		}
-void enableRuntimeValueNotification(void)
+template <typename T> bool resourceUpdate(T value)
 {
 	std::cout << __func__ << std::endl;
-	std::vector<int> resourceIdLis;
-		resourceIdLis.push_back(1270878);
-
-		resourceInteractionService->enableRuntimeValueNotifications(resourceIdLis);
+	return resourceInteractionService->resourceUpdate(value);
 }
-/*
-std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(int const timeout)
-	{
-		std::cout << __func__ << std::endl;
-		return resourceInteractionService->waitResourceValueNotifications(timeout);
-	}
-*/
 
+	void enableRuntimeValueNotification(std::vector<int> resourceIdLis)
+{
+	resourceInteractionService->enableRuntimeValueNotifications(resourceIdLis);
+}
 };
 
 #endif /* IHC_IHCCLIENT_HPP_ */
