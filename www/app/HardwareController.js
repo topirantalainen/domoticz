@@ -114,29 +114,6 @@ define(['app'], function (app) {
                 });
             }
             else if (
-<<<<<<< HEAD
-                (text.indexOf("Panasonic") >= 0) ||
-                (text.indexOf("BleBox") >= 0) ||
-                (text.indexOf("TE923") >= 0) ||
-                (text.indexOf("Volcraft") >= 0) ||
-                (text.indexOf("GPIO") >= 0) ||
-                (text.indexOf("Local I2C sensor") >= 0) ||
-                (text.indexOf("Dummy") >= 0) ||
-                (text.indexOf("System Alive") >= 0) ||
-                (text.indexOf("PiFace") >= 0) ||
-                (text.indexOf("Motherboard") >= 0) ||
-                (text.indexOf("Kodi") >= 0) ||
-                (text.indexOf("Evohome") >= 0 && text.indexOf("script") >= 0) ||
-                (text.indexOf("Yeelight") >= 0)
-                )
-            {
-        // if hardwaretype == 1000 => I2C sensors grouping
-        if (hardwaretype == 1000) {
-                    hardwaretype = $("#hardwareparamsi2clocal #comboi2clocal").find('option:selected').val();
-        }
-
-                $.ajax({
-=======
 				(text.indexOf("Panasonic") >= 0) ||
 				(text.indexOf("BleBox") >= 0) ||
 				(text.indexOf("TE923") >= 0) ||
@@ -164,7 +141,6 @@ define(['app'], function (app) {
                 	var port="&port=" + encodeURIComponent(i2caddress);
                 }
             	$.ajax({
->>>>>>> master
                      url: "json.htm?type=command&param=updatehardware&htype=" + hardwaretype +
                         "&name=" + encodeURIComponent(name) +
                         "&enabled=" + bEnabled +
@@ -829,11 +805,7 @@ define(['app'], function (app) {
                      }
                 });
             }
-<<<<<<< HEAD
-        else if (text.indexOf("MyHome OpenWebNet") >= 0)
-=======
 			else if (text.indexOf("MyHome OpenWebNet with LAN interface") >= 0)
->>>>>>> master
             {
                 var address=$("#hardwarecontent #divremote #tcpaddress").val();
                 if (address=="")
@@ -1062,22 +1034,6 @@ define(['app'], function (app) {
                 });
             }
             else if (
-<<<<<<< HEAD
-                (text.indexOf("Panasonic") >= 0) ||
-                (text.indexOf("BleBox") >= 0) ||
-                (text.indexOf("TE923") >= 0) ||
-                (text.indexOf("Volcraft") >= 0) ||
-                (text.indexOf("Dummy") >= 0) ||
-                (text.indexOf("System Alive") >= 0) ||
-                (text.indexOf("Kodi") >= 0) ||
-                (text.indexOf("PiFace") >= 0) ||
-                (text.indexOf("GPIO") >= 0) ||
-                (text.indexOf("Evohome") >= 0 && text.indexOf("script") >= 0) ||
-                (text.indexOf("Tellstick") >= 0) ||
-                (text.indexOf("Motherboard") >= 0) ||
-                (text.indexOf("Yeelight") >= 0)
-                )
-=======
 				(text.indexOf("Panasonic") >= 0) ||
 				(text.indexOf("BleBox") >= 0) ||
 				(text.indexOf("TE923") >= 0) ||
@@ -1093,7 +1049,6 @@ define(['app'], function (app) {
 				(text.indexOf("YeeLight") >= 0) ||               
 				(text.indexOf("Arilux AL-LC0x") >= 0)
 				)
->>>>>>> master
             {
                 $.ajax({
                      url: "json.htm?type=command&param=addhardware&htype=" + hardwaretype + "&name=" + encodeURIComponent(name) + "&enabled=" + bEnabled + "&datatimeout=" + datatimeout,
@@ -1107,12 +1062,6 @@ define(['app'], function (app) {
                      }
                 });
             }
-<<<<<<< HEAD
-        else if (text.indexOf("Local I2C sensor") >= 0)
-        {
-                hardwaretype = $("#hardwareparamsi2clocal #comboi2clocal").find('option:selected').val();
-        
-=======
 	    else if (text.indexOf("I2C ") >= 0 && text.indexOf("I2C sensor PIO 8bit expander PCF8574") < 0)
 	    {
                 hardwaretype = $("#hardwareparamsi2clocal #comboi2clocal").find('option:selected').val();
@@ -1124,7 +1073,6 @@ define(['app'], function (app) {
                 	var port="&port=" + encodeURIComponent(i2caddress);
                 }
 		
->>>>>>> master
                 $.ajax({
                      url: "json.htm?type=command&param=addhardware&htype=" + hardwaretype + "&name=" + encodeURIComponent(name) + "&enabled=" + bEnabled + "&datatimeout=" + datatimeout + port,
                      async: false,
@@ -1323,6 +1271,7 @@ define(['app'], function (app) {
 				(text.indexOf("MQTT") >= 0) ||
 				(text.indexOf("Logitech Media Server") >= 0) ||
 				(text.indexOf("HEOS by DENON") >= 0) ||
+				(text.indexOf("LK IHC Controller") >= 0) ||
 				(text.indexOf("Razberry") >= 0)
 				)
             {
@@ -1565,11 +1514,7 @@ define(['app'], function (app) {
                      }
                 });
             }
-<<<<<<< HEAD
-        else if (text.indexOf("MyHome OpenWebNet") >= 0)
-=======
             else if (text.indexOf("MyHome OpenWebNet with LAN interface") >= 0)
->>>>>>> master
             {
                 var address=$("#hardwarecontent #divremote #tcpaddress").val();
                 if (address=="")
@@ -1606,14 +1551,9 @@ define(['app'], function (app) {
 
                 $.ajax({
                      url: "json.htm?type=command&param=addhardware&htype=" + hardwaretype + "&address=" + address + "&port=" + port +
-<<<<<<< HEAD
-                     //"&username=" + encodeURIComponent(username) +
-                     "&name=" + encodeURIComponent(name) + "&enabled=" + bEnabled + "&datatimeout=" + datatimeout,
-=======
 					 //"&username=" + encodeURIComponent(username) +
 					 "&password=" + encodeURIComponent(password) +
 					 "&name=" + encodeURIComponent(name) + "&enabled=" + bEnabled + "&datatimeout=" + datatimeout,
->>>>>>> master
                      async: false,
                      dataType: 'json',
                      success: function(data) {
@@ -4731,13 +4671,13 @@ RefreshLKIHCNodeTable = function()
             $( "#dialog-addyeelight" ).dialog( "open" );
         }
 
-<<<<<<< HEAD
         ReloadLKIhc = function(idx,name)
         {
           $.post("reloadlkihc.webem", { 'idx':idx }, function(data) {
             ShowNotify($.t('Device list updated!'), 2500);
           });
-=======
+        }
+
         AddArilux = function (idx, name) {
             $.devIdx = idx;
 
@@ -4798,7 +4738,6 @@ RefreshLKIHCNodeTable = function()
 
             $("#dialog-addArilux").i18n();
             $("#dialog-addArilux").dialog("open");
->>>>>>> master
         }
 
 		ReloadPiFace = function(idx,name)
@@ -5148,11 +5087,7 @@ RefreshLKIHCNodeTable = function()
                         $('#hardwarecontent #hardwareparamstable #enabled').prop('checked',(data["Enabled"]=="true"));
                         $('#hardwarecontent #hardwareparamstable #combodatatimeout').val(data["DataTimeout"]);
 
-<<<<<<< HEAD
-            if (data["Type"].indexOf("Local I2C sensor") >= 0) {
-=======
 			if (data["Type"].indexOf("I2C ") >= 0) {
->>>>>>> master
                             $("#hardwarecontent #hardwareparamstable #combotype").val(1000);
                         }
 
@@ -5179,14 +5114,10 @@ RefreshLKIHCNodeTable = function()
                         }
                         else if (data["Type"].indexOf("I2C ") >= 0) {
                             $("#hardwareparamsi2clocal #comboi2clocal").val(jQuery.inArray(data["Type"], $.myglobals.HardwareI2CStr));
-<<<<<<< HEAD
-                        }           
-=======
                             if (data["Type"].indexOf("I2C sensor PIO 8bit expander PCF8574") >= 0) {
             					$("#hardwareparami2caddress #i2caddress").val(data["Port"].substring(4));		
             				}
                         }			
->>>>>>> master
                         else if (data["Type"].indexOf("USB") >= 0) {
                             $("#hardwarecontent #hardwareparamsserial #comboserialport").val(data["IntPort"]);
                             if (data["Type"].indexOf("MySensors") >= 0)
@@ -5215,11 +5146,7 @@ RefreshLKIHCNodeTable = function()
                                 $("#hardwarecontent #divcrcp1 #disablecrcp1").prop("checked",data["Mode2"]==0);
                             }
                         }
-<<<<<<< HEAD
-                        else if ((((data["Type"].indexOf("LAN") >= 0) || data["Type"].indexOf("MySensors Gateway with MQTT") >= 0) && (data["Type"].indexOf("YouLess") >= 0)) || (data["Type"].indexOf("Domoticz") >= 0) || (data["Type"].indexOf("Denkovi") >= 0) || (data["Type"].indexOf("Satel Integra") >= 0) || (data["Type"].indexOf("Logitech Media Server") >= 0) || (data["Type"].indexOf("HEOS by DENON") >= 0) || (data["Type"].indexOf("LK IHC Controller") >= 0)) {
-=======
-                        else if ((((data["Type"].indexOf("LAN") >= 0) || data["Type"].indexOf("MySensors Gateway with MQTT") >= 0) && (data["Type"].indexOf("YouLess") >= 0)) || (data["Type"].indexOf("Domoticz") >= 0) || (data["Type"].indexOf("Denkovi") >= 0) || (data["Type"].indexOf("Satel Integra") >= 0) || (data["Type"].indexOf("Logitech Media Server") >= 0) || (data["Type"].indexOf("HEOS by DENON") >= 0) || (data["Type"].indexOf("Xiaomi Gateway") >= 0)) {
->>>>>>> master
+                        else if ((((data["Type"].indexOf("LAN") >= 0) || data["Type"].indexOf("MySensors Gateway with MQTT") >= 0) && (data["Type"].indexOf("YouLess") >= 0)) || (data["Type"].indexOf("Domoticz") >= 0) || (data["Type"].indexOf("Denkovi") >= 0) || (data["Type"].indexOf("Satel Integra") >= 0) || (data["Type"].indexOf("Logitech Media Server") >= 0) || (data["Type"].indexOf("HEOS by DENON") >= 0) || (data["Type"].indexOf("Xiaomi Gateway") >= 0) || (data["Type"].indexOf("LK IHC Controller") >= 0)) {
                             $("#hardwarecontent #hardwareparamsremote #tcpaddress").val(data["Address"]);
                             $("#hardwarecontent #hardwareparamsremote #tcpport").val(data["Port"]);
                             $("#hardwarecontent #hardwareparamslogin #password").val(data["Password"]);
@@ -5382,13 +5309,9 @@ RefreshLKIHCNodeTable = function()
             $("#hardwarecontent #div1wire").hide();
             $("#hardwarecontent #divgoodweweb").hide();
             $("#hardwarecontent #divi2clocal").hide();
-<<<<<<< HEAD
-            $("#hardwarecontent #divpollinterval").hide();
-=======
             $("#hardwarecontent #divi2caddress").hide();
 			$("#hardwarecontent #divpollinterval").hide();
             $("#hardwarecontent #divpythonplugin").hide();
->>>>>>> master
 
             if (
 				(text.indexOf("TE923") >= 0)||
@@ -5406,22 +5329,14 @@ RefreshLKIHCNodeTable = function()
                 $("#hardwarecontent #divunderground").hide();
                 $("#hardwarecontent #divhttppoller").hide();
             }
-<<<<<<< HEAD
-        else if (text.indexOf("Local I2C sensor") >= 0)
-        {
-=======
 	    else if (text.indexOf("I2C ") >= 0)
 	    {
->>>>>>> master
                 $("#hardwarecontent #divi2clocal").show();
                 $("#hardwarecontent #divserial").hide();
                 $("#hardwarecontent #divremote").hide();
                 $("#hardwarecontent #divlogin").hide();
                 $("#hardwarecontent #divunderground").hide();
                 $("#hardwarecontent #divhttppoller").hide();
-<<<<<<< HEAD
-        }
-=======
                 $("#hardwarecontent #divi2caddress").hide();
                 var text1 = $("#hardwarecontent #divi2clocal #hardwareparamsi2clocal #comboi2clocal option:selected").text();
                 if (text1.indexOf("I2C sensor PIO 8bit expander PCF8574") >= 0)
@@ -5429,7 +5344,6 @@ RefreshLKIHCNodeTable = function()
                 	$("#hardwarecontent #divi2caddress").show();
                 }
 	    }
->>>>>>> master
             else if (text.indexOf("USB") >= 0)
             {
                 if (text.indexOf("MySensors") >= 0)
@@ -5596,7 +5510,6 @@ RefreshLKIHCNodeTable = function()
                 $("#hardwarecontent #divlogin").show();
                 $("#hardwarecontent #hardwareparamsremote #tcpport").val(1255);
             }
-<<<<<<< HEAD
             else if (text.indexOf("LK IHC Controller") >= 0)
             {
                 $("#hardwarecontent #divserial").hide();
@@ -5604,10 +5517,7 @@ RefreshLKIHCNodeTable = function()
                 $("#hardwarecontent #divlogin").show();
                 $("#hardwarecontent #hardwareparamsremote #tcpport").val(443);
             }
-        else if (text.indexOf("MyHome OpenWebNet") >= 0)
-=======
             else if (text.indexOf("MyHome OpenWebNet with LAN interface") >= 0)
->>>>>>> master
             {
                 $("#hardwarecontent #divserial").hide();
                 $("#hardwarecontent #divremote").show();
@@ -5616,11 +5526,7 @@ RefreshLKIHCNodeTable = function()
                 $("#hardwarecontent #divhttppoller").hide();
                 $("#hardwarecontent #hardwareparamsremote #tcpport").val(20000);
             }
-<<<<<<< HEAD
-        else if (text.indexOf("1-Wire") >= 0)
-=======
 	        else if (text.indexOf("1-Wire") >= 0)
->>>>>>> master
             {
             $("#hardwarecontent #div1wire").show();
                 $("#hardwarecontent #divserial").hide();
@@ -5629,11 +5535,7 @@ RefreshLKIHCNodeTable = function()
                 $("#hardwarecontent #divunderground").hide();
                 $("#hardwarecontent #divhttppoller").hide();
             }
-<<<<<<< HEAD
-        else if (text.indexOf("Goodwe solar inverter via Web") >= 0)
-=======
 	        else if (text.indexOf("Goodwe solar inverter via Web") >= 0)
->>>>>>> master
             {
             $("#hardwarecontent #divgoodweweb").show();
             $("#hardwarecontent #div1wire").hide();
@@ -5751,50 +5653,6 @@ RefreshLKIHCNodeTable = function()
             $scope.SerialPortStr=[];
             $scope.MakeGlobalConfig();
 
-<<<<<<< HEAD
-            //Get hardware types
-            $("#hardwareparamstable #combotype").html("");
-            $.ajax({
-        url: "json.htm?type=command&param=gethardwaretypes",
-        async: false,
-        dataType: 'json',
-        success: function(data) {
-                    if (typeof data.result != 'undefined') {
-            var i2cidx = 0, idx = 0;
-            $.each(data.result, function(i,item) {
-                $.myglobals.HardwareTypesStr[item.idx] = item.name;
-                // Don't show I2C sensors
-                if (item.name.indexOf("Local I2C sensor") != -1) {
-                $.myglobals.HardwareI2CStr[item.idx] = item.name;
-                i2cidx = idx;
-                return true;
-                }
-                // Show other sensors
-                            var option = $('<option />');
-                            option.attr('value', item.idx).text(item.name);
-                            $("#hardwareparamstable #combotype").append(option);
-                idx++;
-            });
-            // regroup local I2C sensors under index 1000
-                        var option = $('<option />');
-                        option.attr('value', 1000).text("Local I2C sensors");
-            option.insertAfter('#hardwareparamstable #combotype :nth-child(' + i2cidx + ')')
-                    }
-             }
-            });
-
-        //Build local I2C devices combo
-            $("#hardwareparamsi2clocal #comboi2clocal").html("");
-            $.each($.myglobals.HardwareI2CStr, function(idx,name) {
-        if (name) {
-                    var option = $('<option />');
-                    option.attr('value', idx).text(name);
-                    $("#hardwareparamsi2clocal #comboi2clocal").append(option);
-        }
-        });
-
-=======
->>>>>>> master
             //Get Serial devices
             $("#hardwareparamsserial #comboserialport").html("");
             $.ajax({
