@@ -211,6 +211,7 @@ std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(in
 
 	TiXmlDocument doc;
     doc.Parse(sResult.c_str());
+    doc.Print();
     std::vector<boost::shared_ptr<ResourceValue> > resourceList;
 
     TinyXPath::xpath_processor processor ( doc.RootElement(), "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:waitForResourceValueChanges2/ns1:arrayItem");

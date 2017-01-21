@@ -72,7 +72,7 @@ bool CLKIHC::StopHardware()
 
 void CLKIHC::Do_Work()
 {
-	std::cout << __func__ << std::endl;
+    std::cout << __func__ << std::endl;
     _log.Log(LOG_STATUS,"LK IHC: Worker started...");
 
     try
@@ -126,12 +126,27 @@ void CLKIHC::Do_Work()
                 char szID[10];
                 std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
 
+                std::vector<std::vector<std::string> > result;
+                result = m_sql.safe_query("SELECT SubType FROM DeviceStatus WHERE (DeviceID='%q' AND HardwareID=='%d')", szID, m_HwdID);
+                if (result.size() != 0)
+                {
+                    ycmd.subtype =  atoi(result[0][0].c_str());
+                }
+
                 ycmd.id =  (long unsigned int)obj.ID;
                 ycmd.unitcode = 0;
                 ycmd.battery_level = 10;
                 std::cout << "new value : " << obj.intValue() << std::endl;
-                ycmd.cmnd = obj.intValue();
-                ycmd.level=0;
+                if (obj.intValue() > 1)
+                {
+                    ycmd.cmnd = 2;
+                    ycmd.level=obj.intValue();
+                }
+                else
+                {
+                    ycmd.cmnd = obj.intValue();
+                    ycmd.level=0;
+                }
                 ycmd.rssi = 12;
 
                 m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, NULL, 12);
@@ -152,6 +167,7 @@ void CLKIHC::Do_Work()
 
 bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 {
+    std::cout << "Write Hardware" << std::endl;
 
     const tRBUF *pSen = reinterpret_cast<const tRBUF*>(pdata);
     if (pSen->ICMND.packettype == pTypeGeneralSwitch && pSen->ICMND.subtype == sSwitchIHCAirRelay)
@@ -169,12 +185,28 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
     }
     else
     {
+        char szID[10];
+
         std::cout << "Got non-relay with ID: " << std::endl;
         const _tGeneralSwitch *general = reinterpret_cast<const _tGeneralSwitch*>(pdata);
 
         std::cout << general->id << std::endl;
-
-        ResourceValue const t(general->id, RangedInteger(general->level));
+        std::sprintf(szID, "%08lX", (long unsigned int)general->cmnd);
+        std::cout << szID << std::endl;
+        uint8_t val = 0;
+        if (general->cmnd == gswitch_sOff)
+        {
+            val = 0;
+        }
+        else if (general->cmnd == gswitch_sOn)
+        {
+            val = 100;
+        }
+        else
+        {
+            val = general->level;
+        }
+        ResourceValue const t(general->id, RangedInteger(val));
         if (ihcC->resourceUpdate(t))
         {
             _log.Log(LOG_STATUS, "Resource update was successful");
@@ -189,59 +221,87 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 
 void CLKIHC::GetDevicesFromController()
 {
-	TiXmlDocument doc2 = ihcC->loadProject();
-	TiXmlElement * nod;
+    TiXmlDocument doc2 = ihcC->loadProject();
+    TiXmlElement * nod;
 
-	    nod = doc2.RootElement();
+    nod = doc2.RootElement();
 
-	    TinyXPath::xpath_processor processor ( doc2.RootElement(), "/utcs_project/groups/*/product_airlink");
+    TinyXPath::xpath_processor processor ( doc2.RootElement(), "/utcs_project/groups/*/product_airlink");
 
-	    unsigned nummer = processor.u_compute_xpath_node_set();
+    unsigned nummer = processor.u_compute_xpath_node_set();
 
-		for (int i = 0; i < nummer; i++)
-		{
+    for (int i = 0; i < nummer; i++)
+    {
+        TiXmlNode* thisNode = processor.XNp_get_xpath_node(i);
+        TiXmlNode* parent = thisNode->Parent();
+        std::string  room = parent->ToElement()->Attribute("name");
+        std::string roomid = parent->ToElement()->Attribute("id");
+        std::string device = thisNode->ToElement()->Attribute("position");
+        std::string deviceid = thisNode->ToElement()->Attribute("id");
+        std::string devType = (thisNode->ToElement()->Attribute("device_type"));
+
+        if (strcmp(devType.c_str(), "_0x812") == 0)
+        {
+            std::cout << "812" << std::endl;
+            std::string devID = thisNode->ToElement()->Attribute("id");
+            std::string d = devID.substr(3);
+
+            _tGeneralSwitch ycmd;
+            ycmd.subtype = sSwitchIHCAirRelay;
+
+            char szID[10];
+            //std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
+
+            ycmd.id =  (std::strtoul(d.c_str(), NULL, 16)) + 0x10A;//(long unsigned int)obj.ID;
+            ycmd.unitcode = 0;
+            ycmd.battery_level = 10;
+            //std::cout << "new value : " << obj.intValue() << std::endl;
+            ycmd.cmnd = 0;
+            ycmd.level=0;
+            ycmd.rssi = 12;
+
+            m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, device.c_str(), 12);
+        }
+
+        if ((strcmp(devType.c_str(), "_0x806") == 0) || (strcmp(devType.c_str(), "_0x808") == 0) )
+        {
+            std::cout << "806 808" << std::endl;
+            std::string devID = thisNode->ToElement()->Attribute("id");
+            std::string d = devID.substr(3);
 
 
-			TiXmlNode* thisNode = processor.XNp_get_xpath_node(i);
-			TiXmlNode* parent = thisNode->Parent();
-			std::string  room = parent->ToElement()->Attribute("name");
-			std::string roomid = parent->ToElement()->Attribute("id");
-			std::string device = thisNode->ToElement()->Attribute("position");
-			std::string deviceid = thisNode->ToElement()->Attribute("id");
-			std::string devType = (thisNode->ToElement()->Attribute("device_type"));
-			//int de = std::stoi(devType.substr(1),nullptr,16);
-			if (strcmp(devType.c_str(), "_0x812") == 0)
-			{
-				std::string devID = thisNode->ToElement()->FirstChild()->ToElement()->Attribute("id");
-				std::string d = devID.substr(3);
-				std::cout << boost::format("%1$08X\n") % std::strtoul(d.c_str(), NULL, 16) ;
-				std::cout << boost::format("writing %1%,  x=%2% : %3%-th try") % "toto" % 40.23 % 50;
-				std::string navn = "Navn";
-			std::cout << room << " (" << roomid.substr(3) << ") - " << device << " (" << deviceid << ") - ";
-			std::cout << devType << std::endl;
+            _tGeneralSwitch ycmd;
+            ycmd.subtype = sSwitchIHCAirDimmer;
 
+            char szID[10];
+            //std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
 
-			_tGeneralSwitch ycmd;
-			ycmd.subtype = sSwitchIHCAirRelay;
+            unsigned int offset = 0;
+            if (strcmp(devType.c_str(), "_0x806") == 0)
+            {
+                offset = 0x709;
+            }
+            else if (strcmp(devType.c_str(), "_0x808") == 0 )
+            {
+                offset = 0x309;
+            }
 
-			char szID[10];
-			//std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
+            ycmd.id =  (std::strtoul(d.c_str(), NULL, 16)) + offset;
 
-			ycmd.id =  std::strtoul(d.c_str(), NULL, 16);//(long unsigned int)obj.ID;
-			ycmd.unitcode = 0;
-			ycmd.battery_level = 10;
-			//std::cout << "new value : " << obj.intValue() << std::endl;
-			ycmd.cmnd = 0;
-			ycmd.level=0;
-			ycmd.rssi = 12;
+            ycmd.unitcode = 0;
+            ycmd.battery_level = 10;
+            //std::cout << "new value : " << obj.intValue() << std::endl;
+            ycmd.cmnd = 0;
+            ycmd.level=0;
+            ycmd.rssi = 12;
 
-			m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, device.c_str(), 12);
+            m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, device.c_str(), 12);
 
-			//m_sql.UpdateValue(m_HwdID, str(boost::format("%1$08X\n") % std::strtoul(d.c_str(), NULL, 16)).c_str() , 0, pTypeGeneralSwitch, sSwitchIHCAirRelay, 10, 255, 0, "Normal", navn);
-			}
-			//std::cout << de << std::endl;
+            //m_sql.UpdateValue(m_HwdID, str(boost::format("%1$08X\n") % std::strtoul(d.c_str(), NULL, 16)).c_str() , 0, pTypeGeneralSwitch, sSwitchIHCAirRelay, 10, 255, 0, "Normal", navn);
+        }
+        //std::cout << de << std::endl;
 
-		}
+    }
 
 
 }
@@ -315,7 +375,7 @@ namespace server {
 
 void CWebServer::ReloadLKIHC(WebEmSession & session, const request& req, std::string & redirect_uri)
 {
-	std::cout << "Get nodes from controller" << std::endl;
+    std::cout << "Get nodes from controller" << std::endl;
     redirect_uri = "/index.html";
     if (session.rights != 2)
     {
@@ -329,15 +389,15 @@ void CWebServer::ReloadLKIHC(WebEmSession & session, const request& req, std::st
     }
 
     int iHardwareID = atoi(idx.c_str());
-    			CDomoticzHardwareBase *pBaseHardware = m_mainworker.GetHardware(iHardwareID);
-    			if (pBaseHardware == NULL)
-    				return;
-    			if (pBaseHardware->HwdType != HTYPE_IHC)
-    				return;
-    			CLKIHC *pHardware = reinterpret_cast<CLKIHC*>(pBaseHardware);
+    CDomoticzHardwareBase *pBaseHardware = m_mainworker.GetHardware(iHardwareID);
+    if (pBaseHardware == NULL)
+        return;
+    if (pBaseHardware->HwdType != HTYPE_IHC)
+        return;
+    CLKIHC *pHardware = reinterpret_cast<CLKIHC*>(pBaseHardware);
 
 
-    			pHardware->GetDevicesFromController();
+    pHardware->GetDevicesFromController();
 
 
 
