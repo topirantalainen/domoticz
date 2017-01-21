@@ -27,18 +27,13 @@ public:
 
 	WSProjectInfo getProjectInfo()
 	{
-		std::cout << "her1" << std::endl;
+
 		TiXmlDocument doc;
 		WSProjectInfo projectInfo;
 		std::string sResult;
-		std::cout << "her2" << std::endl;
 		sResult = sendQuery(url, emptyQuery, "getProjectInfo");
-		std::cout << "her3" << std::endl;
 		doc.Parse(sResult.c_str());
-		std::cout << "her4" << std::endl;
 		projectInfo.encodeData(doc);
-		std::cout << "her5" << std::endl;
-		std::cout << "JH" << std::endl;
 		return projectInfo;
 	}
 
@@ -50,7 +45,6 @@ public:
 		doc.Parse(sResult.c_str());
 
 		std::string numberOfSegments = WSBaseDataType::parseValue(doc, "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:getIHCProjectNumberOfSegments1");
-		std::cout << "Segments: " <<  numberOfSegments << std::endl;
 		return boost::lexical_cast<int>(numberOfSegments);
 	}
 
@@ -107,21 +101,21 @@ public:
 	}
 
 	void getRF()
-		{
-		std::string url2 = url = "http://192.168.1.99/ws/AirlinkManagementService";
-			std::string sResult;
-			TiXmlDocument doc;
+	{
+    std::string url2 = url = "http://192.168.1.99/ws/AirlinkManagementService";
+        std::string sResult;
+        TiXmlDocument doc;
 
-			sResult = sendQuery(url, emptyQuery, "getDetectedDeviceList");
-			doc.Parse(sResult.c_str());
-			doc.Print();
+        sResult = sendQuery(url, emptyQuery, "getDetectedDeviceList");
+        doc.Parse(sResult.c_str());
+        doc.Print();
 /*
-			WSControllerState controllerState;
-			controllerState.encodeData(doc);
-			std::cout << controllerState.getState() << std::endl;
+        WSControllerState controllerState;
+        controllerState.encodeData(doc);
+        std::cout << controllerState.getState() << std::endl;
 */
 
-		}
+    }
 
 
 };

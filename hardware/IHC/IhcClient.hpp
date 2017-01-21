@@ -371,7 +371,6 @@ public:
 
 	WSProjectInfo getProjectInfo()
 	{
-		std::cout << __func__ << std::endl;
 		return controllerService->getProjectInfo();
 	}
 
@@ -459,7 +458,6 @@ public:
 private:
 	TiXmlDocument LoadProjectFileFromController()
 	{
-	/*	std::cout << __func__ << std::endl;
 		WSProjectInfo projectInfo = getProjectInfo();
 		int numberOfSegments = controllerService->getProjectNumberOfSegments();
 		int segmentationSize = controllerService->getProjectSegmentationSize();
@@ -489,43 +487,26 @@ std::string extracted;
 		std::cout << "Final size decoded: " << decoded.size() << std::endl;
 		std::cout << "Final size extracted: " << extracted.size() << std::endl;
 
-		    std::ofstream out("output.txt");
-		    out << extracted;
-		    out.close();
-
-		TiXmlDocument doc;
-		doc.Parse(extracted.c_str());
-		return doc;
-*/
-
-
-
-	    // Open the file and read it into a vector
-	    std::ifstream ifs("output.txt", std::ios::in | std::ios::binary | std::ios::ate);
-	    std::ifstream::pos_type fsize = ifs.tellg();
-	    ifs.seekg(0, std::ios::beg);
-	    std::vector<char> bytes(fsize);
-	    ifs.read(&bytes[0], fsize);
-
-	    // Create string from vector
-	    std::string xml_str(&bytes[0], fsize);
+		std::ofstream out("output.txt");
+		out << extracted;
+		out.close();
 
 	    // Skip unsupported statements
 	    size_t pos = 0;
 	    while (true) {
-	        pos = xml_str.find_first_of("<", pos);
-	        if (xml_str[pos + 1] == '?' || // <?xml...
-	            xml_str[pos + 1] == '!') { // <!DOCTYPE... or [<!ENTITY...
+	        pos = extracted.find_first_of("<", pos);
+	        if (extracted[pos + 1] == '?' || // <?xml...
+	                extracted[pos + 1] == '!') { // <!DOCTYPE... or [<!ENTITY...
 	            // Skip this line
-	            pos = xml_str.find_first_of("\n", pos);
+	            pos = extracted.find_first_of("\n", pos);
 	        } else
 	            break;
 	    }
-	    xml_str = xml_str.substr(pos);
+	    extracted = extracted.substr(pos);
 
 	    // Parse document as usual
 	    TiXmlDocument doc1;
-	    doc1.Parse(xml_str.c_str());
+	    doc1.Parse(extracted.c_str());
 
 
 

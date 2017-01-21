@@ -69,6 +69,11 @@ public:
     	void setMonthWithJanuaryAsOne(int monthWithJanuaryAsOne)
     	{ this->monthWithJanuaryAsOne = monthWithJanuaryAsOne; }
 
+    	/*std::string toString()
+    	{
+    	    return boost::format("%02i:%02i:%02i %02i/%02i/%02i") %this->hours % this->minutes % this->seconds % this->day % this->monthWithJanuaryAsOne % this->year;
+    	}*/
+
     	friend std::ostream& operator<<(std::ostream& os, const WSDate& proj);
 };
 
@@ -78,5 +83,6 @@ std::ostream& operator<<(std::ostream& os, const WSDate& date)
     //os << "b" << proj.projectMajorRevision << "." << proj.projectMinorRevision << "." << proj.projectNumber << std::endl;
     return os;
 }
+
 
 #endif /* IHC_WSDATE_HPP_ */

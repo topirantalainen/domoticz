@@ -41,20 +41,21 @@ void CLKIHC::Init()
 {
     ;;
 }
+
 ihcClient* ihcC;
 
 bool CLKIHC::StartHardware()
 {
     Init();
-    //Start worker thread
 
+    /*Start worker thread*/
     m_bIsStarted=true;
     sOnConnected(this);
     ihcC = new ihcClient(m_IPAddress, m_UserName, m_Password);
 
     std::cout << __func__ << std::endl;
     m_thread = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&CLKIHC::Do_Work, this)));
-    //GetDevices();
+
     return (m_thread!=NULL);
 }
 
@@ -86,6 +87,18 @@ void CLKIHC::Do_Work()
 
     if (ihcC->CONNECTED == ihcC->connState)
     {
+
+
+        /*std::vector<std::vector<std::string> > result;
+        result=m_sql.safe_query("SELECT Extra FROM Hardware WHERE (ID==%d)",m_HwdID);
+        std::string lastModified = result[0][0];
+        if (lastModified.empty())
+            return false;
+        m_refreshToken = refreshToken;
+        m_sql.safe_query("UPDATE Hardware SET Extra='%q' WHERE (ID == %d)", m_refreshToken.c_str(), m_HwdID);*/
+        //std::string lastMod = ihcC->getProjectInfo().getLastmodified().toString();
+        //std::cout << lastMod << std::endl;
+
         std::vector<int> resourceIdLis;
 
         std::vector<std::vector<std::string> > result;
@@ -167,11 +180,13 @@ void CLKIHC::Do_Work()
 
 bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 {
-    std::cout << "Write Hardware" << std::endl;
 
     const tRBUF *pSen = reinterpret_cast<const tRBUF*>(pdata);
+
     if (pSen->ICMND.packettype == pTypeGeneralSwitch && pSen->ICMND.subtype == sSwitchIHCAirRelay)
     {
+        /* Boolean value */
+
         const _tGeneralSwitch *general = reinterpret_cast<const _tGeneralSwitch*>(pdata);
 
         ResourceValue const t(general->id, general->cmnd == gswitch_sOn ? true : false);
@@ -181,12 +196,15 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
             _log.Log(LOG_STATUS, "Resource update was successful");
         }
         else
+        {
             _log.Log(LOG_STATUS, "Failed resource update");
+        }
     }
     else
     {
-        char szID[10];
+        /* Integer value */
 
+        char szID[10];
         std::cout << "Got non-relay with ID: " << std::endl;
         const _tGeneralSwitch *general = reinterpret_cast<const _tGeneralSwitch*>(pdata);
 

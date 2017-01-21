@@ -10458,6 +10458,7 @@ bool MainWorker::SetRFXCOMHardwaremodes(const int HardwareID, const unsigned cha
 
 bool MainWorker::SwitchLightInt(const std::vector<std::string> &sd, std::string switchcmd, int level, int hue, const bool IsTesting)
 {
+    std::cout << "switchlightint---------------------------\n";
 	unsigned long ID;
 	std::stringstream s_strid;
 	s_strid << std::hex << sd[1];
