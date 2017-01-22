@@ -88,17 +88,6 @@ void CLKIHC::Do_Work()
     if (ihcC->CONNECTED == ihcC->connState)
     {
 
-
-        /*std::vector<std::vector<std::string> > result;
-        result=m_sql.safe_query("SELECT Extra FROM Hardware WHERE (ID==%d)",m_HwdID);
-        std::string lastModified = result[0][0];
-        if (lastModified.empty())
-            return false;
-        m_refreshToken = refreshToken;
-        m_sql.safe_query("UPDATE Hardware SET Extra='%q' WHERE (ID == %d)", m_refreshToken.c_str(), m_HwdID);*/
-        //std::string lastMod = ihcC->getProjectInfo().getLastmodified().toString();
-        //std::cout << lastMod << std::endl;
-
         std::vector<int> resourceIdLis;
 
         std::vector<std::vector<std::string> > result;
@@ -238,17 +227,19 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 
     return true;
 }
-bool CLKIHC::AddSwitchIfNotExits(const int id, const char* devname, bool isDimmer)
+bool CLKIHC::AddSwitchIfNotExits(const int &id, const char* devname, const bool &isDimmer)
 {
     char sid[10];
     sprintf(sid, "%08X", id);
 
     std::vector<std::vector<std::string> > result;
-    result = m_sql.safe_query("SELECT ID FROM DeviceStatus WHERE (HardwareID==%d) AND (DeviceID=='%q') AND (Type==%d) AND (SubType==%d)",
-                              m_HwdID, sid, pTypeGeneralSwitch, sSwitchTypeAC);
+    result = m_sql.safe_query("SELECT ID FROM DeviceStatus WHERE (HardwareID==%d) AND (DeviceID=='%q')",
+                              m_HwdID, sid);
     if (result.size() < 1)
     {
-        _log.Log(LOG_NORM, "klæasd: device %d %s: %s", id, sid ,devname);
+#ifdef _DEBUG
+        _log.Log(LOG_NORM, "LK IHC: Added device %d %s: %s", id, sid ,devname);
+#endif
         m_sql.safe_query(
             "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, sValue) "
             "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0,' ')",
@@ -266,9 +257,9 @@ void CLKIHC::GetDevicesFromController()
 
     TinyXPath::xpath_processor processor ( doc2.RootElement(), "/utcs_project/groups/*/product_airlink");
 
-    unsigned nummer = processor.u_compute_xpath_node_set();
+    unsigned numberOfDevices = processor.u_compute_xpath_node_set();
 
-    for (int i = 0; i < nummer; i++)
+    for (int i = 0; i < numberOfDevices; i++)
     {
         TiXmlNode* thisNode = processor.XNp_get_xpath_node(i);
         TiXmlNode* parent = thisNode->Parent();
@@ -296,7 +287,11 @@ void CLKIHC::GetDevicesFromController()
             ycmd.cmnd = 0;
             ycmd.level=0;
             ycmd.rssi = 12;
-            AddSwitchIfNotExits((std::strtoul(d.c_str(), NULL, 16)) + 0x10A, device.c_str(), false);
+            char buff[100];
+              snprintf(buff, sizeof(buff), "%s (%s)", room.c_str(), device.c_str());
+              std::string buffAsStdStr = buff;
+              int id = ((std::strtoul(d.c_str(), NULL, 16)) + 0x10A);
+            AddSwitchIfNotExits(id, (buffAsStdStr.c_str()), false);
             //m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, device.c_str(), 12);
         }
 
@@ -308,9 +303,6 @@ void CLKIHC::GetDevicesFromController()
 
             _tGeneralSwitch ycmd;
             ycmd.subtype = sSwitchIHCAirDimmer;
-
-            char szID[10];
-            //std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
 
             unsigned int offset = 0;
             if (strcmp(devType.c_str(), "_0x806") == 0)
@@ -326,14 +318,11 @@ void CLKIHC::GetDevicesFromController()
 
             ycmd.unitcode = 0;
             ycmd.battery_level = 10;
-            //std::cout << "new value : " << obj.intValue() << std::endl;
             ycmd.cmnd = 0;
             ycmd.level=0;
             ycmd.rssi = 12;
             AddSwitchIfNotExits((std::strtoul(d.c_str(), NULL, 16)) + offset, device.c_str(), true);
-            //m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, device.c_str(), 12);
 
-            //m_sql.UpdateValue(m_HwdID, str(boost::format("%1$08X\n") % std::strtoul(d.c_str(), NULL, 16)).c_str() , 0, pTypeGeneralSwitch, sSwitchIHCAirRelay, 10, 255, 0, "Normal", navn);
         }
         //std::cout << de << std::endl;
 
@@ -342,74 +331,11 @@ void CLKIHC::GetDevicesFromController()
 
 }
 
-bool CLKIHC::GetDevices()
-{
-
-
-    std::vector<std::vector<std::string> > result;
-    result = m_sql.safe_query("SELECT DeviceID FROM DeviceStatus WHERE HardwareID==%d AND Used == 1",
-            m_HwdID);
-
-
-
-    if (result.size() > 0)
-    {
-        std::vector<std::vector<std::string> >::const_iterator itt;
-
-        for (itt = result.begin(); itt != result.end(); ++itt)
-        {
-            std::vector<std::string> sd = *itt;
-            std::cout << sd[0] << std::endl;
-
-
-        }
-    }
-    return false;
-}
-
-void CLKIHC::AddDevice(const std::string nodeID, const std::string &Name, const std::string type, const std::string location)
-{
-    std::cout << __func__ << std::endl;
-    std::vector<std::vector<std::string> > result;
-    /*
-	//Check if exists
-	result=m_sql.safe_query("SELECT ID FROM DeviceStatus WHERE (HardwareID==%d) AND (DeviceID=='%d')",
-		m_HwdID, type);
-	if (result.size()>0)
-		return; //Already exists*/
-    std::string devname = "hej";
-    char ID[40];
-    //sprintf(ID, "%08u", nodeID);
-    std::cout << ID << std::endl;
-    m_sql.UpdateValue(m_HwdID, nodeID.c_str() , 0, pTypeGeneralSwitch, sSwitchIHCAirRelay, 10, 255, 0, "Normal", devname);
-    /*
-
-	m_sql.safe_query("INSERT INTO WOLNodes (HardwareID, Name, MacAddress) VALUES (%d,'%q','%q')",
-		m_HwdID, Name.c_str(), MACAddress.c_str());
-
-	result=m_sql.safe_query("SELECT ID FROM WOLNodes WHERE (HardwareID==%d) AND (Name=='%q') AND (MacAddress=='%q')",
-		m_HwdID, Name.c_str(), MACAddress.c_str());
-	if (result.size()<1)
-		return;
-
-	int ID=atoi(result[0][0].c_str());
-
-	char szID[40];
-	sprintf(szID,"%X%02X%02X%02X", 0, 0, (ID&0xFF00)>>8, ID&0xFF);
-
-	//Also add a light (push) device
-	m_sql.safe_query(
-		"INSERT INTO DeviceStatus (HardwareID, DeviceID, Unit, Type, SubType, SwitchType, Used, SignalLevel, BatteryLevel, Name, nValue, sValue) "
-		"VALUES (%d,'%q',%d,%d,%d,%d,1, 12,255,'%q',1,' ')",
-		m_HwdID, szID, int(1), pTypeLighting2, sTypeAC, int(STYPE_PushOn), Name.c_str());*/
-}
-
-
 //Webserver helpers
 namespace http {
 namespace server {
 
-void CWebServer::ReloadLKIHC(WebEmSession & session, const request& req, std::string & redirect_uri)
+void CWebServer::GetIHCProjectFromController(WebEmSession & session, const request& req, std::string & redirect_uri)
 {
     std::cout << "Get nodes from controller" << std::endl;
     redirect_uri = "/index.html";
@@ -440,78 +366,5 @@ void CWebServer::ReloadLKIHC(WebEmSession & session, const request& req, std::st
     //m_mainworker.RestartHardware(idx);
 }
 
-void CWebServer::Cmd_LKIHCGetNodes(WebEmSession & session, const request& req, Json::Value &root)
-{
-    if (session.rights != 2)
-        return;//Only admin user allowed
-    std::string hwid = request::findValue(&req, "idx");
-    if (hwid == "")
-        return;
-    int iHardwareID = atoi(hwid.c_str());
-    CDomoticzHardwareBase *pHardware = m_mainworker.GetHardware(iHardwareID);
-    if (pHardware == NULL)
-        return;
-    std::cout << hwid << std::endl;
-    /*if (pHardware->HwdType != HTYPE_WOL)
-					return;*/
-
-    root["status"] = "OK";
-    root["title"] = "LKIHCGetNodes";
-
-    std::vector<std::vector<std::string> > result;
-    result = m_sql.safe_query("SELECT DeviceID, Name, (SubType-%d), StrParam1 FROM DeviceStatus WHERE (HardwareID==%d)",
-            sSwitchIHCAirRelay,
-            iHardwareID);
-    if (result.size() > 0)
-    {
-        std::vector<std::vector<std::string> >::const_iterator itt;
-        int ii = 0;
-        for (itt = result.begin(); itt != result.end(); ++itt)
-        {
-            std::vector<std::string> sd = *itt;
-            std::cout << sd[1] << std::endl;
-            root["result"][ii]["idx"] = sd[0];
-            root["result"][ii]["Name"] = sd[1];
-            root["result"][ii]["Type"] = sd[2];
-            root["result"][ii]["Mac"] = sd[3];
-            ii++;
-        }
-    }
-}
-
-void CWebServer::Cmd_LKIHCAddNode(WebEmSession & session, const request& req, Json::Value &root)
-{
-
-    std::cout << "add node\n";
-    if (session.rights != 2)
-    {
-        //No admin user, and not allowed to be here
-        return;
-    }
-
-    std::string hwid = request::findValue(&req, "idx");
-    std::string nodeid = request::findValue(&req, "nodeid");
-    std::string nodename = request::findValue(&req, "nodename");
-    std::string nodetype = request::findValue(&req, "nodetype");
-    std::string nodelocation = request::findValue(&req, "nodelocation");
-    std::cout << hwid << ":" << nodeid << ":" << nodename << ":" << nodetype << ":" << nodelocation << std::endl;
-    /*if (
-			(hwid == "") ||
-			(name == "") ||
-			(mac == "")
-			)
-			return;*/
-    int iHardwareID = atoi(hwid.c_str());
-    CDomoticzHardwareBase *pBaseHardware = m_mainworker.GetHardware(iHardwareID);
-    /*if (pBaseHardware == NULL)
-			return;
-		if (pBaseHardware->HwdType != HTYPE_WOL)
-			return;*/
-    CLKIHC *pHardware = reinterpret_cast<CLKIHC*>(pBaseHardware);
-
-    root["status"] = "OK";
-    root["title"] = "WOLAddNode";
-    pHardware->AddDevice(nodeid, nodename, nodetype,nodelocation);
-}
 }
 }

@@ -28,61 +28,60 @@ IhcResourceInteractionService(std::string hostname)
 
 ResourceValue resourceQuery(int resourceId)
 {
-	std::cout << __func__ << std::endl;
 
 	std::stringstream sstr;
-		std::string httpData = sstr.str();
+    std::string httpData = sstr.str();
 
 
-		TiXmlDocument doc;
+    TiXmlDocument doc;
 
-		//std::string httpUrl(m_address + ":" + std::to_string(m_portnr) + "/ws/ResourceInteractionService");
-		std::string sResult;
+    //std::string httpUrl(m_address + ":" + std::to_string(m_portnr) + "/ws/ResourceInteractionService");
+    std::string sResult;
 
-		std::string query = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-		query += "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"><soapenv:Body>";
-		query += " <ns1:getRuntimeValue1 xmlns:ns1=\"utcs\">" + boost::to_string(resourceId) + "</ns1:getRuntimeValue1></soapenv:Body>";
-		query += "</soapenv:Envelope>";
+    std::string query = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+    query += "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"><soapenv:Body>";
+    query += " <ns1:getRuntimeValue1 xmlns:ns1=\"utcs\">" + boost::to_string(resourceId) + "</ns1:getRuntimeValue1></soapenv:Body>";
+    query += "</soapenv:Envelope>";
 
-		sResult = sendQuery(url, query);
-		if (doc.Parse(sResult.c_str()))
-		{
+        sResult = sendQuery(url, query);
 
-			TinyXPath::xpath_processor processor ( doc.RootElement(), "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:getRuntimeValue2");
-			if (1 == processor.u_compute_xpath_node_set())
-			{
-				TiXmlNode* sss = processor.XNp_get_xpath_node(0);
+    if (doc.Parse(sResult.c_str()))
+    {
 
-				ResourceValue val(boost::lexical_cast<int>( sss-> FirstChildElement("ns1:resourceID")->GetText()));
+        TinyXPath::xpath_processor processor ( doc.RootElement(), "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:getRuntimeValue2");
+        if (1 == processor.u_compute_xpath_node_set())
+        {
+            TiXmlNode* sss = processor.XNp_get_xpath_node(0);
 
-				if (!strcmp(sss->FirstChildElement("ns1:value")->Attribute("xsi:type"), "ns2:WSIntegerValue"))
-				{
+            ResourceValue val(boost::lexical_cast<int>( sss-> FirstChildElement("ns1:resourceID")->GetText()));
 
-					val.value = RangedInteger(boost::lexical_cast<int>(sss->FirstChildElement("ns1:value")->FirstChildElement("ns2:integer")->GetText()),
-							boost::lexical_cast<int>(sss->FirstChildElement("ns1:value")->FirstChildElement("ns2:minimumValue")->GetText()),
-							boost::lexical_cast<int>(sss->FirstChildElement("ns1:value")->FirstChildElement("ns2:maximumValue")->GetText()));
-					return val;
-				}
-				if (!strcmp(sss->FirstChildElement("ns1:value")->Attribute("xsi:type"), "ns2:WSBooleanValue"))
-				{
-					doc.Print();
-					std::cout << "printing bool" << std::endl;
-					val.value =  (!strcmp(sss->FirstChildElement("ns1:value")->FirstChildElement("ns2:value")->GetText(), "true"));
-					return val;
-				}
-				else
-				{
-					std::cout << "Unknown type: (" << sss->FirstChildElement("ns1:value")->Value() << ")" << std::endl;
-					doc.Print();
-				}
-			}
-			else
-			{
-				std::cout << "No resource value found" << std::endl;
+            if (!strcmp(sss->FirstChildElement("ns1:value")->Attribute("xsi:type"), "ns2:WSIntegerValue"))
+            {
 
-			}
-		}
-	}
+                val.value = RangedInteger(boost::lexical_cast<int>(sss->FirstChildElement("ns1:value")->FirstChildElement("ns2:integer")->GetText()),
+                        boost::lexical_cast<int>(sss->FirstChildElement("ns1:value")->FirstChildElement("ns2:minimumValue")->GetText()),
+                        boost::lexical_cast<int>(sss->FirstChildElement("ns1:value")->FirstChildElement("ns2:maximumValue")->GetText()));
+                return val;
+            }
+            if (!strcmp(sss->FirstChildElement("ns1:value")->Attribute("xsi:type"), "ns2:WSBooleanValue"))
+            {
+                //doc.Print();
+                val.value =  (!strcmp(sss->FirstChildElement("ns1:value")->FirstChildElement("ns2:value")->GetText(), "true"));
+                return val;
+            }
+            else
+            {
+                //std::cout << "Unknown type: (" << sss->FirstChildElement("ns1:value")->Value() << ")" << std::endl;
+                //doc.Print();
+            }
+        }
+        else
+        {
+            //std::cout << "No resource value found" << std::endl;
+
+        }
+    }
+}
 
 
 std::string getValue( TiXmlElement* a, std::string t)

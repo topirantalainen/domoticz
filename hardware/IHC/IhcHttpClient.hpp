@@ -16,7 +16,6 @@ class IhcHttpClient {
 public:
 	std::string sendQuery(std::string httpUrl, std::string query, std::string action = "")
 	{
-		std::cout << __func__ << std::endl;
 
 	    std::string result;
 	    std::vector < std::string > ExtraHeaders;
@@ -30,7 +29,8 @@ public:
 
 	    bool ret = HTTPClient::POST(httpUrl, query, ExtraHeaders, result);
 	    if (!ret) {
-	        std::cout << "Netatmo: Error connecting to Server...";
+	        throw std::runtime_error("LK IHC: Error connecting to Server...");
+	        //std::cout << "LK IHC: Error connecting to Server...";
 	    }
 	    return result;
 	}

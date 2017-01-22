@@ -28,15 +28,17 @@
 #include "IhcAuthenticationService.hpp"
 #include "IhcResourceInteractionService.hpp"
 #include "IhcControllerService.hpp"
-	const char* B64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-	const int B64index [256] = { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-	    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-	    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 62, 63, 62, 62, 63, 52, 53, 54, 55,
-	   56, 57, 58, 59, 60, 61,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,
-	    7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,  0,
-	    0,  0,  0, 63,  0, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-	   41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 };
+const char* B64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+const int B64index [256] = { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 62, 63, 62, 62, 63, 52, 53, 54, 55,
+   56, 57, 58, 59, 60, 61,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,
+    7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,  0,
+    0,  0,  0, 63,  0, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+   41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 };
+
 class Thread
 {
 public:
@@ -196,10 +198,7 @@ public:
 
 	}*/
 	ResourceValue resourceQuery(int const res)
-	{
-		std::cout << __func__ << std::endl;
-		return resourceInteractionService->resourceQuery(res);
-	}
+	{ return resourceInteractionService->resourceQuery(res); }
 /*
 	void enableRuntimeValueNotifications(std::vector<int> resourceIdList)
 	{
@@ -207,16 +206,10 @@ public:
 	}*/
 
 	void enableRuntimeValueNotifications2(std::vector<int> resourceIdList)
-	{
-		std::cout << __func__ << std::endl;
-		resourceInteractionService->enableRuntimeValueNotifications(resourceIdList);
-	}
+	{ resourceInteractionService->enableRuntimeValueNotifications(resourceIdList); }
 
 	std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(int const timeout)
-	{
-		std::cout << __func__ << std::endl;
-		return resourceInteractionService->waitResourceValueNotifications(timeout);
-	}
+	{ return resourceInteractionService->waitResourceValueNotifications(timeout); }
 
 	void openConnection()
 	{
@@ -370,14 +363,10 @@ public:
 public:
 
 	WSProjectInfo getProjectInfo()
-	{
-		return controllerService->getProjectInfo();
-	}
+	{ return controllerService->getProjectInfo(); }
 
 	TiXmlDocument loadProject()
 	{
-		std::cout << __func__ << std::endl;
-
 		if (!projectFile.empty())
 		{
 			std::cout << "Loading IHC /ELKO LS project file from path " << projectFile << "\n";
@@ -404,9 +393,6 @@ public:
 			}*/
 		}
 	}
-
-
-
 
 	std::string b64decode(const void* data, const size_t len)
 	{
@@ -455,7 +441,25 @@ public:
 
 		return decompressed.str();
 	}
+
 private:
+	void iso_8859_1_to_utf8(std::string &str, size_t pos)
+	{
+	    std::string strOut;
+	    for (std::string::iterator it = str.substr(pos).begin(); it != str.end(); ++it)
+	    {
+	        uint8_t ch = *it;
+	        if (ch < 0x80) {
+	            strOut.push_back(ch);
+	        }
+	        else {
+	            strOut.push_back(0xc0 | ch >> 6);
+	            strOut.push_back(0x80 | (ch & 0x3f));
+	        }
+	    }
+	    str = strOut;
+	}
+
 	TiXmlDocument LoadProjectFileFromController()
 	{
 		WSProjectInfo projectInfo = getProjectInfo();
@@ -463,34 +467,35 @@ private:
 		int segmentationSize = controllerService->getProjectSegmentationSize();
 
 		std::vector<char> asd;
-		std::cout << " size of asd is now: " << asd.size() << std::endl;
 
 		for (int i = 0; i < numberOfSegments; i++)
 		{
+#ifdef _DEBUG
 			std::cout << "Downloading segment " << i << "..." << std::endl;
+#endif
 			WSFile data = controllerService->getProjectSegment(i, getProjectInfo().getProjectMajorRevision(), getProjectInfo().getProjectMinorRevision());
 
 			std::vector<char> t = data.getData();
 			asd.insert(asd.end(), t.begin(), t.end());
 
-			std::cout << " size of aaaasd is now: " << asd.size() << std::endl;
-
-
 		}
+#ifdef _DEBUG
 		std::cout << "Final size: " << asd.size() << std::endl;
+#endif
 
 		std::string str(asd.begin(), asd.end());
 		std::string decoded;
 		decoded = b64decode(str);
-std::string extracted;
+		std::string extracted;
 		extracted = decompress(decoded);
+#ifdef _DEBUG
 		std::cout << "Final size decoded: " << decoded.size() << std::endl;
 		std::cout << "Final size extracted: " << extracted.size() << std::endl;
 
 		std::ofstream out("output.txt");
 		out << extracted;
 		out.close();
-
+#endif
 	    // Skip unsupported statements
 	    size_t pos = 0;
 	    while (true) {
@@ -502,25 +507,15 @@ std::string extracted;
 	        } else
 	            break;
 	    }
-	    extracted = extracted.substr(pos);
+
+	    iso_8859_1_to_utf8(extracted, pos);
 
 	    // Parse document as usual
-	    TiXmlDocument doc1;
-	    doc1.Parse(extracted.c_str());
+	    TiXmlDocument doc;
+	    doc.Parse(extracted.c_str());
 
+	    return doc;
 
-
-return doc1;
-
-		/*std::string sResult;
-
-		sResult = sendQuery(url, emptyQuery, "getIHCProjectNumberOfSegments");
-
-		doc.Parse(sResult.c_str());
-		doc.Print();*/
-		//projectInfo.encodeData(doc);
-
-		//return projectInfo;
 	}
 public:
 	/*template <typename T> bool resourceUpdate(T value)
