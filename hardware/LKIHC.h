@@ -13,6 +13,8 @@ public:
 	bool WriteToHardware(const char *pdata, const unsigned char length);
 	static std::string RegisterUser(const std::string &IPAddress, const unsigned short Port, const std::string &username);
 	void AddDevice(const std::string nodeID, const std::string &Name, const std::string type, const std::string location);
+	bool AddSwitchIfNotExits(const int id, const char* devname, bool isDimmer);
+
 	void GetDevicesFromController();
 private:
 	std::string m_IPAddress;

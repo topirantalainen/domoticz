@@ -160,18 +160,20 @@ void CLKIHC::Do_Work()
                     ycmd.cmnd = obj.intValue();
                     ycmd.level=0;
                 }
+                //TODO: FIX Rssi
                 ycmd.rssi = 12;
 
-                m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, NULL, 12);
-                //m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&gswitch, pDevice->label.c_str(), BatLevel);
+                m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, NULL, 100);
 
             }
 
             sleep_seconds(1);
+
             sec_counter++;
+
             if (sec_counter % 2 == 0)
             {
-                m_LastHeartbeat=mytime(NULL);
+                m_LastHeartbeat = mytime(NULL);
             }
         }
     }
@@ -236,7 +238,25 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 
     return true;
 }
+bool CLKIHC::AddSwitchIfNotExits(const int id, const char* devname, bool isDimmer)
+{
+    char sid[10];
+    sprintf(sid, "%08X", id);
 
+    std::vector<std::vector<std::string> > result;
+    result = m_sql.safe_query("SELECT ID FROM DeviceStatus WHERE (HardwareID==%d) AND (DeviceID=='%q') AND (Type==%d) AND (SubType==%d)",
+                              m_HwdID, sid, pTypeGeneralSwitch, sSwitchTypeAC);
+    if (result.size() < 1)
+    {
+        _log.Log(LOG_NORM, "klæasd: device %d %s: %s", id, sid ,devname);
+        m_sql.safe_query(
+            "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, sValue) "
+            "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0,' ')",
+            m_HwdID, sid, pTypeGeneralSwitch, isDimmer ? sSwitchIHCAirDimmer : sSwitchIHCAirRelay, isDimmer ? STYPE_Dimmer : STYPE_OnOff, devname);
+        return true;
+    }
+    return false;
+}
 void CLKIHC::GetDevicesFromController()
 {
     TiXmlDocument doc2 = ihcC->loadProject();
@@ -258,9 +278,8 @@ void CLKIHC::GetDevicesFromController()
         std::string deviceid = thisNode->ToElement()->Attribute("id");
         std::string devType = (thisNode->ToElement()->Attribute("device_type"));
 
-        if (strcmp(devType.c_str(), "_0x812") == 0)
+        if ((strcmp(devType.c_str(), "_0x804") == 0) || (strcmp(devType.c_str(), "_0x812") == 0))
         {
-            std::cout << "812" << std::endl;
             std::string devID = thisNode->ToElement()->Attribute("id");
             std::string d = devID.substr(3);
 
@@ -277,13 +296,12 @@ void CLKIHC::GetDevicesFromController()
             ycmd.cmnd = 0;
             ycmd.level=0;
             ycmd.rssi = 12;
-
-            m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, device.c_str(), 12);
+            AddSwitchIfNotExits((std::strtoul(d.c_str(), NULL, 16)) + 0x10A, device.c_str(), false);
+            //m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, device.c_str(), 12);
         }
 
         if ((strcmp(devType.c_str(), "_0x806") == 0) || (strcmp(devType.c_str(), "_0x808") == 0) )
         {
-            std::cout << "806 808" << std::endl;
             std::string devID = thisNode->ToElement()->Attribute("id");
             std::string d = devID.substr(3);
 
@@ -312,8 +330,8 @@ void CLKIHC::GetDevicesFromController()
             ycmd.cmnd = 0;
             ycmd.level=0;
             ycmd.rssi = 12;
-
-            m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, device.c_str(), 12);
+            AddSwitchIfNotExits((std::strtoul(d.c_str(), NULL, 16)) + offset, device.c_str(), true);
+            //m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, device.c_str(), 12);
 
             //m_sql.UpdateValue(m_HwdID, str(boost::format("%1$08X\n") % std::strtoul(d.c_str(), NULL, 16)).c_str() , 0, pTypeGeneralSwitch, sSwitchIHCAirRelay, 10, 255, 0, "Normal", navn);
         }

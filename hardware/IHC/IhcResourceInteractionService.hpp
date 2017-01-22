@@ -110,11 +110,12 @@ private:
 
 bool doResourceUpdate(ResourceValue const query)
 {
-	std::cout << __func__ << std::endl;
-    TiXmlDocument doc;
+	TiXmlDocument doc;
+#ifdef _DEBUG
     std::cout << "--aadd----------------\n";
     std::cout << query.toXml() << std::endl;
     std::cout << "--ddaa----------------\n";
+#endif
     std::string const sResult = sendQuery(url, query.toXml());
     doc.Parse(sResult.c_str());
     return WSLoginResult::parseValueToBoolean(doc, "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:setResourceValue2/text()");
@@ -123,8 +124,6 @@ bool doResourceUpdate(ResourceValue const query)
 
 boost::shared_ptr<ResourceValue> parseResourceValue(TiXmlElement* xmlRes, int const index)
 {
-	std::cout << __func__ << std::endl;
-
 	std::string resourceID = getValue(xmlRes, "/ns1:resourceID");
 
 	if (!resourceID.empty())
@@ -151,7 +150,6 @@ boost::shared_ptr<ResourceValue> parseResourceValue(TiXmlElement* xmlRes, int co
 			return boost::move(var);
 		}
 
-		std::cout << " None found\n";
 		//Todo: throw unknown type
 	}
 
@@ -159,12 +157,12 @@ boost::shared_ptr<ResourceValue> parseResourceValue(TiXmlElement* xmlRes, int co
 /*
 	TiXmlElement * pxmlChild = pxmlParent->FirstChildElement( "child" );
 	std::stringstream ss;*/
-	std::cout << (xmlRes->Value());
+	//std::cout << (xmlRes->Value());
 
 	//xmlRes->ToDocument()->Print();
-	std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
-			boost::shared_ptr<ResourceValue> r = boost::shared_ptr<ResourceValue>(new ResourceValue(123));
-			r->value = false;
+	//std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+	boost::shared_ptr<ResourceValue> r = boost::shared_ptr<ResourceValue>(new ResourceValue(123));
+	r->value = false;
 	return r;
 }
 
@@ -188,11 +186,11 @@ void enableRuntimeValueNotifications(std::vector<int> items)
 
 	query += querySuffix;
 std::cout << "her2\n";
-	TiXmlDocument doc;
+	//TiXmlDocument doc;
 
 	std::string sResult;
 	sResult = sendQuery(url, query);
-	std::cout << "enabling runtime notifications: " << sResult<<std::endl;
+	//std::cout << "enabling runtime notifications: " << sResult<<std::endl;
 }
 
 
