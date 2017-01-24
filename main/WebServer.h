@@ -62,7 +62,7 @@ public:
 	void SBFSpotImportOldData(WebEmSession & session, const request& req, std::string & redirect_uri);
 	void SetCurrentCostUSBType(WebEmSession & session, const request& req, std::string & redirect_uri);
 
-	void ReloadLKIHC(WebEmSession & session, const request& req, std::string & redirect_uri);
+	void GetIHCProjectFromController(WebEmSession & session, const request& req, std::string & redirect_uri);
 	void EventCreate(WebEmSession & session, const request& req, std::string & redirect_uri);
 
 	cWebem *m_pWebEm;
@@ -113,8 +113,6 @@ private:
 	void Cmd_AddHardware(WebEmSession & session, const request& req, Json::Value &root);
 	void Cmd_UpdateHardware(WebEmSession & session, const request& req, Json::Value &root);
 	void Cmd_DeleteHardware(WebEmSession & session, const request& req, Json::Value &root);
-	void Cmd_LKIHCGetNodes(WebEmSession & session, const request& req, Json::Value &root);
-	void Cmd_LKIHCAddNode(WebEmSession & session, const request& req, Json::Value &root);
 	void Cmd_WOLGetNodes(WebEmSession & session, const request& req, Json::Value &root);
 	void Cmd_WOLAddNode(WebEmSession & session, const request& req, Json::Value &root);
 	void Cmd_WOLUpdateNode(WebEmSession & session, const request& req, Json::Value &root);

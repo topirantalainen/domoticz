@@ -334,7 +334,7 @@ namespace http {
 			m_pWebEm->RegisterActionCode("setrego6xxtype", boost::bind(&CWebServer::SetRego6XXType, this, _1, _2, _3));
 			m_pWebEm->RegisterActionCode("sets0metertype", boost::bind(&CWebServer::SetS0MeterType, this, _1, _2, _3));
 			m_pWebEm->RegisterActionCode("setlimitlesstype", boost::bind(&CWebServer::SetLimitlessType, this, _1, _2, _3));
-			m_pWebEm->RegisterActionCode("reloadlkihc", boost::bind(&CWebServer::ReloadLKIHC, this, _1, _2, _3));
+			m_pWebEm->RegisterActionCode("reloadlkihc", boost::bind(&CWebServer::GetIHCProjectFromController, this, _1, _2, _3));
 
 			m_pWebEm->RegisterActionCode("setopenthermsettings", boost::bind(&CWebServer::SetOpenThermSettings, this, _1, _2, _3));
 			RegisterCommandCode("sendopenthermcommand", boost::bind(&CWebServer::Cmd_SendOpenThermCommand, this, _1, _2, _3), true);
@@ -361,9 +361,6 @@ namespace http {
 			RegisterCommandCode("addhardware", boost::bind(&CWebServer::Cmd_AddHardware, this, _1, _2, _3));
 			RegisterCommandCode("updatehardware", boost::bind(&CWebServer::Cmd_UpdateHardware, this, _1, _2, _3));
 			RegisterCommandCode("deletehardware", boost::bind(&CWebServer::Cmd_DeleteHardware, this, _1, _2, _3));
-
-			RegisterCommandCode("lkihcgetnodes", boost::bind(&CWebServer::Cmd_LKIHCGetNodes, this, _1, _2, _3));
-			RegisterCommandCode("lkihcaddnode", boost::bind(&CWebServer::Cmd_LKIHCAddNode, this, _1, _2, _3));
 
 			RegisterCommandCode("wolgetnodes", boost::bind(&CWebServer::Cmd_WOLGetNodes, this, _1, _2, _3));
 			RegisterCommandCode("woladdnode", boost::bind(&CWebServer::Cmd_WOLAddNode, this, _1, _2, _3));
@@ -3557,6 +3554,7 @@ namespace http {
 			}
 			else if (cparam == "getlightswitches")
 			{
+			    _log.Log(LOG_ERROR, "get ligth start");
 				root["status"] = "OK";
 				root["title"] = "GetLightSwitches";
 				std::vector<std::vector<std::string> > result;

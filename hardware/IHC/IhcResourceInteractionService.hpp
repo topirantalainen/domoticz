@@ -32,10 +32,8 @@ ResourceValue resourceQuery(int resourceId)
 	std::stringstream sstr;
     std::string httpData = sstr.str();
 
-
     TiXmlDocument doc;
 
-    //std::string httpUrl(m_address + ":" + std::to_string(m_portnr) + "/ws/ResourceInteractionService");
     std::string sResult;
 
     std::string query = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
@@ -101,13 +99,12 @@ std::string getValue( TiXmlElement* a, std::string t)
 
 bool resourceUpdate(ResourceValue const value)
 {
-	std::cout << __func__ << std::endl;
 	return doResourceUpdate(value);
 }
 
 private:
 
-bool doResourceUpdate(ResourceValue const query)
+bool doResourceUpdate(ResourceValue const &query)
 {
 	TiXmlDocument doc;
 #ifdef _DEBUG
@@ -152,14 +149,6 @@ boost::shared_ptr<ResourceValue> parseResourceValue(TiXmlElement* xmlRes, int co
 		//Todo: throw unknown type
 	}
 
-
-/*
-	TiXmlElement * pxmlChild = pxmlParent->FirstChildElement( "child" );
-	std::stringstream ss;*/
-	//std::cout << (xmlRes->Value());
-
-	//xmlRes->ToDocument()->Print();
-	//std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
 	boost::shared_ptr<ResourceValue> r = boost::shared_ptr<ResourceValue>(new ResourceValue(123));
 	r->value = false;
 	return r;
@@ -167,10 +156,8 @@ boost::shared_ptr<ResourceValue> parseResourceValue(TiXmlElement* xmlRes, int co
 
 public:
 
-void enableRuntimeValueNotifications(std::vector<int> items)
+void enableRuntimeValueNotifications(std::vector<int> &items)
 {
-	std::cout << __func__ << std::endl;
-	std::cout << "her \n";
 	std::string queryPrefix = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 	queryPrefix += "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">";
 	queryPrefix += "<soap:Body><enableRuntimeValueNotifications1 xmlns=\"utcs\">";
@@ -184,12 +171,9 @@ void enableRuntimeValueNotifications(std::vector<int> items)
 	}
 
 	query += querySuffix;
-std::cout << "her2\n";
-	//TiXmlDocument doc;
 
 	std::string sResult;
 	sResult = sendQuery(url, query);
-	//std::cout << "enabling runtime notifications: " << sResult<<std::endl;
 }
 
 
@@ -203,12 +187,14 @@ std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(in
 	query += "</soapenv:Envelope>";
 
 	std::string sResult;
-	// TODO: Dont load from file
+
 	sResult = sendQuery(url, query);
 
 	TiXmlDocument doc;
     doc.Parse(sResult.c_str());
+#ifdef _DEBUG
     doc.Print();
+#endif
     std::vector<boost::shared_ptr<ResourceValue> > resourceList;
 
     TinyXPath::xpath_processor processor ( doc.RootElement(), "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:waitForResourceValueChanges2/ns1:arrayItem");
