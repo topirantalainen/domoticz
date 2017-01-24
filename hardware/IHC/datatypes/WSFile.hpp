@@ -22,38 +22,18 @@ public:
     	this->filename = filename;
     }
 
-    /**
-     * Gets the data value for this WSFile.
-     *
-     * @return data
-     */
     std::vector<char> getData() {
         return data;
     }
 
-    /**
-     * Sets the data value for this WSFile.
-     *
-     * @param data
-     */
     void setData(std::vector<char> data) {
         this->data = data;
     }
 
-    /**
-     * Gets the filename value for this WSFile.
-     *
-     * @return filename
-     */
     std::string getFilename() {
         return filename;
     }
 
-    /**
-     * Sets the filename value for this WSFile.
-     *
-     * @param filename
-     */
     void setFilename(std::string filename) {
         this->filename = filename;
     }
@@ -61,7 +41,7 @@ public:
     void encodeData(TiXmlDocument data)
     {
         filename = parseValue(data, "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:getIHCProjectSegment4/ns1:filename");
-        std::string str =parseValue(data, "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:getIHCProjectSegment4/ns1:data");
+        std::string str = parseValue(data, "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:getIHCProjectSegment4/ns1:data");
         std::copy(str.begin(), str.end(), std::back_inserter(this->data));
     }
 

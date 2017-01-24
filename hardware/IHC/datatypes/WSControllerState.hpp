@@ -8,12 +8,6 @@
 #ifndef IHC_DATATYPES_WSCONTROLLERSTATE_HPP_
 #define IHC_DATATYPES_WSCONTROLLERSTATE_HPP_
 
-/**
- * <p>
- * Java class for WSControllerState complex type.
- *
- */
-
 class WSControllerState : public WSBaseDataType
 {
 protected:
@@ -25,19 +19,9 @@ public:
     WSControllerState(std::string state)
     { this->state = state; }
 
-    /**
-     * Gets the state value for this WSControllerState.
-     *
-     * @return state
-     */
     std::string getState()
     { return state; }
 
-    /**
-     * Sets the state value for this WSControllerState.
-     *
-     * @param state
-     */
     void setState(std::string state)
     { this->state = state; }
 
@@ -59,7 +43,6 @@ public:
 			return;
 		}
     }
-
 };
 
 #endif /* IHC_DATATYPES_WSCONTROLLERSTATE_HPP_ */

@@ -84,5 +84,4 @@ std::ostream& operator<<(std::ostream& os, const WSDate& date)
     return os;
 }
 
-
 #endif /* IHC_WSDATE_HPP_ */

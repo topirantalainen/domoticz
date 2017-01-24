@@ -12,7 +12,7 @@ class WSBaseDataType
 {
 public:
 
-	static std::string parseValue(TiXmlDocument doc, std::string xpath)
+	static std::string parseValue(TiXmlDocument const doc, std::string const xpath)
 	{
 		std::string xp = xpath + "/text()"; // <-- Fixing what I think is a bug in tinyXpath
 		TinyXPath::xpath_processor processor(doc.RootElement(), xp.c_str());
@@ -20,7 +20,7 @@ public:
 		return xresult.c_str();
 	}
 
-	static bool parseValueToBoolean(TiXmlDocument doc, std::string xpath)
+	static bool parseValueToBoolean(TiXmlDocument const doc, std::string const xpath)
 	{
 	    bool result;
 		std::string xresult = parseValue(doc, xpath);
@@ -28,7 +28,6 @@ public:
 	    is >> std::boolalpha >> result;
 	    return result;
 	}
-
 };
 
 #endif /* IHC_DATATYPES_WSBASEDATATYPE_HPP_ */

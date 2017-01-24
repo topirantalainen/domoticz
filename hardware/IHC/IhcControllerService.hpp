@@ -11,11 +11,11 @@
 #include "datatypes/WSBaseDataType.hpp"
 
 static const std::string emptyQuery = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"><soapenv:Body></soapenv:Body></soapenv:Envelope>";
+
 class IhcControllerService : public IhcHttpClient
 {
 private:
 	std::string url;
-	//static const std::string emptyQuery;// = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"><soapenv:Body></soapenv:Body></soapenv:Envelope>";
 
 public:
 	IhcControllerService(std::string hostname)
@@ -80,11 +80,6 @@ public:
 		return file;
 	}
 
-	/**
-	 * Query controller current state.
-	 *
-	 * @return controller's current state.
-	 */
 	WSControllerState getControllerState()
 	{
 		std::string sResult;
@@ -95,7 +90,6 @@ public:
 
 		WSControllerState controllerState;
 		controllerState.encodeData(doc);
-		std::cout << controllerState.getState() << std::endl;
 
 		return controllerState;
 	}

@@ -10,7 +10,6 @@
 #include <string>
 #include <boost/variant.hpp>
 
-
 struct RangedInteger {
     int min;
     int max;
@@ -22,8 +21,6 @@ struct RangedInteger {
       , value(value)
     {}
 };
-
-/**/
 
 struct valueVisitor : boost::static_visitor<int> {
 	int ID;
@@ -37,14 +34,12 @@ struct valueVisitor : boost::static_visitor<int> {
     }
 
     int operator()(RangedInteger const value) const{
-    	//std::string const out = value.value;
         return value.value;
     }
 
     template<typename T>
     int operator()(T const&) const
     {
-    	//std::string const out = 0;
         return 0;
     }
 };
@@ -68,13 +63,11 @@ struct ToStringVisitor : boost::static_visitor<std::string> {
     }
 
     template<typename T>
-    std::string operator()(T const&) const
-    {
+    std::string operator()(T const&) const{
     	std::string const out = "Object " + boost::to_string(ID) + ", Unknown type";
         return out;
     }
 };
-
 
 struct XmlVisitor : boost::static_visitor<std::string> {
 	int ID;
@@ -93,42 +86,30 @@ struct XmlVisitor : boost::static_visitor<std::string> {
 		query +=  "  <value xmlns:q1=\"utcs.values\" xsi:type=\"q1:WSBooleanValue\"><q1:value>" + status + "</q1:value>";
 		query +=  "  </value><resourceID>" + boost::to_string(ID) + "</resourceID><isValueRuntime>true</isValueRuntime>";
 		query +=  " </setResourceValue1></soap:Body></soap:Envelope>";
-return query;
 
-		//std::cout << std::to_string(ID);
-		//return "bool"; // TODO: XML
+		return query;
 	}
 
 	std::string operator()(RangedInteger const value) const
 	{
 		std::string query = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-			query += "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">";
-			query += "<soap:Body><setResourceValue1 xmlns=\"utcs\">";
-			query += "  <value xmlns:q1=\"utcs.values\" xsi:type=\"q1:WSIntegerValue\">";
-			query += "   <q1:maximumValue>" + boost::to_string(value.max) + "</q1:maximumValue><q1:minimumValue>" + boost::to_string(value.min) + "</q1:minimumValue>";
-			query += "   <q1:integer>" + boost::to_string(value.value) + "</q1:integer></value><resourceID>" + boost::to_string(ID) + "</resourceID>";
-			query += "  <isValueRuntime>true</isValueRuntime></setResourceValue1></soap:Body>";
-			query += "</soap:Envelope>";
-		/*std::string query = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-		        			query += "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">";
-		        			query +=  "<soap:Body><setResourceValue1 xmlns=\"utcs\">";
-		        			query +=  "  <value xmlns:q1=\"utcs.values\" xsi:type=\"q1:WSBooleanValue\"><q1:value>" + std::to_string( value.value) + "</q1:value>";
-		        			query +=  "  </value><resourceID>" + std::to_string(ID) + "</resourceID><isValueRuntime>true</isValueRuntime>";
-		      			query +=  " </setResourceValue1></soap:Body></soap:Envelope>";*/
-		        			return query;
-		//return "integer"; // TODO: XML
+        query += "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">";
+        query += "<soap:Body><setResourceValue1 xmlns=\"utcs\">";
+        query += "  <value xmlns:q1=\"utcs.values\" xsi:type=\"q1:WSIntegerValue\">";
+        query += "   <q1:maximumValue>" + boost::to_string(value.max) + "</q1:maximumValue><q1:minimumValue>" + boost::to_string(value.min) + "</q1:minimumValue>";
+        query += "   <q1:integer>" + boost::to_string(value.value) + "</q1:integer></value><resourceID>" + boost::to_string(ID) + "</resourceID>";
+        query += "  <isValueRuntime>true</isValueRuntime></setResourceValue1></soap:Body>";
+        query += "</soap:Envelope>";
+
+        return query;
 	}
 
 	template<typename T>
-	    std::string operator()(T const&) const
-	    {
-	        return "default";
-	    }
+    std::string operator()(T const&) const
+    {
+        return "default";
+    }
 };
-
-
-
-
 
 struct Null {};
 
@@ -146,11 +127,9 @@ struct ResourceValue {
       , value(val)
     {}
 
-
     std::string toString() const
     {
         return boost::apply_visitor(ToStringVisitor(ID), value);
-//        return boost::apply_visitor(ToStringVisitor{}, value);
     }
 
     int intValue() const
@@ -160,32 +139,9 @@ struct ResourceValue {
 
     std::string toXml( ) const
     {
-
-
-
     	return boost::apply_visitor( XmlVisitor(ID), value);
     }
-
 };
-/*
-ResourceValue res(132456, RangedInteger(42));
-
-res.value = RangedInteger(42);
-res.value = true;
-
-*/
-
-
-
-
-
-
-
-
-
-
-
-
 
 class WSResourceValue
 {
@@ -208,89 +164,5 @@ public:
     virtual std::string toString() const = 0;
 
 };
-
-/**
- * <p>
- * C++ class for WSBooleanValue complex type.
- *
- * <p>
- * The following schema fragment specifies the expected content contained within
- * this class.
- *
- * <pre>
- * &lt;complexType name="WSBooleanValue">
- *   &lt;complexContent>
- *     &lt;extension base="{utcs.values}WSResourceValue">
- *       &lt;sequence>
- *         &lt;element name="value" type="{http://www.w3.org/2001/XMLSchema}boolean"/>
- *       &lt;/sequence>
- *     &lt;/extension>
- *   &lt;/complexContent>
- * &lt;/complexType>
- * </pre>
- *
- *
- */
-
-// class WSBooleanValue : public  WSResourceValue {
-// private:
-//     bool value;
-//
-// public:
-//     /**
-// 	 * Gets the value of the value property.
-// 	 *
-// 	 */
-//     bool isValue() const
-//     { return value; }
-//
-//     /**
-//      * Sets the value of the value property.
-//      *
-//      */
-//     void setValue(bool val)
-//     { this->value = val; }
-//
-//     std::string toString() const override
-//     {
-//         return (value) ? "true" : "false";
-//     }
-// };
-//
-// class WSIntegerValue : public WSResourceValue {
-// private:
-//     int integer;
-//     int minValue;
-//     int maxValue;
-//
-// public:
-//     WSIntegerValue(int id = 0, int value = 0)
-//       : WSResourceValue(id), integer(value)
-//     {}
-//
-//     int getInteger () const
-//     { return integer; }
-//
-//     void setInteger(int val)
-//     { this->integer = val; }
-//
-//     int getMinValue() const
-//     { return minValue; }
-//
-//     int getMaxValue() const
-//     { return maxValue; }
-//
-//     void setMinValue(int val)
-//     { this->minValue = val; }
-//
-//     int setMaxValue(int val)
-//     { this->maxValue = val; }
-//
-//     std::string toString() const override
-//     {
-//         return boost::lexical_cast<std::string>(integer);
-//     }
-//
-// };
 
 #endif /* IHC_WSRESOURCEVALUE_HPP_ */

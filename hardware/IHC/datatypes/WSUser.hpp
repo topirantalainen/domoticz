@@ -86,5 +86,4 @@ public:
 
 };
 
-
 #endif /* IHC_WSUSER_HPP_ */
