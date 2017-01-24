@@ -433,7 +433,6 @@ const char *RFX_Type_Desc(const unsigned char i, const unsigned char snum)
 		{ pTypeLighting6, "Lighting 6" , "lightbulb", },
 		{ pTypeHomeConfort, "Home Confort" , "lightbulb" },
 		{ pTypeLimitlessLights, "Lighting Limitless/Applamp" , "lightbulb" },
-		{ pTypeIHC, "IHC", "lightbulb" },
 		{ pTypeCurtain, "Curtain" , "blinds" },
 		{ pTypeBlinds, "Blinds" , "blinds" },
 		{ pTypeSecurity1, "Security", "security" },

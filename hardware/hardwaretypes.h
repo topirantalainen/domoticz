@@ -37,10 +37,6 @@
 #define sTypeThermSetpoint		0x01
 #define sTypeThermTemperature	0x02
 
-#define pTypeIHC            0xF0
-#define sTypeIHCAirRelay                  0x01
-#define sTypeIHCAirDimmer                 0x02
-
 #define pTypeGeneral				0xF3
 #define sTypeVisibility				0x01
 #define sTypeSolarRadiation			0x02
