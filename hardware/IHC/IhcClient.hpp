@@ -236,10 +236,10 @@ static std::string decompress(const std::string& data)
 }
 
 private:
-void iso_8859_1_to_utf8(std::string &str, size_t pos)
+std::string iso_8859_1_to_utf8(std::string str, size_t pos)
 {
     std::string strOut;
-    for (std::string::iterator it = str.substr(pos).begin(); it != str.end(); ++it)
+    for (std::string::iterator it = str.begin(); it != str.end(); ++it)
     {
         uint8_t ch = *it;
         if (ch < 0x80) {
@@ -250,7 +250,7 @@ void iso_8859_1_to_utf8(std::string &str, size_t pos)
             strOut.push_back(0x80 | (ch & 0x3f));
         }
     }
-    str = strOut;
+    return strOut;
 }
 
 TiXmlDocument LoadProjectFileFromController()
@@ -260,7 +260,6 @@ TiXmlDocument LoadProjectFileFromController()
     int segmentationSize = controllerService->getProjectSegmentationSize();
 
     std::vector<char> asd;
-
     for (int i = 0; i < numberOfSegments; i++)
     {
 #ifdef _DEBUG
@@ -281,6 +280,7 @@ TiXmlDocument LoadProjectFileFromController()
     decoded = b64decode(str);
     std::string extracted;
     extracted = decompress(decoded);
+
 #ifdef _DEBUG
     std::cout << "Final size decoded: " << decoded.size() << std::endl;
     std::cout << "Final size extracted: " << extracted.size() << std::endl;
@@ -300,8 +300,10 @@ TiXmlDocument LoadProjectFileFromController()
         } else
             break;
     }
-
-    iso_8859_1_to_utf8(extracted, pos);
+    //extracted = extracted.substr(pos);
+    //std::cout << "and here\n";
+    //std::string ext2;
+    extracted = iso_8859_1_to_utf8(extracted.substr(pos), pos);
 
     // Parse document as usual
     TiXmlDocument doc;

@@ -250,6 +250,7 @@ void CLKIHC::GetDevicesFromController()
 
     for (int i = 0; i < numberOfDevices; i++)
     {
+
         TiXmlNode* thisNode = processor.XNp_get_xpath_node(i);
         TiXmlNode* parent = thisNode->Parent();
         std::string  room = parent->ToElement()->Attribute("name");
@@ -257,7 +258,7 @@ void CLKIHC::GetDevicesFromController()
         std::string device = thisNode->ToElement()->Attribute("position");
         std::string deviceid = thisNode->ToElement()->Attribute("id");
         std::string devType = (thisNode->ToElement()->Attribute("device_type"));
-
+        std::cout << room << "-" << device <<".\n";
         if ((strcmp(devType.c_str(), "_0x804") == 0) || (strcmp(devType.c_str(), "_0x812") == 0))
         {
             std::string devID = thisNode->ToElement()->Attribute("id");
