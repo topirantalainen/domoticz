@@ -266,9 +266,6 @@ void CLKIHC::GetDevicesFromController()
             _tGeneralSwitch ycmd;
             ycmd.subtype = sSwitchIHCAirRelay;
 
-            char szID[10];
-            //std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
-
             ycmd.id =  (std::strtoul(d.c_str(), NULL, 16)) + 0x10A;//(long unsigned int)obj.ID;
             ycmd.unitcode = 0;
             ycmd.battery_level = 10;
@@ -288,7 +285,6 @@ void CLKIHC::GetDevicesFromController()
             std::string devID = thisNode->ToElement()->Attribute("id");
             std::string d = devID.substr(3);
 
-
             _tGeneralSwitch ycmd;
             ycmd.subtype = sSwitchIHCAirDimmer;
 
@@ -303,19 +299,19 @@ void CLKIHC::GetDevicesFromController()
             }
 
             ycmd.id =  (std::strtoul(d.c_str(), NULL, 16)) + offset;
-
             ycmd.unitcode = 0;
             ycmd.battery_level = 10;
             ycmd.cmnd = 0;
             ycmd.level=0;
             ycmd.rssi = 12;
-            AddSwitchIfNotExits((std::strtoul(d.c_str(), NULL, 16)) + offset, device.c_str(), true);
+            char buff[100];
+            snprintf(buff, sizeof(buff), "%s (%s)", room.c_str(), device.c_str());
+            std::string buffAsStdStr = buff;
+            int id = ((std::strtoul(d.c_str(), NULL, 16)) + 0x10A);
+            AddSwitchIfNotExits((std::strtoul(d.c_str(), NULL, 16)) + offset, (buffAsStdStr.c_str()), true);
 
         }
-
     }
-
-
 }
 
 //Webserver helpers
