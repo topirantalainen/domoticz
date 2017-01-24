@@ -2320,9 +2320,6 @@ void MainWorker::ProcessRXMessage(const CDomoticzHardwareBase *pHardware, const 
 		case pTypeHomeConfort:
 			decode_HomeConfort(HwdID, HwdType, reinterpret_cast<const tRBUF *>(pRXCommand), procResult);
 			break;
-		case pTypeIHC:
-			decode_IHC(HwdID, HwdType, reinterpret_cast<const tRBUF *>(pRXCommand), procResult);
-			break;
 		default:
 			_log.Log(LOG_ERROR, "UNHANDLED PACKET TYPE:      FS20 %02X", pRXCommand[1]);
 			return;
@@ -9841,53 +9838,6 @@ void MainWorker::decode_General(const int HwdID, const _eHardwareTypes HwdType, 
 		}
 		WriteMessageEnd();
 	}
-	procResult.DeviceRowIdx = DevRowIdx;
-}
-
-void MainWorker::decode_IHC(const int HwdID, const _eHardwareTypes HwdType, const tRBUF *pResponse, _tRxMessageProcessingResult & procResult)
-{
-	std::cout << "decode_IHC\n";
-
-	char szTmp[300];
-	_tIHC *pLed=(_tIHC*)pResponse;
-
-	unsigned char devType=pTypeIHC;
-	unsigned char subType=pLed->subtype;
-	if (pLed->id==1)
-		sprintf(szTmp,"%d", 1);
-	else
-		sprintf(szTmp, "%08x", (unsigned int)pLed->id);
-	std::string ID = szTmp;
-	unsigned char Unit=pLed->dunit;
-	unsigned char cmnd=pLed->command;
-	unsigned char value=pLed->value;
-
-	unsigned long long DevRowIdx=m_sql.UpdateValue(HwdID, ID.c_str(),Unit,devType,subType,12,-1,cmnd, procResult.DeviceName);
-	if (DevRowIdx == -1)
-		return;
-	CheckSceneCode(DevRowIdx,devType,subType,cmnd,szTmp);
-/*
-	if (cmnd == Limitless_SetBrightnessLevel)
-	{
-		std::vector<std::vector<std::string> > result;
-		result = m_sql.safe_query(
-			"SELECT ID,Name FROM DeviceStatus WHERE (HardwareID=%d AND DeviceID='%q' AND Unit=%d AND Type=%d AND SubType=%d)",
-			HwdID, ID.c_str(), Unit, devType, subType);
-		if (result.size() != 0)
-		{
-			unsigned long long ulID;
-			std::stringstream s_str(result[0][0]);
-			s_str >> ulID;
-
-			//store light level
-			m_sql.safe_query(
-				"UPDATE DeviceStatus SET LastLevel='%d' WHERE (ID = %llu)",
-				value,
-				ulID);
-		}
-
-	}
-*/
 	procResult.DeviceRowIdx = DevRowIdx;
 }
 

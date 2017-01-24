@@ -518,29 +518,6 @@ typedef struct _tLimitlessLights {
 #define Limitless_DiscoSpeedFasterLong 22 //exclude RGB
 #define Limitless_SetHEXColour 23
 
-typedef struct _tIHC {
-	uint8_t len;
-	uint8_t type;
-	uint8_t subtype;
-	uint32_t id;
-	uint8_t dunit; //0=All, 1=Group1,2=Group2,3=Group3,4=Group4
-	uint8_t command;
-	uint8_t value;
-	_tIHC()
-	{
-		id = 1;
-		dunit = 1;
-		len=sizeof(_tIHC)-1;
-		type=pTypeIHC;
-		subtype=sTypeIHCAirRelay;
-		command=0;
-		value=0;
-	}
-} _tIHC;
-
-#define IHC_Off 0
-#define IHC_On 1
-
 typedef union tREVOBUF {
 	struct _tEVOHOME1 {
 		uint8_t len;

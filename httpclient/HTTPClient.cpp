@@ -61,8 +61,6 @@ void HTTPClient::SetGlobalOptions(void *curlobj)
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT,m_iTimeout); 
 	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, false);
-	curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv3);
 	std::string domocookie = szUserDataFolder + "domocookie.txt";
 	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, domocookie.c_str());
 	curl_easy_setopt(curl, CURLOPT_COOKIEJAR, domocookie.c_str());
@@ -185,7 +183,6 @@ bool HTTPClient::POSTBinary(const std::string &url, const std::string &postdata,
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&response);
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 		curl_easy_setopt(curl, CURLOPT_POST, 1);
-		curl_easy_setopt(curl, CURLOPT_SSL_CIPHER_LIST, "RC4-MD5");
 
 		struct curl_slist *headers=NULL;
 		if (ExtraHeaders.size()>0) {
