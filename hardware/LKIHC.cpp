@@ -53,7 +53,6 @@ bool CLKIHC::StartHardware()
     sOnConnected(this);
     ihcC = new ihcClient(m_IPAddress, m_UserName, m_Password);
 
-    std::cout << __func__ << std::endl;
     m_thread = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&CLKIHC::Do_Work, this)));
 
     return (m_thread!=NULL);
@@ -73,7 +72,6 @@ bool CLKIHC::StopHardware()
 
 void CLKIHC::Do_Work()
 {
-    std::cout << __func__ << std::endl;
     _log.Log(LOG_STATUS,"LK IHC: Worker started...");
 
     try
@@ -99,7 +97,6 @@ void CLKIHC::Do_Work()
             for (itt = result.begin(); itt != result.end(); ++itt)
             {
                 std::vector<std::string> sd = *itt;
-                std::cout << sd[0] << std::endl;
                 resourceIdLis.push_back(std::strtoul(sd[0].c_str(), NULL, 16));
             }
         }
@@ -138,7 +135,7 @@ void CLKIHC::Do_Work()
                 ycmd.id =  (long unsigned int)obj.ID;
                 ycmd.unitcode = 0;
                 ycmd.battery_level = 10;
-                std::cout << "new value : " << obj.intValue() << std::endl;
+
                 if (obj.intValue() > 1)
                 {
                     ycmd.cmnd = 2;
@@ -177,7 +174,6 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
     if (pSen->ICMND.packettype == pTypeGeneralSwitch && pSen->ICMND.subtype == sSwitchIHCAirRelay)
     {
         /* Boolean value */
-
         const _tGeneralSwitch *general = reinterpret_cast<const _tGeneralSwitch*>(pdata);
 
         ResourceValue const t(general->id, general->cmnd == gswitch_sOn ? true : false);
@@ -194,14 +190,8 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
     else
     {
         /* Integer value */
-
-        char szID[10];
-        std::cout << "Got non-relay with ID: " << std::endl;
         const _tGeneralSwitch *general = reinterpret_cast<const _tGeneralSwitch*>(pdata);
 
-        std::cout << general->id << std::endl;
-        std::sprintf(szID, "%08lX", (long unsigned int)general->cmnd);
-        std::cout << szID << std::endl;
         uint8_t val = 0;
         if (general->cmnd == gswitch_sOff)
         {
@@ -223,7 +213,6 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
         else
             _log.Log(LOG_STATUS, "Failed resource update");
     }
-
 
     return true;
 }
@@ -283,14 +272,13 @@ void CLKIHC::GetDevicesFromController()
             ycmd.id =  (std::strtoul(d.c_str(), NULL, 16)) + 0x10A;//(long unsigned int)obj.ID;
             ycmd.unitcode = 0;
             ycmd.battery_level = 10;
-            //std::cout << "new value : " << obj.intValue() << std::endl;
             ycmd.cmnd = 0;
             ycmd.level=0;
             ycmd.rssi = 12;
             char buff[100];
-              snprintf(buff, sizeof(buff), "%s (%s)", room.c_str(), device.c_str());
-              std::string buffAsStdStr = buff;
-              int id = ((std::strtoul(d.c_str(), NULL, 16)) + 0x10A);
+            snprintf(buff, sizeof(buff), "%s (%s)", room.c_str(), device.c_str());
+            std::string buffAsStdStr = buff;
+            int id = ((std::strtoul(d.c_str(), NULL, 16)) + 0x10A);
             AddSwitchIfNotExits(id, (buffAsStdStr.c_str()), false);
             //m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, device.c_str(), 12);
         }
@@ -324,7 +312,6 @@ void CLKIHC::GetDevicesFromController()
             AddSwitchIfNotExits((std::strtoul(d.c_str(), NULL, 16)) + offset, device.c_str(), true);
 
         }
-        //std::cout << de << std::endl;
 
     }
 
@@ -337,7 +324,6 @@ namespace server {
 
 void CWebServer::GetIHCProjectFromController(WebEmSession & session, const request& req, std::string & redirect_uri)
 {
-    std::cout << "Get nodes from controller" << std::endl;
     redirect_uri = "/index.html";
     if (session.rights != 2)
     {

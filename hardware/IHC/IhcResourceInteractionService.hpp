@@ -22,7 +22,6 @@ private:
 public:
 IhcResourceInteractionService(std::string hostname)
 {
-	std::cout << __func__ << std::endl;
 	url = "http://" + hostname + "/ws/ResourceInteractionService";
 }
 
@@ -41,7 +40,7 @@ ResourceValue resourceQuery(int resourceId)
     query += " <ns1:getRuntimeValue1 xmlns:ns1=\"utcs\">" + boost::to_string(resourceId) + "</ns1:getRuntimeValue1></soapenv:Body>";
     query += "</soapenv:Envelope>";
 
-        sResult = sendQuery(url, query);
+    sResult = sendQuery(url, query);
 
     if (doc.Parse(sResult.c_str()))
     {
@@ -57,8 +56,8 @@ ResourceValue resourceQuery(int resourceId)
             {
 
                 val.value = RangedInteger(boost::lexical_cast<int>(sss->FirstChildElement("ns1:value")->FirstChildElement("ns2:integer")->GetText()),
-                        boost::lexical_cast<int>(sss->FirstChildElement("ns1:value")->FirstChildElement("ns2:minimumValue")->GetText()),
-                        boost::lexical_cast<int>(sss->FirstChildElement("ns1:value")->FirstChildElement("ns2:maximumValue")->GetText()));
+                boost::lexical_cast<int>(sss->FirstChildElement("ns1:value")->FirstChildElement("ns2:minimumValue")->GetText()),
+                boost::lexical_cast<int>(sss->FirstChildElement("ns1:value")->FirstChildElement("ns2:maximumValue")->GetText()));
                 return val;
             }
             if (!strcmp(sss->FirstChildElement("ns1:value")->Attribute("xsi:type"), "ns2:WSBooleanValue"))
@@ -108,9 +107,9 @@ bool doResourceUpdate(ResourceValue const &query)
 {
 	TiXmlDocument doc;
 #ifdef _DEBUG
-    std::cout << "--aadd----------------\n";
+    std::cout << "------------------\n";
     std::cout << query.toXml() << std::endl;
-    std::cout << "--ddaa----------------\n";
+    std::cout << "------------------\n";
 #endif
     std::string const sResult = sendQuery(url, query.toXml());
     doc.Parse(sResult.c_str());

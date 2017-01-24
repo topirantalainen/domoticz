@@ -56,7 +56,7 @@ public:
 		doc.Parse(sResult.c_str());
 
 		std::string segmentationSize = WSBaseDataType::parseValue(doc, "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:getIHCProjectSegmentationSize1");
-		std::cout << "SegmentSize: " <<  segmentationSize << std::endl;
+
 		return boost::lexical_cast<int>(segmentationSize);
     }
 
@@ -102,7 +102,7 @@ public:
 
 	void getRF()
 	{
-    std::string url2 = url = "http://192.168.1.99/ws/AirlinkManagementService";
+	    std::string url2 = url = "http://192.168.1.99/ws/AirlinkManagementService";
         std::string sResult;
         TiXmlDocument doc;
 

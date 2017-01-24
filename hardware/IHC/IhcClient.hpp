@@ -136,10 +136,9 @@ std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(in
 void openConnection()
 {
     connState = CONNECTING;
-    std::cout << __func__ << std::endl;
+
     authenticationService = new IhcAuthenticationService(ip);
     WSLoginResult* loginResult = authenticationService->authenticate(username, password);
-    std::cout << __func__ << std::endl;
     if (!loginResult->isLoginWasSuccessful())
     {
         connState = DISCONNECTED;
@@ -163,9 +162,7 @@ void openConnection()
     controllerService = new IhcControllerService(ip);
     controllerState = controllerService->getControllerState();
     //loadProject(); //Todo: insert again
-    //startIhcListeners();
 
-    //controllerService->getRF();
 }
 
 public:
@@ -177,28 +174,16 @@ TiXmlDocument loadProject()
 {
     if (!projectFile.empty())
     {
-        std::cout << "Loading IHC /ELKO LS project file from path " << projectFile << "\n";
-/*
-        try {
-            enumDictionary = IhcProjectFile.parseProject(projectFile, dumpResourcesToFile);
-        } catch (IhcExecption e) {
-            logger.error("Project file loading error", e);
-        }*/
+        //TODO: Load from file
+        //std::cout << "Loading IHC /ELKO LS project file from path " << projectFile << "\n";
+
     }
     else
     {
         std::cout << "Loading IHC /ELKO LS project file from controller...\n";
         TiXmlDocument doc = LoadProjectFileFromController();
         return doc;
-        /*try
-         {
 
-            Document doc = LoadProjectFileFromController();
-            IhcProjectFile.parseProject(doc, dumpResourcesToFile);
-        } catch (IhcExecption e)
-         {
-            throw new IhcExecption("Project file loading error", e);
-        }*/
     }
 }
 
@@ -329,7 +314,6 @@ public:
 
 template <typename T> bool resourceUpdate(T value)
 {
-	std::cout << __func__ << std::endl;
 	return resourceInteractionService->resourceUpdate(value);
 }
 

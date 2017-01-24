@@ -7,10 +7,7 @@
 
 #ifndef IHC_IHCHTTPCLIENT_HPP_
 #define IHC_IHCHTTPCLIENT_HPP_
-
-
 #include "../../httpclient/HTTPClient.h"
-
 
 class IhcHttpClient {
 public:
@@ -22,7 +19,6 @@ public:
 	    if (action.length())
 	    {
 	    	ExtraHeaders.push_back("SOAPAction: \"" + action + "\"");
-
 	    }
 
 	    ExtraHeaders.push_back("Content-Type: text/xml; charset=UTF-8");
@@ -36,6 +32,5 @@ public:
 	}
 
 };
-
 
 #endif /* IHC_IHCHTTPCLIENT_HPP_ */
