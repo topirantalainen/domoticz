@@ -86,7 +86,7 @@ void CLKIHC::Do_Work()
     if (ihcC->CONNECTED == ihcC->connState)
     {
 
-        std::vector<int> resourceIdLis;
+        std::vector<int> resourceIdList;
 
         std::vector<std::vector<std::string> > result;
         result = m_sql.safe_query("SELECT DeviceID FROM DeviceStatus WHERE HardwareID==%d AND Used == 1", m_HwdID);
@@ -97,11 +97,11 @@ void CLKIHC::Do_Work()
             for (itt = result.begin(); itt != result.end(); ++itt)
             {
                 std::vector<std::string> sd = *itt;
-                resourceIdLis.push_back(std::strtoul(sd[0].c_str(), NULL, 16));
+                resourceIdList.push_back(std::strtoul(sd[0].c_str(), NULL, 16));
             }
         }
 
-        ihcC->enableRuntimeValueNotification(resourceIdLis);
+        ihcC->enableRuntimeValueNotification(resourceIdList);
 
         int sec_counter = 0;
 
@@ -163,6 +163,7 @@ void CLKIHC::Do_Work()
             }
         }
     }
+
     _log.Log(LOG_STATUS,"LK IHC: Worker stopped...");
 }
 
@@ -237,28 +238,29 @@ bool CLKIHC::AddSwitchIfNotExits(const int &id, const char* devname, const bool 
     }
     return false;
 }
+
 void CLKIHC::GetDevicesFromController()
 {
-    TiXmlDocument doc2 = ihcC->loadProject();
+    TiXmlDocument doc = ihcC->loadProject();
     TiXmlElement * nod;
 
-    nod = doc2.RootElement();
+    nod = doc.RootElement();
 
-    TinyXPath::xpath_processor processor ( doc2.RootElement(), "/utcs_project/groups/*/product_airlink");
+    TinyXPath::xpath_processor processor ( doc.RootElement(), "/utcs_project/groups/*/product_airlink");
 
-    unsigned numberOfDevices = processor.u_compute_xpath_node_set();
+    unsigned const numberOfDevices = processor.u_compute_xpath_node_set();
 
     for (int i = 0; i < numberOfDevices; i++)
     {
 
         TiXmlNode* thisNode = processor.XNp_get_xpath_node(i);
         TiXmlNode* parent = thisNode->Parent();
-        std::string  room = parent->ToElement()->Attribute("name");
-        std::string roomid = parent->ToElement()->Attribute("id");
-        std::string device = thisNode->ToElement()->Attribute("position");
-        std::string deviceid = thisNode->ToElement()->Attribute("id");
-        std::string devType = (thisNode->ToElement()->Attribute("device_type"));
-        std::cout << room << "-" << device <<".\n";
+        std::string const room = parent->ToElement()->Attribute("name");
+        std::string const roomid = parent->ToElement()->Attribute("id");
+        std::string const device = thisNode->ToElement()->Attribute("position");
+        std::string const deviceid = thisNode->ToElement()->Attribute("id");
+        std::string const devType = (thisNode->ToElement()->Attribute("device_type"));
+
         if ((strcmp(devType.c_str(), "_0x804") == 0) || (strcmp(devType.c_str(), "_0x812") == 0))
         {
             std::string devID = thisNode->ToElement()->Attribute("id");
