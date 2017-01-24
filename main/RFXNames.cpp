@@ -736,8 +736,6 @@ const char *RFX_Type_SubType_Desc(const unsigned char dType, const unsigned char
 
 		{ pTypePOWER, sTypeELEC5, "Revolt" },
 
-		{ pTypeIHC, sTypeIHCAirRelay, "Air Relay" },
-		{ pTypeIHC, sTypeIHCAirDimmer, "Air Dimmer" },
 		{ pTypeLimitlessLights, sTypeLimitlessRGBW, "RGBW" },
 		{ pTypeLimitlessLights, sTypeLimitlessRGB, "RGB" },
 		{ pTypeLimitlessLights, sTypeLimitlessWhite, "White" },
@@ -1817,23 +1815,6 @@ void GetLightStatus(
 			break;
 		}
 		break;
-	case pTypeIHC:
-		std::cout << "IHC\n";
-			bHaveDimmer=true;
-			maxDimLevel=100;
-			switch (nValue)
-			{
-			case Limitless_LedOff:
-				lstatus="Off";
-				break;
-			case Limitless_LedOn:
-				lstatus="On";
-				break;
-			case Limitless_SetBrightnessLevel:
-				lstatus="Set Level";
-				break;
-			}
-			break;
 	case pTypeSecurity1:
 		llevel=0;
 		switch (nValue)
@@ -3397,21 +3378,6 @@ bool GetLightCommand(
 			break;
 		}
 		return true;
-	}
-	case pTypeIHC:
-	{
-		std::cout << switchcmd << std::endl;
-		if (switchcmd=="Off")
-		{
-			cmd=Limitless_LedOff;
-			return true;
-		}
-		else if (switchcmd=="On")
-		{
-			cmd=Limitless_LedOn;
-			return true;
-		}
-		break;
 	}
 	break;
 	}

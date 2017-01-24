@@ -3596,7 +3596,6 @@ namespace http {
 			}
 			else if (cparam == "getlightswitches")
 			{
-			    _log.Log(LOG_ERROR, "get ligth start");
 				root["status"] = "OK";
 				root["title"] = "GetLightSwitches";
 				std::vector<std::vector<std::string> > result;
@@ -3627,7 +3626,6 @@ namespace http {
 						case pTypeLighting6:
 						case pTypeFan:
 						case pTypeLimitlessLights:
-						case pTypeIHC:
 						case pTypeSecurity1:
 						case pTypeSecurity2:
 						case pTypeEvohome:
@@ -8038,7 +8036,6 @@ namespace http {
 								(dType != pTypeThermostat3) &&
 								(dType != pTypeThermostat4) &&
 								(dType != pTypeRemote) &&
-								(dType != pTypeIHC) &&
 								(dType != pTypeGeneralSwitch) &&
 								(dType != pTypeHomeConfort) &&
 								(dType != pTypeChime) &&
@@ -8307,7 +8304,6 @@ namespace http {
 						(dType == pTypeRemote)||
 						(dType == pTypeGeneralSwitch) ||
 						(dType == pTypeHomeConfort) ||
-						(dType == pTypeIHC) ||
 						((dType == pTypeRadiator1) && (dSubType == sTypeSmartwaresSwitchRadiator)) ||
 						((dType == pTypeRego6XXValue) && (dSubType == sTypeRego6XXStatus))
 						)

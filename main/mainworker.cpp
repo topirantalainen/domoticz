@@ -2103,7 +2103,6 @@ void MainWorker::ProcessRXMessage(const CDomoticzHardwareBase *pHardware, const 
 			case pTypeThermostat4:
 			case pTypeRadiator1:
 			case pTypeGeneralSwitch:
-			case pTypeIHC:
 			case pTypeHomeConfort:
 			case pTypeFan:
 				//we received a control message from a domoticz client,
@@ -10420,7 +10419,6 @@ bool MainWorker::SetRFXCOMHardwaremodes(const int HardwareID, const unsigned cha
 
 bool MainWorker::SwitchLightInt(const std::vector<std::string> &sd, std::string switchcmd, int level, int hue, const bool IsTesting)
 {
-    std::cout << "switchlightint---------------------------\n";
 	unsigned long ID;
 	std::stringstream s_strid;
 	s_strid << std::hex << sd[1];
@@ -11264,66 +11262,6 @@ bool MainWorker::SwitchLightInt(const std::vector<std::string> &sd, std::string 
 			PushAndWaitRxMessage(m_hardwaredevices[hindex], (const unsigned char *)&lcmd, NULL, -1);
 		}
 		return true;
-	case pTypeIHC:
-	{
-		_log.Log(LOG_STATUS,"pTypeIHC");
-		_tLimitlessLights lcmd;
-		lcmd.len=sizeof(_tLimitlessLights)-1;
-		lcmd.type=dType;
-		lcmd.subtype=dSubType;
-		lcmd.id = ID;
-		lcmd.dunit = Unit;
-std::cout << switchcmd << std::endl;
-		if ((switchcmd=="On")||(switchcmd=="Set Level"))
-		{
-			_log.Log(LOG_STATUS,"ON || Set level");
-			if (hue!=-1)
-			{
-				_tLimitlessLights lcmd2;
-				lcmd2.len=sizeof(_tLimitlessLights)-1;
-				lcmd2.type=dType;
-				lcmd2.subtype=dSubType;
-				lcmd2.id = ID;
-				lcmd2.dunit = Unit;
-				if (hue!=1000)
-				{
-					double dval;
-					dval=(255.0/360.0)*float(hue);
-					int ival;
-					ival=round(dval);
-					lcmd2.value=ival;
-					lcmd2.command=Limitless_SetRGBColour;
-				}
-				else
-				{
-					lcmd2.command=Limitless_SetColorToWhite;
-				}
-				if (!WriteToHardware(HardwareID, (const char*)&lcmd2, sizeof(_tLimitlessLights)))
-					return false;
-				sleep_milliseconds(100);
-			}
-		}
-
-		lcmd.value=level;
-		if (!GetLightCommand(dType,dSubType,switchtype,switchcmd,lcmd.command, options))
-			return false;
-		_log.Log(LOG_STATUS,"Second write");
-		if (!WriteToHardware(HardwareID, (const char*)&lcmd, sizeof(_tLimitlessLights)))
-			return false;
-		_log.Log(LOG_STATUS,"Second write true");
-
-		_log.Log(LOG_STATUS,"testing?");
-		if (!IsTesting) {
-			_log.Log(LOG_STATUS,"   no");
-			//send to internal for now (later we use the ACK)
-			std::cout << "asd666\n";
-			PushAndWaitRxMessage(m_hardwaredevices[hindex],(const unsigned char *)&lcmd, NULL, -1);
-		}
-		else
-			_log.Log(LOG_STATUS,"   yes");
-		return true;
-	}
-	break;
 	case pTypeGeneralSwitch:
 		{
 			_tGeneralSwitch gswitch;
