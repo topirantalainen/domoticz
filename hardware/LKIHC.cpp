@@ -271,7 +271,7 @@ void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char d
     }
 }
 
-void CLKIHC::iterate(const TiXmlNode* deviceNode)
+void CLKIHC::iterateDevices(const TiXmlNode* deviceNode)
 {
     if (strcmp(deviceNode->Value(), "airlink_dimming") == 0)
     {
@@ -291,7 +291,7 @@ void CLKIHC::iterate(const TiXmlNode* deviceNode)
 
     for (const TiXmlNode* node = deviceNode->FirstChild(); node; node = node->NextSibling())
     {
-        iterate(node);
+        iterateDevices(node);
     }
 }
 
@@ -306,7 +306,7 @@ void CLKIHC::GetDevicesFromController()
     for (int i = 0; i < numberOfDevices; i++)
     {
         TiXmlNode* thisNode = processor.XNp_get_xpath_node(i);
-        iterate(thisNode);
+        iterateDevices(thisNode);
     }
 }
 

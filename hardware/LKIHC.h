@@ -25,7 +25,7 @@ private:
 	bool StartHardware();
 	bool StopHardware();
 	void Do_Work();
-    void iterate(const TiXmlNode* );
+    void iterateDevices(const TiXmlNode* );
     void addDeviceIfNotExists(const TiXmlNode* device, const unsigned char deviceType);
 };
 
