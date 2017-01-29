@@ -169,55 +169,58 @@ void CLKIHC::Do_Work()
 
 bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 {
-
+    bool result = false;
     const tRBUF *pSen = reinterpret_cast<const tRBUF*>(pdata);
 
-    if (pSen->ICMND.packettype == pTypeGeneralSwitch && pSen->ICMND.subtype == sSwitchIHCAirRelay)
+    if (pSen->ICMND.packettype == pTypeGeneralSwitch)
     {
-        /* Boolean value */
         const _tGeneralSwitch *general = reinterpret_cast<const _tGeneralSwitch*>(pdata);
-
-        ResourceValue const t(general->id, general->cmnd == gswitch_sOn ? true : false);
-        if (ihcC->resourceUpdate(t))
+        switch (pSen->ICMND.subtype)
         {
+        case sSwitchIHCAirRelay:
+        case sSwitchIHCAirBtns:
+            {
+                /* Boolean value */
+                ResourceValue const t(general->id, general->cmnd == gswitch_sOn ? true : false);
+                result = ihcC->resourceUpdate(t);
+                break;
+            }
+        case sSwitchIHCAirDimmer:
+            {
+                /* Integer value */
+                uint8_t val = 0;
+                if (general->cmnd == gswitch_sOff)
+                {
+                    val = 0;
+                }
+                else if (general->cmnd == gswitch_sOn)
+                {
+                    val = 100;
+                }
+                else
+                {
+                    val = general->level;
+                }
+                ResourceValue const t(general->id, RangedInteger(val));
+                result = ihcC->resourceUpdate(t);
+                break;
+            }
+        }
+    }
 
-            _log.Log(LOG_STATUS, "Resource update was successful");
-        }
-        else
-        {
-            _log.Log(LOG_STATUS, "Failed resource update");
-        }
+    if (result)
+    {
+        _log.Log(LOG_STATUS, "Resource update was successful");
     }
     else
     {
-        /* Integer value */
-        const _tGeneralSwitch *general = reinterpret_cast<const _tGeneralSwitch*>(pdata);
-
-        uint8_t val = 0;
-        if (general->cmnd == gswitch_sOff)
-        {
-            val = 0;
-        }
-        else if (general->cmnd == gswitch_sOn)
-        {
-            val = 100;
-        }
-        else
-        {
-            val = general->level;
-        }
-        ResourceValue const t(general->id, RangedInteger(val));
-        if (ihcC->resourceUpdate(t))
-        {
-            _log.Log(LOG_STATUS, "Resource update was successful");
-        }
-        else
-            _log.Log(LOG_STATUS, "Failed resource update");
+        _log.Log(LOG_STATUS, "Failed resource update");
     }
 
-    return true;
+    return result;
 }
-bool CLKIHC::AddSwitchIfNotExits(const int &id, const char* devname, const bool &isDimmer)
+
+bool CLKIHC::AddLightIfNotExits(const int &id, const char* devname, const bool &isDimmer)
 {
     char sid[10];
     sprintf(sid, "%08X", id);
@@ -232,11 +235,84 @@ bool CLKIHC::AddSwitchIfNotExits(const int &id, const char* devname, const bool 
 #endif
         m_sql.safe_query(
             "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, sValue) "
-            "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0,' ')",
+            "VALUES (%d,'%q',%d,%d,%d,12,0,'%q',0,' ')",
             m_HwdID, sid, pTypeGeneralSwitch, isDimmer ? sSwitchIHCAirDimmer : sSwitchIHCAirRelay, isDimmer ? STYPE_Dimmer : STYPE_OnOff, devname);
         return true;
     }
     return false;
+}
+
+bool CLKIHC::AddSwitchIfNotExits(const int &id, const char* devname, const bool &isDimmer)
+{
+    char sid[10];
+    sprintf(sid, "%08X", id);
+
+    std::vector<std::vector<std::string> > result;
+    result = m_sql.safe_query("SELECT ID FROM DeviceStatus WHERE (HardwareID==%d) AND (DeviceID=='%q')",
+                              m_HwdID, sid);
+    if (result.size() < 1)
+    {
+#ifdef _DEBUG
+        _log.Log(LOG_NORM, "LK IHC: Added device %d %s: %s", id, sid ,devname);
+#endif
+        m_sql.safe_query(
+            "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, AddjValue, sValue) "
+            "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, %f, ' ')",
+            m_HwdID, sid, pTypeGeneralSwitch, sSwitchIHCAirBtns, STYPE_PushOn, 1.0, devname);
+        return true;
+    }
+    return false;
+}
+
+void CLKIHC::adds(const TiXmlNode* device, const unsigned char deviceType) {
+    std::string devID = device->ToElement()->Attribute("id");
+    std::string d = devID.substr(3);
+
+
+    char buff[100];
+    snprintf(buff, sizeof(buff), "%s | %s | %s",
+            device->Parent()->ToElement()->Parent()->ToElement()->Attribute(
+                    "name"),
+            device->Parent()->ToElement()->Attribute("position"),
+            device->ToElement()->Attribute("name"));
+    std::string buffAsStdStr = buff;
+
+    if (sSwitchIHCAirBtns == deviceType)
+    {
+        AddSwitchIfNotExits((std::strtoul(d.c_str(), NULL, 16)),
+            (buffAsStdStr.c_str()), false);
+    }
+    else
+    {
+        AddLightIfNotExits((std::strtoul(d.c_str(), NULL, 16)),
+            (buffAsStdStr.c_str()), (deviceType == sSwitchIHCAirDimmer) ? true : false);
+    }
+}
+
+void CLKIHC::iterate(const TiXmlNode* el)
+{
+
+    if (strcmp(el->Value(), "airlink_dimming") == 0)
+    {
+        unsigned char const deviceType = sSwitchIHCAirDimmer;
+        adds(el, deviceType);
+    }
+    else if (strcmp(el->Value(), "airlink_relay") == 0)
+    {
+        unsigned char const deviceType = sSwitchIHCAirRelay;
+        adds(el, deviceType);
+    }
+    else if (strcmp(el->Value(), "airlink_input") == 0)
+    {
+        unsigned char const deviceType = sSwitchIHCAirBtns;
+        adds(el, deviceType);
+    }
+
+    for (const TiXmlNode* node=el->FirstChild(); node; node=node->NextSibling())
+    {
+        iterate(node);
+    }
+
 }
 
 void CLKIHC::GetDevicesFromController()
@@ -254,14 +330,15 @@ void CLKIHC::GetDevicesFromController()
     {
 
         TiXmlNode* thisNode = processor.XNp_get_xpath_node(i);
-        TiXmlNode* parent = thisNode->Parent();
+        iterate(thisNode);
+        /*TiXmlNode* parent = thisNode->Parent();
         std::string const room = parent->ToElement()->Attribute("name");
         std::string const roomid = parent->ToElement()->Attribute("id");
         std::string const device = thisNode->ToElement()->Attribute("position");
         std::string const deviceid = thisNode->ToElement()->Attribute("id");
         std::string const devType = (thisNode->ToElement()->Attribute("device_type"));
-
-        if ((strcmp(devType.c_str(), "_0x804") == 0) || (strcmp(devType.c_str(), "_0x812") == 0))
+*/
+/*        if ((strcmp(devType.c_str(), "_0x804") == 0) || (strcmp(devType.c_str(), "_0x812") == 0))
         {
             std::string devID = thisNode->ToElement()->Attribute("id");
             std::string d = devID.substr(3);
@@ -311,7 +388,7 @@ void CLKIHC::GetDevicesFromController()
             std::string buffAsStdStr = buff;
             AddSwitchIfNotExits((std::strtoul(d.c_str(), NULL, 16)) + offset, (buffAsStdStr.c_str()), true);
 
-        }
+        }*/
     }
 }
 
