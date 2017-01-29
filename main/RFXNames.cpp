@@ -837,6 +837,7 @@ const char *RFX_Type_SubType_Desc(const unsigned char dType, const unsigned char
 		{ pTypeGeneralSwitch, sSwitchHT6P20, "HT6P20" },
 		{ pTypeGeneralSwitch, sSwitchIHCAirRelay, "IHC Air Relay" },
 		{ pTypeGeneralSwitch, sSwitchIHCAirDimmer, "IHC Air Dimmer" },
+		{ pTypeGeneralSwitch, sSwitchIHCAirBtns, "IHC Air Buttons" },
 		{ pTypeGeneralSwitch, sSwitchTypeDoitrand, "Doitrand" },
 		{ pTypeGeneralSwitch, sSwitchTypeWarema, "Warema" },
 		{ pTypeGeneralSwitch, sSwitchTypeAnsluta, "Ansluta" },
@@ -1188,6 +1189,7 @@ const char *RFX_Type_SubType_Values(const unsigned char dType, const unsigned ch
 
 		{ pTypeGeneralSwitch, sSwitchIHCAirRelay, "Status" },
 		{ pTypeGeneralSwitch, sSwitchIHCAirDimmer, "Status" },
+		{ pTypeGeneralSwitch, sSwitchIHCAirBtns, "Status" },
 
 		{  0,0,NULL }
 	};
