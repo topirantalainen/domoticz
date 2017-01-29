@@ -170,6 +170,7 @@
 #define sSwitchLightT2				0x70
 #define sSwitchIHCAirRelay			0x71
 #define sSwitchIHCAirDimmer			0x72
+#define sSwitchIHCAirBtns           0x73
 
 //Switch commands
 #define gswitch_sOff				0x00
