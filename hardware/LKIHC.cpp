@@ -343,9 +343,14 @@ void CWebServer::GetIHCProjectFromController(WebEmSession & session, const reque
         return;
     CLKIHC *pHardware = reinterpret_cast<CLKIHC*>(pBaseHardware);
 
-
-    pHardware->GetDevicesFromController();
-
+    try
+    {
+        pHardware->GetDevicesFromController();
+    }
+    catch (const char* msg)
+    {
+        _log.Log(LOG_ERROR, "LKIHC Plugin: Exception: '%s'", msg);
+    }
 
 
     //m_mainworker.RestartHardware(idx);
