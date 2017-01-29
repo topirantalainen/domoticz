@@ -280,7 +280,6 @@ void CLKIHC::GetDevicesFromController()
             std::string buffAsStdStr = buff;
             int id = ((std::strtoul(d.c_str(), NULL, 16)) + 0x10A);
             AddSwitchIfNotExits(id, (buffAsStdStr.c_str()), false);
-            //m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, device.c_str(), 12);
         }
 
         if ((strcmp(devType.c_str(), "_0x806") == 0) || (strcmp(devType.c_str(), "_0x808") == 0) )
@@ -310,7 +309,6 @@ void CLKIHC::GetDevicesFromController()
             char buff[100];
             snprintf(buff, sizeof(buff), "%s (%s)", room.c_str(), device.c_str());
             std::string buffAsStdStr = buff;
-            int id = ((std::strtoul(d.c_str(), NULL, 16)) + 0x10A);
             AddSwitchIfNotExits((std::strtoul(d.c_str(), NULL, 16)) + offset, (buffAsStdStr.c_str()), true);
 
         }
