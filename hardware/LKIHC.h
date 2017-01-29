@@ -25,9 +25,7 @@ private:
 	bool StartHardware();
 	bool StopHardware();
 	void Do_Work();
-    bool AddLightIfNotExits(const int &id, const char* devname, const bool &isDimmer);
-    bool AddSwitchIfNotExits(const int &id, const char* devname, const bool &isDimmer);
     void iterate(const TiXmlNode* );
-    void adds(const TiXmlNode* device, const unsigned char deviceType);
+    void addDeviceIfNotExists(const TiXmlNode* device, const unsigned char deviceType);
 };
 
