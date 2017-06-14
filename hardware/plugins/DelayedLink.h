@@ -1,10 +1,18 @@
 #pragma once
 
 #ifdef WIN32
-#	include "../../../domoticz/main/dirent_windows.h"
+#	define MS_NO_COREDLL 1
 #else
-#	include <dirent.h>
+#	pragma GCC diagnostic ignored "-Wwrite-strings"
 #endif
+
+#ifdef WITH_THREAD
+#    undefine WITH_THREAD
+#endif
+#include <Python.h>
+#include <structmember.h>
+#include <frameobject.h>
+#include "../../main/Helper.h"
 
 namespace Plugins {
 
@@ -50,10 +58,15 @@ namespace Plugins {
 		DECLARE_PYTHON_SYMBOL(PyObject*, PyUnicode_AsASCIIString, PyObject*);
 		DECLARE_PYTHON_SYMBOL(PyObject*, PyUnicode_FromString, const char*);
 		DECLARE_PYTHON_SYMBOL(wchar_t*, PyUnicode_AsWideCharString, PyObject* COMMA Py_ssize_t*);
+		DECLARE_PYTHON_SYMBOL(const char*, PyUnicode_AsUTF8, PyObject*);
+		DECLARE_PYTHON_SYMBOL(PyObject*, PyUnicode_FromKindAndData, int COMMA const void* COMMA Py_ssize_t);
 		DECLARE_PYTHON_SYMBOL(PyObject*, PyLong_FromLong, long);
 		DECLARE_PYTHON_SYMBOL(PY_LONG_LONG, PyLong_AsLongLong, PyObject*);
 		DECLARE_PYTHON_SYMBOL(PyObject*, PyModule_GetDict, PyObject*);
 		DECLARE_PYTHON_SYMBOL(PyObject*, PyDict_New, );
+		DECLARE_PYTHON_SYMBOL(void, PyDict_Clear, PyObject *);
+		DECLARE_PYTHON_SYMBOL(Py_ssize_t, PyDict_Size, PyObject*);
+		DECLARE_PYTHON_SYMBOL(PyObject *, PyDict_GetItemString, PyObject* COMMA const char*);
 		DECLARE_PYTHON_SYMBOL(int, PyDict_SetItemString, PyObject* COMMA const char* COMMA PyObject*);
 		DECLARE_PYTHON_SYMBOL(int, PyDict_SetItem, PyObject* COMMA PyObject* COMMA PyObject*);
 		DECLARE_PYTHON_SYMBOL(int, PyDict_DelItem, PyObject* COMMA PyObject*);
@@ -68,10 +81,11 @@ namespace Plugins {
 		DECLARE_PYTHON_SYMBOL(PyObject*, PyImport_ImportModule, const char*);
 		DECLARE_PYTHON_SYMBOL(PyObject*, PyObject_CallObject, PyObject* COMMA PyObject*);
 		DECLARE_PYTHON_SYMBOL(int, PyFrame_GetLineNumber, PyFrameObject*);
+		DECLARE_PYTHON_SYMBOL(PyThreadState*, PyEval_SaveThread, void);
 		DECLARE_PYTHON_SYMBOL(void, PyEval_RestoreThread, PyThreadState*);
 		DECLARE_PYTHON_SYMBOL(void, _Py_NegativeRefcount, const char* COMMA int COMMA PyObject*);
 		DECLARE_PYTHON_SYMBOL(PyObject*, _PyObject_New, PyTypeObject*);
-#ifdef DEBUG
+#ifdef _DEBUG
 		DECLARE_PYTHON_SYMBOL(PyObject*, PyModule_Create2TraceRefs, struct PyModuleDef* COMMA int);
 #else
 		DECLARE_PYTHON_SYMBOL(PyObject*, PyModule_Create2, struct PyModuleDef* COMMA int);
@@ -82,8 +96,14 @@ namespace Plugins {
 		DECLARE_PYTHON_SYMBOL(PyObject*, PyUnicode_FromFormat, const char* COMMA ...);
 		DECLARE_PYTHON_SYMBOL(PyObject*, Py_BuildValue, const char* COMMA ...);
 		DECLARE_PYTHON_SYMBOL(void, PyMem_Free, void*);
+		DECLARE_PYTHON_SYMBOL(PyObject*, PyBool_FromLong, long);
+        DECLARE_PYTHON_SYMBOL(int, PyRun_SimpleStringFlags, const char* COMMA PyCompilerFlags*);
+        DECLARE_PYTHON_SYMBOL(int, PyRun_SimpleFileExFlags, FILE* COMMA const char* COMMA int COMMA PyCompilerFlags*);
+		DECLARE_PYTHON_SYMBOL(void*, PyCapsule_Import, const char *name COMMA int);
+		DECLARE_PYTHON_SYMBOL(void*, PyType_GenericAlloc, const PyTypeObject * COMMA Py_ssize_t);
+		DECLARE_PYTHON_SYMBOL(PyObject*, PyUnicode_DecodeUTF8, const char * COMMA Py_ssize_t COMMA const char *);
 
-#ifdef DEBUG
+#ifdef _DEBUG
 		// In a debug build dealloc is a function but for release builds its a macro
 		DECLARE_PYTHON_SYMBOL(void, _Py_Dealloc, PyObject*);
 #endif
@@ -95,16 +115,19 @@ namespace Plugins {
 			_Py_RefTotal = 0;
 			if (!shared_lib_) {
 #ifdef WIN32
-#	ifdef DEBUG
+#	ifdef _DEBUG
+				if (!shared_lib_) shared_lib_ = LoadLibrary("python37_d.dll");
 				if (!shared_lib_) shared_lib_ = LoadLibrary("python36_d.dll");
 				if (!shared_lib_) shared_lib_ = LoadLibrary("python35_d.dll");
 				if (!shared_lib_) shared_lib_ = LoadLibrary("python34_d.dll");
 #	else
+				if (!shared_lib_) shared_lib_ = LoadLibrary("python37.dll");
 				if (!shared_lib_) shared_lib_ = LoadLibrary("python36.dll");
 				if (!shared_lib_) shared_lib_ = LoadLibrary("python35.dll");
 				if (!shared_lib_) shared_lib_ = LoadLibrary("python34.dll");
 #	endif
 #else
+				if (!shared_lib_) FindLibrary("python3.7", true);
 				if (!shared_lib_) FindLibrary("python3.6", true);
 				if (!shared_lib_) FindLibrary("python3.5", true);
 				if (!shared_lib_) FindLibrary("python3.4", true);
@@ -131,10 +154,15 @@ namespace Plugins {
 					RESOLVE_PYTHON_SYMBOL(PyUnicode_AsASCIIString);
 					RESOLVE_PYTHON_SYMBOL(PyUnicode_FromString);
 					RESOLVE_PYTHON_SYMBOL(PyUnicode_AsWideCharString);
+					RESOLVE_PYTHON_SYMBOL(PyUnicode_AsUTF8);
+					RESOLVE_PYTHON_SYMBOL(PyUnicode_FromKindAndData);
 					RESOLVE_PYTHON_SYMBOL(PyLong_FromLong);
 					RESOLVE_PYTHON_SYMBOL(PyLong_AsLongLong);
 					RESOLVE_PYTHON_SYMBOL(PyModule_GetDict);
 					RESOLVE_PYTHON_SYMBOL(PyDict_New);
+					RESOLVE_PYTHON_SYMBOL(PyDict_Clear);
+					RESOLVE_PYTHON_SYMBOL(PyDict_Size);
+					RESOLVE_PYTHON_SYMBOL(PyDict_GetItemString);
 					RESOLVE_PYTHON_SYMBOL(PyDict_SetItemString);
 					RESOLVE_PYTHON_SYMBOL(PyDict_SetItem);
 					RESOLVE_PYTHON_SYMBOL(PyDict_DelItem);
@@ -149,10 +177,11 @@ namespace Plugins {
 					RESOLVE_PYTHON_SYMBOL(PyImport_ImportModule);
 					RESOLVE_PYTHON_SYMBOL(PyObject_CallObject);
 					RESOLVE_PYTHON_SYMBOL(PyFrame_GetLineNumber);
+					RESOLVE_PYTHON_SYMBOL(PyEval_SaveThread);
 					RESOLVE_PYTHON_SYMBOL(PyEval_RestoreThread);
 					RESOLVE_PYTHON_SYMBOL(_Py_NegativeRefcount);
 					RESOLVE_PYTHON_SYMBOL(_PyObject_New);
-#ifdef DEBUG
+#ifdef _DEBUG
 					RESOLVE_PYTHON_SYMBOL(PyModule_Create2TraceRefs);
 #else
 					RESOLVE_PYTHON_SYMBOL(PyModule_Create2);
@@ -163,9 +192,15 @@ namespace Plugins {
 					RESOLVE_PYTHON_SYMBOL(PyUnicode_FromFormat);
 					RESOLVE_PYTHON_SYMBOL(Py_BuildValue);
 					RESOLVE_PYTHON_SYMBOL(PyMem_Free);
-#ifdef DEBUG
+#ifdef _DEBUG
 					RESOLVE_PYTHON_SYMBOL(_Py_Dealloc);
 #endif
+                    RESOLVE_PYTHON_SYMBOL(PyRun_SimpleFileExFlags);
+                    RESOLVE_PYTHON_SYMBOL(PyRun_SimpleStringFlags);
+					RESOLVE_PYTHON_SYMBOL(PyBool_FromLong);
+					RESOLVE_PYTHON_SYMBOL(PyCapsule_Import);
+					RESOLVE_PYTHON_SYMBOL(PyType_GenericAlloc);
+					RESOLVE_PYTHON_SYMBOL(PyUnicode_DecodeUTF8);
 				}
 			}
 			_Py_NoneStruct.ob_refcnt = 1;
@@ -176,94 +211,82 @@ namespace Plugins {
 
 #ifndef WIN32
 		private:
-			void FindLibrary(const char * szLibrary, bool bSimple = false)
+			void FindLibrary(const std::string sLibrary, bool bSimple = false)
 			{
+				std::string library;
 				if (bSimple)
 				{
 					// look in directories covered by ldconfig
 					if (!shared_lib_)
 					{
-						std::string sLibrary = "lib";
-						sLibrary += szLibrary;
-						sLibrary += ".so";
-						shared_lib_ = dlopen(sLibrary.c_str(), RTLD_LAZY | RTLD_GLOBAL);
-
+						library = "lib" + sLibrary + ".so";
+						shared_lib_ = dlopen(library.c_str(), RTLD_LAZY | RTLD_GLOBAL);
 					}
 					// look in directories covered by ldconfig but 'm' variant
 					if (!shared_lib_)
 					{
-						std::string sLibraryM = "lib";
-						sLibraryM += szLibrary;
-						sLibraryM += "m.so";
-						shared_lib_ = dlopen(sLibraryM.c_str(), RTLD_LAZY | RTLD_GLOBAL);
+						library = "lib" + sLibrary + "m.so";
+						shared_lib_ = dlopen(library.c_str(), RTLD_LAZY | RTLD_GLOBAL);
 					}
 					// look in /usr/lib directories
 					if (!shared_lib_)
 					{
-						std::string	sLibraryDir = "/usr/lib/";
-						sLibraryDir += szLibrary;
-						sLibraryDir += "/";
-						FindLibrary(sLibraryDir.c_str(), false);
+						library = "/usr/lib/" + sLibrary + "/";
+						FindLibrary(library, false);
 					}
 					// look in /usr/lib directories but 'm' variant
 					if (!shared_lib_)
 					{
-						std::string	sLibraryMDir = "/usr/lib/";
-						sLibraryMDir += szLibrary;
-						sLibraryMDir += "m/";
-						FindLibrary(sLibraryMDir.c_str(), false);
+						library = "/usr/lib/" + sLibrary + "m/";
+						FindLibrary(library, false);
 					}
 					// look in /usr/local/lib directory (handles build from source)
 					if (!shared_lib_)
 					{
-						std::string sLibrary = "/usr/local/lib/lib";
-						sLibrary += szLibrary;
-						sLibrary += ".so";
-						shared_lib_ = dlopen(sLibrary.c_str(), RTLD_LAZY | RTLD_GLOBAL);
+						library = "/usr/local/lib/lib" + sLibrary + ".so";
+						shared_lib_ = dlopen(library.c_str(), RTLD_LAZY | RTLD_GLOBAL);
 
 					}
 					// look in /usr/local/lib directory (handles build from source) but 'm' variant
 					if (!shared_lib_)
 					{
-						std::string sLibraryM = "/usr/local/lib/lib";
-						sLibraryM += szLibrary;
-						sLibraryM += "m.so";
-						shared_lib_ = dlopen(sLibraryM.c_str(), RTLD_LAZY | RTLD_GLOBAL);
+						library = "/usr/local/lib/lib" + sLibrary + "m.so";
+						shared_lib_ = dlopen(library.c_str(), RTLD_LAZY | RTLD_GLOBAL);
 					}
 				}
 				else
 				{
-					DIR *lDir;
-					struct dirent *ent;
-					if ((lDir = opendir(szLibrary)) != NULL)
+					std::vector<std::string> entries;
+					std::vector<std::string>::const_iterator itt;
+					DirectoryListing(entries, sLibrary, true, false);
+					for (itt = entries.begin(); !shared_lib_ && itt != entries.end(); ++itt)
 					{
-						while (!shared_lib_ && (ent = readdir(lDir)) != NULL)
+						library = sLibrary + *itt + "/";
+						FindLibrary(library, false);
+					}
+
+					std::string filename;
+					entries.clear();
+					DirectoryListing(entries, sLibrary, false, true);
+					for (itt = entries.begin(); !shared_lib_ && itt != entries.end(); ++itt)
+					{
+						filename = *itt;
+						if (filename.length() > 12 &&
+							filename.compare(0, 11, "libpython3.") == 0 &&
+							filename.compare(filename.length() - 3, 3, ".so") == 0 &&
+							filename.compare(filename.length() - 6, 6, ".dylib") == 0)
 						{
-							std::string filename = ent->d_name;
-							if (dirent_is_directory(szLibrary, ent) && (filename.length() > 2))
-							{
-								std::string	newDir = szLibrary + filename + "/";
-								FindLibrary(newDir.c_str());
-							}
-							else
-							{
-								if ((filename.length() > 12) &&
-									(filename.compare(0, 11, "libpython3.") == 0) &&
-									(filename.compare(filename.length() - 3, 3, ".so") == 0))
-								{
-									std::string sLibFile = szLibrary + filename;
-									shared_lib_ = dlopen(sLibFile.c_str(), RTLD_LAZY | RTLD_GLOBAL);
-								}
-							}
+							library = sLibrary + filename;
+							shared_lib_ = dlopen(library.c_str(), RTLD_LAZY | RTLD_GLOBAL);
 						}
-						closedir(lDir);
+
 					}
 				}
 			}
 #endif
 	};
 
-	SharedLibraryProxy* pythonLib = new SharedLibraryProxy();
+extern	SharedLibraryProxy* pythonLib;
 
 #define	Py_LoadLibrary			pythonLib->Py_LoadLibrary
 #define	Py_GetVersion			pythonLib->Py_GetVersion
@@ -287,10 +310,15 @@ namespace Plugins {
 #define PyUnicode_FromString	pythonLib->PyUnicode_FromString
 #define PyUnicode_FromFormat	pythonLib->PyUnicode_FromFormat
 #define PyUnicode_AsWideCharString	pythonLib->PyUnicode_AsWideCharString
+#define PyUnicode_AsUTF8		pythonLib->PyUnicode_AsUTF8
+#define PyUnicode_FromKindAndData  pythonLib->PyUnicode_FromKindAndData
 #define PyLong_FromLong			pythonLib->PyLong_FromLong
 #define PyLong_AsLongLong		pythonLib->PyLong_AsLongLong
 #define PyModule_GetDict		pythonLib->PyModule_GetDict
 #define PyDict_New				pythonLib->PyDict_New
+#define PyDict_Clear			pythonLib->PyDict_Clear
+#define PyDict_Size				pythonLib->PyDict_Size
+#define PyDict_GetItemString	pythonLib->PyDict_GetItemString
 #define PyDict_SetItemString	pythonLib->PyDict_SetItemString
 #define PyDict_SetItem			pythonLib->PyDict_SetItem
 #define PyDict_DelItem			pythonLib->PyDict_DelItem
@@ -305,13 +333,14 @@ namespace Plugins {
 #define PyImport_ImportModule	pythonLib->PyImport_ImportModule
 #define PyObject_CallObject		pythonLib->PyObject_CallObject
 #define PyFrame_GetLineNumber	pythonLib->PyFrame_GetLineNumber
+#define PyEval_SaveThread		pythonLib->PyEval_SaveThread
 #define PyEval_RestoreThread	pythonLib->PyEval_RestoreThread
 #define _Py_NegativeRefcount	pythonLib->_Py_NegativeRefcount
 #define _PyObject_New			pythonLib->_PyObject_New
 #define PyArg_ParseTuple		pythonLib->PyArg_ParseTuple
 #define Py_BuildValue			pythonLib->Py_BuildValue
 #define PyMem_Free				pythonLib->PyMem_Free
-#ifdef DEBUG
+#ifdef _DEBUG
 #	define PyModule_Create2TraceRefs pythonLib->PyModule_Create2TraceRefs
 #else
 #	define PyModule_Create2		pythonLib->PyModule_Create2
@@ -319,10 +348,16 @@ namespace Plugins {
 #define PyModule_AddObject		pythonLib->PyModule_AddObject
 #define PyArg_ParseTupleAndKeywords pythonLib->PyArg_ParseTupleAndKeywords
 
-#ifdef DEBUG
+#ifdef _DEBUG
 #	define _Py_Dealloc			pythonLib->_Py_Dealloc
 #endif
 
 #define _Py_RefTotal			pythonLib->_Py_RefTotal
 #define _Py_NoneStruct			pythonLib->_Py_NoneStruct
+#define PyRun_SimpleStringFlags pythonLib->PyRun_SimpleStringFlags
+#define PyRun_SimpleFileExFlags pythonLib->PyRun_SimpleFileExFlags
+#define PyBool_FromLong			pythonLib->PyBool_FromLong
+#define PyCapsule_Import		pythonLib->PyCapsule_Import
+#define PyType_GenericAlloc		pythonLib->PyType_GenericAlloc
+#define PyUnicode_DecodeUTF8	pythonLib->PyUnicode_DecodeUTF8
 }

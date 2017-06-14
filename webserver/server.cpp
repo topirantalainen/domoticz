@@ -181,6 +181,8 @@ void ssl_server::init_connection() {
 	} else {
 		context_.set_options(settings_.get_ssl_options());
 	}
+	char cipher_list[] = "ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:ECDH+AES128:DH+AES:RSA+AESGCM:RSA+AES:!aNULL:!MD5:!DSS";
+	SSL_CTX_set_cipher_list(context_.native_handle(), cipher_list);
 
 	if (settings_.certificate_chain_file_path.empty()) {
 		_log.Log(LOG_ERROR, "[web:%s] missing SSL certificate chain file parameter !", settings_.listening_port.c_str());
@@ -204,7 +206,7 @@ void ssl_server::init_connection() {
 			_log.Log(LOG_ERROR, "[web:%s] missing SSL verify file parameter !", settings_.listening_port.c_str());
 		} else {
 			context_.load_verify_file(settings_.verify_file_path);
-			boost::asio::ssl::context::verify_mode verify_mode;
+			boost::asio::ssl::context::verify_mode verify_mode = 0;
 			if (settings_.verify_peer) {
 				verify_mode |= boost::asio::ssl::context::verify_peer;
 			}

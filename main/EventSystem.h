@@ -15,7 +15,9 @@ extern "C" {
 #endif
 }
 
-class CEventSystem
+#include "LuaCommon.h"
+
+class CEventSystem : public CLuaCommon
 {
 	typedef struct lua_State lua_State;
 
@@ -47,14 +49,14 @@ public:
 	{
 		uint64_t ID;
 		std::string deviceName;
-		unsigned long long nValue;
+		int nValue;
 		std::string sValue;
-		unsigned char devType;
-		unsigned char subType;
+		uint8_t devType;
+		uint8_t subType;
 		std::string nValueWording;
 		std::string lastUpdate;
-		unsigned char lastLevel;
-		unsigned char switchtype;
+		uint8_t lastLevel;
+		uint8_t switchtype;
 	};
 
 	struct _tUserVariable
@@ -93,6 +95,8 @@ public:
 
 	void exportDeviceStatesToLua(lua_State *lua_state);
 
+    bool PythonScheduleEvent(std::string ID, const std::string &Action, const std::string &eventName);
+
 private:
 	//lua_State	*m_pLUA;
 	bool m_bEnabled;
@@ -130,7 +134,7 @@ private:
 	void EvaluateLua(const std::string &reason, const std::string &filename, const std::string &LuaString, const uint64_t DeviceID, const std::string &devname, const int nValue, const char* sValue, std::string nValueWording, const uint64_t varId);
 	void luaThread(lua_State *lua_state, const std::string &filename);
 	static void luaStop(lua_State *L, lua_Debug *ar);
-	std::string nValueToWording(const unsigned char dType, const unsigned char dSubType, const _eSwitchType switchtype, const unsigned char nValue, const std::string &sValue, const std::map<std::string, std::string> & options);
+	std::string nValueToWording(const uint8_t dType, const uint8_t dSubType, const _eSwitchType switchtype, const int nValue, const std::string &sValue, const std::map<std::string, std::string> & options);
 	static int l_domoticz_print(lua_State* lua_state);
 	void OpenURL(const std::string &URL);
 	void WriteToLog(const std::string &devNameNoQuotes, const std::string &doWhat);
@@ -161,6 +165,7 @@ private:
 	std::map<std::string, float> m_winddirValuesByName;
 	std::map<std::string, float> m_windspeedValuesByName;
 	std::map<std::string, float> m_windgustValuesByName;
+	std::map<std::string, int>	 m_zwaveAlarmValuesByName;
 
 	std::map<uint64_t, float> m_tempValuesByID;
 	std::map<uint64_t, float> m_dewValuesByID;
@@ -174,6 +179,7 @@ private:
 	std::map<uint64_t, float> m_winddirValuesByID;
 	std::map<uint64_t, float> m_windspeedValuesByID;
 	std::map<uint64_t, float> m_windgustValuesByID;
+	std::map<uint64_t, int> m_zwaveAlarmValuesByID;
 
 	void reportMissingDevice(const int deviceID, const std::string &EventName, const uint64_t eventID);
 	int getSunRiseSunSetMinutes(const std::string &what);

@@ -16,7 +16,7 @@
 		</Value>
 		<Value type="byte" genre="config" instance="1" index="2" label="Motion detection - blind time" min="0" max="15" value="3">
 			<Help>
-				PIR sensor is blind (insensitive) to motion after last detection for the amount of time speci ed in this parameter.
+				PIR sensor is blind (insensitive) to motion after last detection for the amount of time specified in this parameter.
 				Shorter time periods allow to detect motion more frequently, but the battery will be drained faster.
 				Available settings: 0 - 15 (0.5-8 seconds).
 				Formula to calculate the time: time [s] = 0.5 x (value+1))
@@ -67,7 +67,7 @@
 		</Value>
 		<Value type="short" genre="config" instance="1" index="9" label="Motion detection - night/day" units="lux" min="1" max="65535" value="200">
 			<Help>
-				This parameter de nes the difference between night and day in terms of light intensity, used in parameter 8.
+				This parameter defines the difference between night and day in terms of light intensity, used in parameter 8.
 				Available settings: 1 - 65535
 				Default setting: 200 (200 lux)
 			</Help>

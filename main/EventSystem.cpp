@@ -20,12 +20,6 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
-#ifdef WIN32
-#include "dirent_windows.h"
-#else
-#include <dirent.h>
-#endif
-
 extern "C" {
 #ifdef WITH_EXTERNAL_LUA
 #include <lua.h>
@@ -36,14 +30,12 @@ extern "C" {
 #include "../lua/src/lualib.h"
 #include "../lua/src/lauxlib.h"
 #endif
-#ifdef ENABLE_PYTHON
-#include <Python.h>
-#endif
 }
 
 #ifdef ENABLE_PYTHON
-#include <boost/python.hpp>
-using namespace boost::python;
+#include "EventsPythonModule.h"
+#include "EventsPythonDevice.h"
+extern PyObject * PDevice_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
 #endif
 
 extern std::string szUserDataFolder;
@@ -77,6 +69,9 @@ void CEventSystem::StartEventSystem()
 
 	LoadEvents();
 	GetCurrentStates();
+#ifdef ENABLE_PYTHON
+    Plugins::PythonEventsInitialize(szUserDataFolder);
+#endif
 
 	m_thread = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&CEventSystem::Do_Work, this)));
 }
@@ -88,6 +83,9 @@ void CEventSystem::StopEventSystem()
 		m_stoprequested = true;
 		m_thread->join();
 	}
+#ifdef ENABLE_PYTHON
+    Plugins::PythonEventsStop();
+#endif
 }
 
 void CEventSystem::SetEnabled(const bool bEnabled)
@@ -274,7 +272,7 @@ void CEventSystem::GetCurrentStates()
 			sitem.switchtype = atoi(sd[7].c_str());
 			_eSwitchType switchtype = (_eSwitchType)sitem.switchtype;
 			std::map<std::string, std::string> options = m_sql.BuildDeviceOptions(sd[10].c_str());
-			sitem.nValueWording = l_nValueWording.assign(nValueToWording(sitem.devType, sitem.subType, switchtype, (unsigned char)sitem.nValue, sitem.sValue, options));
+			sitem.nValueWording = l_nValueWording.assign(nValueToWording(sitem.devType, sitem.subType, switchtype, sitem.nValue, sitem.sValue, options));
 			sitem.lastUpdate = l_lastUpdate.assign(sd[8]);
 			sitem.lastLevel = atoi(sd[9].c_str());
 			m_devicestates[sitem.ID] = sitem;
@@ -356,6 +354,7 @@ void CEventSystem::GetCurrentMeasurementStates()
 	m_winddirValuesByName.clear();
 	m_windspeedValuesByName.clear();
 	m_windgustValuesByName.clear();
+	m_zwaveAlarmValuesByName.clear();
 
 	m_tempValuesByID.clear();
 	m_dewValuesByID.clear();
@@ -369,6 +368,7 @@ void CEventSystem::GetCurrentMeasurementStates()
 	m_winddirValuesByID.clear();
 	m_windspeedValuesByID.clear();
 	m_windgustValuesByID.clear();
+	m_zwaveAlarmValuesByID.clear();
 
 	std::stringstream szQuery;
 
@@ -402,7 +402,7 @@ void CEventSystem::GetCurrentMeasurementStates()
 
 		float temp = 0;
 		float chill = 0;
-		unsigned char humidity = 0;
+		int humidity = 0;
 		float barometer = 0;
 		float rainmm = 0;
 		float rainmmlasthour = 0;
@@ -413,6 +413,7 @@ void CEventSystem::GetCurrentMeasurementStates()
 		float winddir = 0;
 		float windspeed = 0;
 		float windgust = 0;
+		int alarmval = 0;
 
 		bool isTemp = false;
 		bool isDew = false;
@@ -426,6 +427,7 @@ void CEventSystem::GetCurrentMeasurementStates()
 		bool isWindDir = false;
 		bool isWindSpeed = false;
 		bool isWindGust = false;
+		bool isZWaveAlarm = false;
 
 		szQuery.clear();
 		szQuery.str("");
@@ -466,7 +468,7 @@ void CEventSystem::GetCurrentMeasurementStates()
 			}
 			break;
 		case pTypeHUM:
-			humidity = (unsigned char)sitem.nValue;
+			humidity = sitem.nValue;
 			isHum = true;
 			break;
 		case pTypeTEMP_HUM:
@@ -615,7 +617,7 @@ void CEventSystem::GetCurrentMeasurementStates()
 			}
 			break;
 		case pTypeP1Power:
-			if (!splitresults.empty())
+			if (splitresults.size() == 6)
 			{
 				utilityval = static_cast<float>(atof(splitresults[4].c_str()));
 				isUtility = true;
@@ -646,25 +648,29 @@ void CEventSystem::GetCurrentMeasurementStates()
 					isBaro = true;
 				}
 				else if ((sitem.subType == sTypeAlert)
-					  || (sitem.subType == sTypeDistance)
-					  || (sitem.subType == sTypePercentage)
-					  || (sitem.subType == sTypeWaterflow)
-					  || (sitem.subType == sTypeCustom)
-					  || (sitem.subType == sTypeVoltage)
-		 			  || (sitem.subType == sTypeCurrent)
-		 			  || (sitem.subType == sTypeSetPoint)
-					  || (sitem.subType == sTypeKwh)
-					  || (sitem.subType == sTypeSoundLevel)
+					|| (sitem.subType == sTypeDistance)
+					|| (sitem.subType == sTypePercentage)
+					|| (sitem.subType == sTypeWaterflow)
+					|| (sitem.subType == sTypeCustom)
+					|| (sitem.subType == sTypeVoltage)
+					|| (sitem.subType == sTypeCurrent)
+					|| (sitem.subType == sTypeSetPoint)
+					|| (sitem.subType == sTypeKwh)
+					|| (sitem.subType == sTypeSoundLevel)
 					)
 				{
 					utilityval = static_cast<float>(atof(splitresults[0].c_str()));
 					isUtility = true;
 				}
-
 			}
 			else
 			{
-				if (sitem.subType == sTypeCounterIncremental)
+				if (sitem.subType == sTypeZWaveAlarm)
+				{
+					alarmval = sitem.nValue;
+					isZWaveAlarm = true;
+				}
+				else if (sitem.subType == sTypeCounterIncremental)
 				{
 					//get value of today
 					time_t now = mytime(NULL);
@@ -721,6 +727,8 @@ void CEventSystem::GetCurrentMeasurementStates()
 						case MTYPE_COUNTER:
 							sprintf(szTmp, "%llu", total_real);
 							break;
+						default:
+							continue; //not handled
 						}
 						utilityval = static_cast<float>(atof(szTmp));
 						isUtility = true;
@@ -885,6 +893,8 @@ void CEventSystem::GetCurrentMeasurementStates()
 					case MTYPE_COUNTER:
 						sprintf(szTmp, "%llu", total_real);
 						break;
+					default:
+						continue; //not handled
 					}
 					utilityval = static_cast<float>(atof(szTmp));
 					isUtility = true;
@@ -943,6 +953,11 @@ void CEventSystem::GetCurrentMeasurementStates()
 		if (isWindGust) {
 			m_windgustValuesByName[sitem.deviceName] = windgust;
 			m_windgustValuesByID[sitem.ID] = windgust;
+		}
+		if (isZWaveAlarm)
+		{
+			m_zwaveAlarmValuesByName[sitem.deviceName] = alarmval;
+			m_zwaveAlarmValuesByID[sitem.ID] = alarmval;
 		}
 	}
 }
@@ -1085,105 +1100,79 @@ void CEventSystem::EvaluateEvent(const std::string &reason, const uint64_t Devic
 		return;
 	boost::unique_lock<boost::shared_mutex> uservariablesMutexLock(m_uservariablesMutex);
 
-	std::stringstream lua_DirT;
-
+	std::string lua_Dir;
 #ifdef WIN32
-	lua_DirT << szUserDataFolder << "scripts\\lua\\";
+	lua_Dir = szUserDataFolder + "scripts\\lua\\";
 #else
-	lua_DirT << szUserDataFolder << "scripts/lua/";
+	lua_Dir = szUserDataFolder + "scripts/lua/";
 #endif
-
-	std::string lua_Dir = lua_DirT.str();
-
-	DIR *lDir;
-	struct dirent *ent;
-
-	if ((lDir = opendir(lua_Dir.c_str())) != NULL)
+	std::vector<std::string> FileEntries;
+	std::vector<std::string>::const_iterator itt;
+	std::string filename;
+	DirectoryListing(FileEntries, lua_Dir, false, true);
+	for (itt = FileEntries.begin(); itt != FileEntries.end(); ++itt)
 	{
-		while ((ent = readdir(lDir)) != NULL)
+		filename = *itt;
+		if (filename.length() > 4 &&
+			filename.compare(filename.length() - 4, 4, ".lua") == 0 &&
+			filename.find("_demo.lua") == std::string::npos)
 		{
-			std::string filename = ent->d_name;
-			if (dirent_is_file(lua_Dir, ent))
+			if (reason == "device" && filename.find("_device_") != std::string::npos)
 			{
-				if ((filename.length() < 4) || (filename.compare(filename.length() - 4, 4, ".lua") != 0))
-				{
-					//_log.Log(LOG_STATUS,"EventSystem: ignore file not .lua: %s",filename.c_str());
-				}
-				else if (filename.find("_demo.lua") == std::string::npos) //skip demo lua files
-				{
-					if ((reason == "device") && (filename.find("_device_") != std::string::npos))
-					{
-						EvaluateLua(reason, lua_Dir + filename, "", DeviceID, devname, nValue, sValue, nValueWording, 0);
-					}
-					else if ((reason == "time") && (filename.find("_time_") != std::string::npos))
-					{
-						EvaluateLua(reason, lua_Dir + filename, "");
-					}
-					else if ((reason == "security") && (filename.find("_security_") != std::string::npos))
-					{
-						EvaluateLua(reason, lua_Dir + filename, "");
-					}
-					else if ((reason == "uservariable") && (filename.find("_variable_") != std::string::npos))
-					{
-						EvaluateLua(reason, lua_Dir + filename, "", varId);
-					}
-				}
+				EvaluateLua(reason, lua_Dir + filename, "", DeviceID, devname, nValue, sValue, nValueWording, 0);
+			}
+			else if (reason == "time" && filename.find("_time_") != std::string::npos)
+			{
+				EvaluateLua(reason, lua_Dir + filename, "");
+			}
+			else if (reason == "security" && filename.find("_security_") != std::string::npos)
+			{
+				EvaluateLua(reason, lua_Dir + filename, "");
+			}
+			else if (reason == "uservariable" && filename.find("_variable_") != std::string::npos)
+			{
+				EvaluateLua(reason, lua_Dir + filename, "", varId);
 			}
 		}
-		closedir(lDir);
-	}
-	else {
-		_log.Log(LOG_ERROR, "EventSystem: Error accessing lua script directory %s", lua_Dir.c_str());
+		// else _log.Log(LOG_STATUS,"EventSystem: ignore file not .lua or is demo file: %s", filename.c_str());
 	}
 
 #ifdef ENABLE_PYTHON
 	try
 	{
-		std::stringstream python_DirT;
+		std::string python_Dir;
 #ifdef WIN32
-		python_DirT << szUserDataFolder << "scripts\\python\\";
+		python_Dir = szUserDataFolder + "scripts\\python\\";
 #else
-		python_DirT << szUserDataFolder << "scripts/python/";
+		python_Dir = szUserDataFolder + "scripts/python/";
 #endif
-
-		std::string python_Dir = python_DirT.str();
-
-		if ((lDir = opendir(python_Dir.c_str())) != NULL)
+		FileEntries.clear();
+		DirectoryListing(FileEntries, python_Dir, false, true);
+		for (itt = FileEntries.begin(); itt != FileEntries.end(); ++itt)
 		{
-			while ((ent = readdir(lDir)) != NULL)
+			filename = *itt;
+			if (filename.length() > 3 &&
+				filename.compare(filename.length() - 3, 3, ".py") == 0 &&
+				filename.find("_demo.py") == std::string::npos)
 			{
-				std::string filename = ent->d_name;
-				if (dirent_is_file(python_Dir, ent))
+				if (reason == "device" && filename.find("_device_") != std::string::npos)
 				{
-					if ((filename.length() < 4) || (filename.compare(filename.length() - 3, 3, ".py") != 0))
-					{
-						//_log.Log(LOG_STATUS,"EventSystem: ignore file not .lua: %s",filename.c_str());
-					}
-					else if (filename.find("_demo.py") == std::string::npos) //skip demo python files
-					{
-						if ((reason == "device") && (filename.find("_device_") != std::string::npos))
-						{
-							EvaluatePython(reason, python_Dir + filename, "", DeviceID, devname, nValue, sValue, nValueWording, 0);
-						}
-						else if ((reason == "time") && (filename.find("_time_") != std::string::npos))
-						{
-							EvaluatePython(reason, python_Dir + filename, "");
-						}
-						else if ((reason == "security") && (filename.find("_security_") != std::string::npos))
-						{
-							EvaluatePython(reason, python_Dir + filename, "");
-						}
-						else if ((reason == "uservariable") && (filename.find("_variable_") != std::string::npos))
-						{
-							EvaluatePython(reason, python_Dir + filename, "", varId);
-						}
-					}
+					EvaluatePython(reason, python_Dir + filename, "", DeviceID, devname, nValue, sValue, nValueWording, 0);
+				}
+				else if (reason == "time" && filename.find("_time_") != std::string::npos)
+				{
+					EvaluatePython(reason, python_Dir + filename, "");
+				}
+				else if (reason == "security" && filename.find("_security_") != std::string::npos)
+				{
+					EvaluatePython(reason, python_Dir + filename, "");
+				}
+				else if (reason == "uservariable" && filename.find("_variable_") != std::string::npos)
+				{
+					EvaluatePython(reason, python_Dir + filename, "", varId);
 				}
 			}
-			closedir(lDir);
-		}
-		else {
-			_log.Log(LOG_ERROR, "EventSystem: Error accessing python script directory %s", python_Dir.c_str());
+			// else _log.Log(LOG_STATUS,"EventSystem: ignore file not .py or is demo file: %s", filename.c_str());
 		}
 	}
 	catch (...)
@@ -1433,6 +1422,17 @@ lua_State *CEventSystem::CreateBlocklyLuaState()
 		}
 		lua_setglobal(lua_state, "windgustdevice");
 	}
+	if (m_zwaveAlarmValuesByID.size() > 0) {
+		lua_createtable(lua_state, (int)m_zwaveAlarmValuesByID.size(), 0);
+		std::map<uint64_t, int>::iterator p;
+		for (p = m_zwaveAlarmValuesByID.begin(); p != m_zwaveAlarmValuesByID.end(); ++p)
+		{
+			lua_pushnumber(lua_state, (lua_Number)p->first);
+			lua_pushnumber(lua_state, (lua_Number)p->second);
+			lua_rawset(lua_state, -3);
+		}
+		lua_setglobal(lua_state, "zwavealarms");
+	}
 
 	lua_pushnumber(lua_state, (lua_Number)m_SecStatus);
 	lua_setglobal(lua_state, "securitystatus");
@@ -1455,47 +1455,52 @@ void CEventSystem::EvaluateBlockly(const std::string &reason, const uint64_t Dev
 		for (it = m_events.begin(); it != m_events.end(); ++it) {
 			bool eventInScope = ((it->Interpreter == "Blockly") && ((it->Type=="all")||(it->Type == reason)));
 			bool eventActive = (it->EventStatus == 1);
-			std::stringstream sstr;
-			sstr << "device[" << DeviceID << "]";
-			std::string conditions (it->Conditions);
-			found = conditions.find(sstr.str());
-			if ((eventInScope) && (eventActive) && (found != std::string::npos)) {
-				// Replace Sunrise and sunset placeholder with actual time for query
-				if (conditions.find("@Sunrise") != std::string::npos) {
-					int intRise = getSunRiseSunSetMinutes("Sunrise");
-					std::stringstream ssRise;
-					ssRise << intRise;
-					stdreplace(conditions, "@Sunrise", ssRise.str());
-				}
-				if (conditions.find("@Sunset") != std::string::npos) {
-					int intSet = getSunRiseSunSetMinutes("Sunset");
-					std::stringstream ssSet;
-					ssSet << intSet;
-					stdreplace(conditions, "@Sunset", ssSet.str());
-				}
-
-				std::string ifCondition = "result = 0; weekday = os.date('*t')['wday']; timeofday = ((os.date('*t')['hour']*60)+os.date('*t')['min']); if " + conditions + " then result = 1 end; return result";
-
-				if (lua_state == NULL)
+			if (eventInScope && eventActive)
+			{
+				std::stringstream sstr;
+				//sstr << "device[" << DeviceID << "]";
+				sstr << "[" << DeviceID << "]";
+				std::string conditions(it->Conditions);
+				found = conditions.find(sstr.str());
+				if (found != std::string::npos)
 				{
-					lua_state = CreateBlocklyLuaState();
+					// Replace Sunrise and sunset placeholder with actual time for query
+					if (conditions.find("@Sunrise") != std::string::npos) {
+						int intRise = getSunRiseSunSetMinutes("Sunrise");
+						std::stringstream ssRise;
+						ssRise << intRise;
+						stdreplace(conditions, "@Sunrise", ssRise.str());
+					}
+					if (conditions.find("@Sunset") != std::string::npos) {
+						int intSet = getSunRiseSunSetMinutes("Sunset");
+						std::stringstream ssSet;
+						ssSet << intSet;
+						stdreplace(conditions, "@Sunset", ssSet.str());
+					}
+
+					std::string ifCondition = "result = 0; weekday = os.date('*t')['wday']; timeofday = ((os.date('*t')['hour']*60)+os.date('*t')['min']); if " + conditions + " then result = 1 end; return result";
+
 					if (lua_state == NULL)
-						return;
-				}
-
-				//_log.Log(LOG_STATUS,"EventSystem: ifc: %s",ifCondition.c_str());
-				if (luaL_dostring(lua_state, ifCondition.c_str()))
-				{
-					_log.Log(LOG_ERROR, "EventSystem: Lua script error (Blockly), Name: %s => %s", it->Name.c_str(), lua_tostring(lua_state, -1));
-				}
-				else
-				{
-					lua_Number ruleTrue = lua_tonumber(lua_state, -1);
-					if (ruleTrue != 0)
 					{
-						if (m_sql.m_bLogEventScriptTrigger)
-							_log.Log(LOG_NORM, "EventSystem: Event triggered: %s", it->Name.c_str());
-						parseBlocklyActions(it->Actions, it->Name, it->ID);
+						lua_state = CreateBlocklyLuaState();
+						if (lua_state == NULL)
+							return;
+					}
+
+					//_log.Log(LOG_STATUS,"EventSystem: ifc: %s",ifCondition.c_str());
+					if (luaL_dostring(lua_state, ifCondition.c_str()))
+					{
+						_log.Log(LOG_ERROR, "EventSystem: Lua script error (Blockly), Name: %s => %s", it->Name.c_str(), lua_tostring(lua_state, -1));
+					}
+					else
+					{
+						lua_Number ruleTrue = lua_tonumber(lua_state, -1);
+						if (ruleTrue != 0)
+						{
+							if (m_sql.m_bLogEventScriptTrigger)
+								_log.Log(LOG_NORM, "EventSystem: Event triggered: %s", it->Name.c_str());
+							parseBlocklyActions(it->Actions, it->Name, it->ID);
+						}
 					}
 				}
 			}
@@ -1816,6 +1821,16 @@ std::string CEventSystem::ProcessVariableArgument(const std::string &Argument)
 		if (itt != m_uservariables.end())
 		{
 			return itt->second.variableValue;
+		}
+	}
+	else if (Argument.find("zwavealarms") == 0)
+	{
+		std::map<uint64_t, int>::const_iterator itt = m_zwaveAlarmValuesByID.find(dindex);
+		if (itt != m_zwaveAlarmValuesByID.end())
+		{
+			std::stringstream sstr;
+			sstr << (int)itt->second;
+			return sstr.str();
 		}
 	}
 
@@ -2180,219 +2195,30 @@ void CEventSystem::EvaluatePython(const std::string &reason, const std::string &
 }
 
 
-static int numargs=0;
-
-/* Return the number of arguments of the application command line */
-static PyObject*
-PyDomoticz_log(PyObject *self, PyObject *args)
-{
-	char* msg;
-	int type;
-    if(!PyArg_ParseTuple(args, "is", &type, &msg))
-        return NULL;
-	_log.Log((_eLogLevel)type, msg);
-	Py_INCREF(Py_None);
-    return Py_None;
-
-}
-
-static PyMethodDef DomoticzMethods[] = {
-    {"log", PyDomoticz_log, METH_VARARGS,  "log to Domoticz."},
-    {NULL, NULL, 0, NULL}
-};
-
-
-// from https://gist.github.com/octavifs/5362297
-
-template <class K, class V>
-boost::python::dict toPythonDict(std::map<K, V> map) {
-    typename std::map<K, V>::iterator iter;
-	boost::python::dict dictionary;
-	for (iter = map.begin(); iter != map.end(); ++iter) {
-		dictionary[iter->first] = iter->second;
-	}
-	return dictionary;
-}
-
-
 // this should be filled in by the preprocessor
 const char * Python_exe = "PYTHON_EXE";
+
+
+
+// Python EventModule helper functions
+bool CEventSystem::PythonScheduleEvent(std::string ID, const std::string &Action, const std::string &eventName) {
+    ScheduleEvent(ID, Action,eventName);
+    return true;
+}
 
 void CEventSystem::EvaluatePython(const std::string &reason, const std::string &filename, const std::string &PyString, const uint64_t DeviceID, const std::string &devname, const int nValue, const char* sValue, std::string nValueWording, const uint64_t varId)
 {
 	//_log.Log(LOG_NORM, "EventSystem: Already scheduled this event, skipping");
-	//_log.Log(LOG_STATUS, "EventSystem: script %s trigger, file: %s, deviceName: %s" , reason.c_str(), filename.c_str(), devname.c_str());
-
-	std::stringstream python_DirT;
-
-#ifdef WIN32
-	python_DirT << szUserDataFolder << "scripts\\python\\";
-#else
-	python_DirT << szUserDataFolder << "scripts/python/";
-#endif
-	std::string python_Dir = python_DirT.str();
-	if(!Py_IsInitialized()) {
-		Py_SetProgramName((char*)Python_exe); // will this cast lead to problems ?
-		Py_Initialize();
-		Py_InitModule("domoticz_", DomoticzMethods);
-		// TODO: may have a small memleak, remove references in destructor
-		PyObject* sys = PyImport_ImportModule("sys");
-		PyObject *path = PyObject_GetAttrString(sys, "path");
-		PyList_Append(path, PyString_FromString(python_Dir.c_str()));
-
-		bool (CEventSystem::*ScheduleEventMethod)(std::string ID, const std::string &Action, const std::string &eventName) = &CEventSystem::ScheduleEvent;
-		class_<CEventSystem, boost::noncopyable>("Domoticz", no_init)
-			.def("command", ScheduleEventMethod)
-			;
-	}
-
-	FILE* PythonScriptFile = fopen(filename.c_str(), "r");
-	object main_module = import("__main__");
-	object main_namespace = dict(main_module.attr("__dict__")).copy();
+	// _log.Log(LOG_STATUS, "EventSystem: script %s trigger, file: %s, script: %s, deviceName: %s" , reason.c_str(), filename.c_str(), PyString.c_str(), devname.c_str());
 
 
-	try {
-		object domoticz_module = import("domoticz");
-		object reloader = import("reloader");
-		reloader.attr("_check_reload")();
-
-		//object alldevices = dict();
-		object devices = domoticz_module.attr("devices");
-		object domoticz_namespace = domoticz_module.attr("__dict__");
-
-		domoticz_namespace["event_system"] = ptr(this);
-
-		main_namespace["changed_device_name"] = str(devname);
-		domoticz_namespace["changed_device_name"] = str(devname);
-
-		boost::shared_lock<boost::shared_mutex> devicestatesMutexLock1(m_devicestatesMutex);
-		typedef std::map<uint64_t, _tDeviceStatus>::iterator it_type;
-		for (it_type iterator = m_devicestates.begin(); iterator != m_devicestates.end(); ++iterator)
-		{
-			_tDeviceStatus sitem = iterator->second;
-			object deviceStatus = domoticz_module.attr("Device")(sitem.ID, sitem.deviceName, sitem.devType, sitem.subType, sitem.switchtype, sitem.nValue, sitem.nValueWording, sitem.sValue, sitem.lastUpdate);
-			devices[sitem.deviceName] = deviceStatus;
-		}
-		main_namespace["domoticz"] = ptr(this);
-		main_namespace["__file__"] = filename;
-
-		if (reason == "device")
-		{
-			main_namespace["changed_device"] = devices[m_devicestates[DeviceID].deviceName];
-			domoticz_namespace["changed_device"] = devices[m_devicestates[DeviceID].deviceName];
-		}
-		devicestatesMutexLock1.unlock();
+    Plugins::PythonEventsProcessPython(reason, filename, PyString, DeviceID, m_devicestates, m_uservariables, getSunRiseSunSetMinutes("Sunrise"),
+        getSunRiseSunSetMinutes("Sunset"));
 
 
-		int intRise = getSunRiseSunSetMinutes("Sunrise");
-		int intSet = getSunRiseSunSetMinutes("Sunset");
-
-		time_t now = mytime(NULL);
-		struct tm mtime;
-		time_t tmidnight;
-		getMidnight(tmidnight,mtime);
-		int minutesSinceMidnight = (int)(difftime(now,tmidnight) / 60);
-	
-		bool dayTimeBool = false;
-		bool nightTimeBool = false;
-		if ((minutesSinceMidnight > intRise) && (minutesSinceMidnight < intSet)) {
-			dayTimeBool = true;
-		}
-		else {
-			nightTimeBool = true;
-		}
-		main_namespace["is_daytime"] = dayTimeBool;
-		main_namespace["is_nighttime"] = nightTimeBool;
-		main_namespace["sunrise_in_minutes"] = intRise;
-		main_namespace["sunset_in_minutes"] = intSet;
-
-		domoticz_namespace["is_daytime"] = dayTimeBool;
-		domoticz_namespace["is_nighttime"] = nightTimeBool;
-		domoticz_namespace["sunrise_in_minutes"] = intRise;
-		domoticz_namespace["sunset_in_minutes"] = intSet;
-
-		//main_namespace["timeofday"] = ... 		// not sure how to set this
-
-
-		/*std::string secstatusw = "";
-		m_sql.GetPreferencesVar("SecStatus", secstatus);
-		if (secstatus == 1) {
-			secstatusw = "Armed Home";
-		}
-		else if (secstatus == 2) {
-			secstatusw = "Armed Away";
-		}
-		else {
-			secstatusw = "Disarmed";
-		}
-		main_namespace["Security"] = secstatusw;*/
-
-		// put variables in user_variables dict, but also in the namespace
-		object user_variables = dict();
-		{
-			typedef std::map<uint64_t, _tUserVariable>::iterator it_var;
-			for (it_var iterator = m_uservariables.begin(); iterator != m_uservariables.end(); ++iterator) {
-				_tUserVariable uvitem = iterator->second;
-				//user_variables[uvitem.variableName] = uvitem;
-				if (uvitem.variableType == 0) {
-					//Integer
-					main_namespace[uvitem.variableName] = atoi(uvitem.variableValue.c_str());
-					user_variables[uvitem.variableName] = main_namespace[uvitem.variableName];
-				}
-				else if (uvitem.variableType == 1) {
-					//Float
-					main_namespace[uvitem.variableName] = atof(uvitem.variableValue.c_str());
-					user_variables[uvitem.variableName] = main_namespace[uvitem.variableName];
-				}
-				else {
-					//String,Date,Time
-					main_namespace[uvitem.variableName] = uvitem.variableValue;
-					user_variables[uvitem.variableName] = main_namespace[uvitem.variableName];
-				}
-			}
-		}
-
-		domoticz_namespace["user_variables"] = user_variables;
-		main_namespace["user_variables"] = user_variables;
-		main_namespace["otherdevices_temperature"] = toPythonDict(m_tempValuesByName);
-		main_namespace["otherdevices_dewpoint"] = toPythonDict(m_dewValuesByName);
-		main_namespace["otherdevices_barometer"] = toPythonDict(m_baroValuesByName);
-		main_namespace["otherdevices_utility"] = toPythonDict(m_utilityValuesByName);
-		main_namespace["otherdevices_rain"] = toPythonDict(m_rainValuesByName);
-		main_namespace["otherdevices_rain_lasthour"] = toPythonDict(m_rainLastHourValuesByName);
-		main_namespace["otherdevices_uv"] = toPythonDict(m_uvValuesByName);
-		main_namespace["otherdevices_winddir"] = toPythonDict(m_winddirValuesByName);
-		main_namespace["otherdevices_windspeed"] = toPythonDict(m_windspeedValuesByName);
-		main_namespace["otherdevices_windgust"] = toPythonDict(m_windgustValuesByName);
-
-		if(PyString.length() > 0)
-			exec(str(PyString), main_namespace);
-		else
-			object ignored = exec_file(str(filename), main_namespace);
-	} catch(...) {
-
-		PyObject *exc,*val,*tb;
-		PyErr_Fetch(&exc,&val,&tb);
-		boost::python::handle<> hexc(exc), hval(boost::python::allow_null(val)), htb(boost::python::allow_null(tb));
-		boost::python::object traceback(boost::python::import("traceback"));
-
-		boost::python::object format_exception(traceback.attr("format_exception"));
-		boost::python::object formatted_list = format_exception(hexc, hval, htb);
-		boost::python::object formatted = boost::python::str("\n").join(formatted_list);
-
-		object traceback_module = import("traceback");
-		std::string formatted_str = extract<std::string>(formatted);
-		//PyErr_Print();
-		PyErr_Clear();
-		if(PyString.length() > 0)
-			_log.Log(LOG_ERROR, "in event %s: %s", filename.c_str(), formatted_str.c_str());
-		else
-			_log.Log(LOG_ERROR, "%s",formatted_str.c_str());
-	}
-	if (PythonScriptFile!=NULL)
-		fclose(PythonScriptFile);
 	//Py_Finalize();
 }
+
 #endif // ENABLE_PYTHON
 
 void CEventSystem::exportDeviceStatesToLua(lua_State *lua_state)
@@ -2440,6 +2266,17 @@ void CEventSystem::exportDeviceStatesToLua(lua_State *lua_state)
 		lua_rawset(lua_state, -3);
 	}
 	lua_setglobal(lua_state, "otherdevices_idx");
+
+	lua_createtable(lua_state, (int)m_devicestates.size(), 0);
+	typedef std::map<uint64_t, _tDeviceStatus>::iterator it_type;
+	for (it_type iterator = m_devicestates.begin(); iterator != m_devicestates.end(); ++iterator)
+	{
+		_tDeviceStatus sitem = iterator->second;
+		lua_pushstring(lua_state, sitem.deviceName.c_str());
+		lua_pushnumber(lua_state, sitem.lastLevel);
+		lua_rawset(lua_state, -3);
+	}
+	lua_setglobal(lua_state, "otherdevices_lastlevel");
 	devicestatesMutexLock2.unlock();
 }
 
@@ -2489,17 +2326,24 @@ void CEventSystem::EvaluateLua(const std::string &reason, const std::string &fil
 	lua_pushcfunction(lua_state, l_domoticz_print);
 	lua_setglobal(lua_state, "print");
 
+	lua_pushcfunction(lua_state, l_domoticz_applyJsonPath);
+	lua_setglobal(lua_state, "domoticz_applyJsonPath");
+
+	lua_pushcfunction(lua_state, l_domoticz_applyXPath);
+	lua_setglobal(lua_state, "domoticz_applyXPath");
+
 #ifdef _DEBUG
 	_log.Log(LOG_STATUS, "EventSystem: script %s trigger", reason.c_str());
 #endif
 
 	int intRise = getSunRiseSunSetMinutes("Sunrise");
 	int intSet = getSunRiseSunSetMinutes("Sunset");
-	time_t now = time(0);
-	struct tm mtime;
-	time_t tmidnight;
-	getMidnight(tmidnight,mtime);
-	int minutesSinceMidnight = (int)(difftime(now,tmidnight) / 60);
+
+	// Do not correct for DST change - we only need this to compare with intRise and intSet which aren't as well
+	time_t now = mytime(NULL);
+	struct tm ltime;
+	localtime_r(&now, &ltime);
+	int minutesSinceMidnight = (ltime.tm_hour * 60) + ltime.tm_min;
 
 	bool dayTimeBool = false;
 	bool nightTimeBool = false;
@@ -2541,6 +2385,7 @@ void CEventSystem::EvaluateLua(const std::string &reason, const std::string &fil
 		float thisDeviceWindSpeed = 0;
 		float thisDeviceWindGust = 0;
 		float thisDeviceWeather = 0;
+		int thisZwaveAlarm = 0;
 
 		if (m_tempValuesByName.size()>0)
 		{
@@ -2722,6 +2567,21 @@ void CEventSystem::EvaluateLua(const std::string &reason, const std::string &fil
 			}
 			lua_setglobal(lua_state, "otherdevices_weather");
 		}
+		if (m_zwaveAlarmValuesByName.size() > 0)
+		{
+			lua_createtable(lua_state, (int)m_zwaveAlarmValuesByName.size(), 0);
+			std::map<std::string, int>::iterator p;
+			for (p = m_zwaveAlarmValuesByName.begin(); p != m_zwaveAlarmValuesByName.end(); ++p)
+			{
+				lua_pushstring(lua_state, p->first.c_str());
+				lua_pushnumber(lua_state, (lua_Number)p->second);
+				lua_rawset(lua_state, -3);
+				if (p->first == devname) {
+					thisZwaveAlarm = p->second;
+				}
+			}
+			lua_setglobal(lua_state, "otherdevices_zwavealarms");
+		}
 
 		if (reason == "device")
 		{
@@ -2797,6 +2657,13 @@ void CEventSystem::EvaluateLua(const std::string &reason, const std::string &fil
 				lua_pushnumber(lua_state, (lua_Number)thisDeviceUV);
 				lua_rawset(lua_state, -3);
 			}
+			if (thisZwaveAlarm != 0) {
+				std::string alarmName = devname;
+				alarmName += "_ZWaveAlarm";
+				lua_pushstring(lua_state, alarmName.c_str());
+				lua_pushnumber(lua_state, (lua_Number)thisZwaveAlarm);
+				lua_rawset(lua_state, -3);
+			}
 			lua_setglobal(lua_state, "devicechanged");
 
 
@@ -2809,14 +2676,14 @@ void CEventSystem::EvaluateLua(const std::string &reason, const std::string &fil
 			lua_pushstring(lua_state, "svalue");
 			lua_pushstring(lua_state, sValue);
 			lua_rawset(lua_state, -3);
-			
+
 			lua_pushstring(lua_state, "nvalue");
 			lua_pushnumber(lua_state, nValue);
 			lua_rawset(lua_state, -3);
 
 			/* USELESS, WE HAVE THE DEVICE INDEX
-			// replace devicechanged => 
-			lua_pushstring(lua_state, "name"); 
+			// replace devicechanged =>
+			lua_pushstring(lua_state, "name");
 			lua_pushnumber(lua_state, nValue);
 			lua_rawset(lua_state, -3);
 			*/
@@ -2826,7 +2693,7 @@ void CEventSystem::EvaluateLua(const std::string &reason, const std::string &fil
 	}
 
 	exportDeviceStatesToLua(lua_state);
-	
+
 	lua_createtable(lua_state, (int)m_uservariables.size(), 0);
 
 	typedef std::map<uint64_t, _tUserVariable>::iterator it_var;
@@ -3220,6 +3087,9 @@ void CEventSystem::UpdateDevice(const std::string &DevParams)
 		int dlastlevel = atoi(result[0][7].c_str());
 		std::map<std::string, std::string> options = m_sql.BuildDeviceOptions(result[0][8].c_str());
 
+		int devType = atoi(dtype.c_str());
+		int subType = atoi(dsubtype.c_str());
+
 		time_t now = time(0);
 		struct tm ltime;
 		localtime_r(&now, &ltime);
@@ -3227,16 +3097,14 @@ void CEventSystem::UpdateDevice(const std::string &DevParams)
 		char szLastUpdate[40];
 		sprintf(szLastUpdate, "%04d-%02d-%02d %02d:%02d:%02d", ltime.tm_year + 1900, ltime.tm_mon + 1, ltime.tm_mday, ltime.tm_hour, ltime.tm_min, ltime.tm_sec);
 
+//		m_mainworker.UpdateDevice(atoi(hid.c_str()), did, atoi(dunit.c_str()), devType, subType, atoi(nvalue.c_str()), svalue, 12, 255, true);
+
 		m_sql.safe_query("UPDATE DeviceStatus SET nValue='%q', sValue='%q', LastUpdate='%q' WHERE (ID = '%q')",
 			nvalue.c_str(), svalue.c_str(), szLastUpdate, idx.c_str());
-
 
 		uint64_t ulIdx = 0;
 		std::stringstream s_str(idx);
 		s_str >> ulIdx;
-
-		int devType = atoi(dtype.c_str());
-		int subType = atoi(dsubtype.c_str());
 
 		UpdateSingleState(ulIdx, dname, atoi(nvalue.c_str()), svalue.c_str(), devType, subType, dswitchtype, szLastUpdate, dlastlevel, options);
 
@@ -3568,7 +3436,7 @@ bool CEventSystem::ScheduleEvent(int deviceID, std::string Action, bool isScene,
 
 
 
-std::string CEventSystem::nValueToWording(const unsigned char dType, const unsigned char dSubType, const _eSwitchType switchtype, const unsigned char nValue, const std::string &sValue, const std::map<std::string, std::string> & options)
+std::string CEventSystem::nValueToWording(const uint8_t dType, const uint8_t dSubType, const _eSwitchType switchtype, const int nValue, const std::string &sValue, const std::map<std::string, std::string> & options)
 {
 
 	std::string lstatus = "";
@@ -3576,13 +3444,13 @@ std::string CEventSystem::nValueToWording(const unsigned char dType, const unsig
 	bool bHaveDimmer = false;
 	bool bHaveGroupCmd = false;
 	int maxDimLevel = 0;
-	GetLightStatus(dType, dSubType, switchtype,nValue, sValue, lstatus, llevel, bHaveDimmer, maxDimLevel, bHaveGroupCmd);
-/*
-	if (lstatus.find("Set Level") == 0)
-	{
-		lstatus = "Set Level";
-	}
-*/
+	GetLightStatus(dType, dSubType, switchtype, nValue, sValue, lstatus, llevel, bHaveDimmer, maxDimLevel, bHaveGroupCmd);
+	/*
+		if (lstatus.find("Set Level") == 0)
+		{
+			lstatus = "Set Level";
+		}
+	*/
 	if (switchtype == STYPE_Dimmer)
 	{
 		// use default lstatus
@@ -3592,7 +3460,7 @@ std::string CEventSystem::nValueToWording(const unsigned char dType, const unsig
 	{
 		lstatus = sValue;
 	}
-	else if(switchtype == STYPE_Selector)
+	else if (switchtype == STYPE_Selector)
 	{
 		std::map<std::string, std::string> statuses;
 		GetSelectorSwitchStatuses(options, statuses);
@@ -3600,7 +3468,7 @@ std::string CEventSystem::nValueToWording(const unsigned char dType, const unsig
 		sslevel << llevel;
 		lstatus = statuses[sslevel.str()];
 	}
-	else if ((switchtype == STYPE_Contact) || (switchtype == STYPE_DoorLock))
+	else if ((switchtype == STYPE_Contact) || (switchtype == STYPE_DoorContact))
 	{
 		bool bIsOn = IsLightSwitchOn(lstatus);
 		if (bIsOn)
@@ -3610,6 +3478,18 @@ std::string CEventSystem::nValueToWording(const unsigned char dType, const unsig
 		else if (lstatus == "Off")
 		{
 			lstatus = "Closed";
+		}
+	}
+	else if (switchtype == STYPE_DoorLock)
+	{
+		bool bIsOn = IsLightSwitchOn(lstatus);
+		if (bIsOn)
+		{
+			lstatus = "Locked";
+		}
+		else if (lstatus == "Off")
+		{
+			lstatus = "Unlocked";
 		}
 	}
 	else if (switchtype == STYPE_Blinds)
@@ -3648,7 +3528,7 @@ std::string CEventSystem::nValueToWording(const unsigned char dType, const unsig
 		{
 			lstatus = "Closed";
 		}
-		else
+		else if (lstatus == "Off")
 		{
 			lstatus = "Open";
 		}
@@ -3659,7 +3539,7 @@ std::string CEventSystem::nValueToWording(const unsigned char dType, const unsig
 		{
 			lstatus = "Open";
 		}
-		else
+		else if (lstatus == "Off")
 		{
 			lstatus = "Closed";
 		}
@@ -3672,12 +3552,12 @@ std::string CEventSystem::nValueToWording(const unsigned char dType, const unsig
 	{
 		lstatus = sValue;
 		//OJO if lstatus  is still empty we use nValue for lstatus. ss for conversion
-        	if (lstatus == "")
-        	{
+		if (lstatus == "")
+		{
 			std::stringstream ss;
 			ss << (unsigned int)nValue;
-           		lstatus = ss.str();
-        	}		
+			lstatus = ss.str();
+		}
 	}
 	return lstatus;
 }
@@ -4092,6 +3972,21 @@ namespace http {
 					}
 					root["status"] = "OK";
 				}
+			}
+			else if (cparam == "updatestatus")
+			{
+			   std::string eventactive = request::findValue(&req, "eventstatus");
+			   if (eventactive == "")
+			      return;
+
+			   std::string eventid = request::findValue(&req, "eventid");
+			   if (eventid == "")
+			      return;
+
+			   m_sql.safe_query("UPDATE EventMaster SET Status ='%d' WHERE (ID == '%q')", atoi(eventactive.c_str()), eventid.c_str());
+			   m_mainworker.m_eventsystem.LoadEvents();
+			   root["status"] = "OK";
+
 			}
 			else if (cparam == "create")
 			{
