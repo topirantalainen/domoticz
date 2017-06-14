@@ -4627,6 +4627,13 @@ define(['app'], function (app) {
             $("#dialog-addyeelight").dialog("open");
         }
 
+        ReloadLKIhc = function(idx,name)
+        {
+          $.post("reloadlkihc.webem", { 'idx':idx }, function(data) {
+            ShowNotify($.t('Device list updated!'), 2500);
+          });
+        }
+
         AddArilux = function (idx, name) {
             $.devIdx = idx;
 
