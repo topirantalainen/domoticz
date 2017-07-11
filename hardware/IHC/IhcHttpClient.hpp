@@ -25,7 +25,8 @@ public:
 
 	    bool ret = HTTPClient::POST(httpUrl, query, ExtraHeaders, result);
 	    if (!ret) {
-	        throw std::runtime_error("LK IHC: Error connecting to Server...");
+	        std::cout << "Not good - throwing exception\n";
+	        throw std::runtime_error("asd");//std::logic_error("LK IHC: Error connecting to Server...");
 	    }
 	    return result;
 	}

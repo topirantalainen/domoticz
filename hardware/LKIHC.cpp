@@ -74,39 +74,34 @@ void CLKIHC::Do_Work()
 {
     _log.Log(LOG_STATUS,"LK IHC: Worker started...");
 
-    try
+
+
+
+    int sec_counter = 0;
+
+    while (!m_stoprequested)
+
     {
-        ihcC->openConnection();
-    }
-    catch (const char* msg)
-    {
-        _log.Log(LOG_ERROR, "LKIHC Plugin: Exception: '%s' connecting to '%s'", msg, m_IPAddress.c_str());
-    }
-
-    if (ihcC->CONNECTED == ihcC->connState)
-    {
-
-        std::vector<int> resourceIdList;
-
-        std::vector<std::vector<std::string> > result;
-        result = m_sql.safe_query("SELECT DeviceID FROM DeviceStatus WHERE HardwareID==%d AND Used == 1", m_HwdID);
-
-        if (result.size() > 0)
+                if (ihcC->CONNECTED == ihcC->connState)
         {
-            std::vector<std::vector<std::string> >::const_iterator itt;
-            for (itt = result.begin(); itt != result.end(); ++itt)
+            std::vector<int> resourceIdList;
+
+            std::vector<std::vector<std::string> > result;
+            result = m_sql.safe_query("SELECT DeviceID FROM DeviceStatus WHERE HardwareID==%d AND Used == 1", m_HwdID);
+
+            if (result.size() > 0)
             {
-                std::vector<std::string> sd = *itt;
-                resourceIdList.push_back(std::strtoul(sd[0].c_str(), NULL, 16));
+                std::vector<std::vector<std::string> >::const_iterator itt;
+                for (itt = result.begin(); itt != result.end(); ++itt)
+                {
+                    std::vector<std::string> sd = *itt;
+                    resourceIdList.push_back(std::strtoul(sd[0].c_str(), NULL, 16));
+                }
             }
-        }
 
-        ihcC->enableRuntimeValueNotification(resourceIdList);
+            ihcC->enableRuntimeValueNotification(resourceIdList);
 
-        int sec_counter = 0;
 
-        while (!m_stoprequested)
-        {
             std::vector<boost::shared_ptr<ResourceValue> > updatedResources;
             updatedResources = ihcC->waitResourceValueNotifications(RESOURCE_NOTIFICATION_TIMEOUT_S);
 
@@ -150,22 +145,36 @@ void CLKIHC::Do_Work()
                 ycmd.rssi = 12;
 
                 m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, NULL, 100);
-
-            }
-
-            sleep_seconds(1);
-
-            sec_counter++;
-
-            if (sec_counter % 2 == 0)
-            {
-                m_LastHeartbeat = mytime(NULL);
             }
         }
-    }
+        else
+        {
+            try
+                {
+                    ihcC->openConnection();
+                }
+                catch (...)
+                {
+                    _log.Log(LOG_ERROR, "LKIHC Plugin: Exception:  connecting to '%s'", m_IPAddress.c_str());
+                    //return;
+                }
+            _log.Log(LOG_STATUS,"LK IHC: Not connected");
+        }
 
-    _log.Log(LOG_STATUS,"LK IHC: Worker stopped...");
+        sleep_seconds(1);
+
+        sec_counter++;
+
+        if (sec_counter % 2 == 0)
+        {
+            m_LastHeartbeat = mytime(NULL);
+        }
+    }
 }
+
+
+/*    _log.Log(LOG_STATUS,"LK IHC: Worker stopped...");
+}*/
 
 bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 {

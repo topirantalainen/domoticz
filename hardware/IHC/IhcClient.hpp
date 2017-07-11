@@ -138,7 +138,18 @@ void openConnection()
     connState = CONNECTING;
 
     authenticationService = new IhcAuthenticationService(ip);
-    WSLoginResult* loginResult = authenticationService->authenticate(username, password);
+
+    WSLoginResult* loginResult;
+    try
+    {
+
+         loginResult= authenticationService->authenticate(username, password);
+    }
+    catch (...)
+    {
+        throw std::runtime_error("asd3");
+    }
+
     if (!loginResult->isLoginWasSuccessful())
     {
         connState = DISCONNECTED;
@@ -156,12 +167,14 @@ void openConnection()
 
     }
 
+
     connState = CONNECTED;
 
     resourceInteractionService = new IhcResourceInteractionService(ip);
     controllerService = new IhcControllerService(ip);
     controllerState = controllerService->getControllerState();
     //loadProject(); //Todo: insert again
+
 
 }
 
