@@ -183,6 +183,9 @@
 #define sSwitchIHCAirRelay			0x76
 #define sSwitchIHCAirDimmer			0x77
 #define sSwitchIHCAirBtns           0x78
+#define sSwitchIHCWiredRelay        0x79
+#define sSwitchIHCWiredDimmer       0x7a
+#define sSwitchIHCWiredBtns         0x7b
 
 //Switch commands
 #define gswitch_sOff				0x00
