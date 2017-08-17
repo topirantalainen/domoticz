@@ -389,6 +389,11 @@ void CLKIHC::iterateDevices(const TiXmlNode* deviceNode)
         unsigned char const deviceType = sSwitchIHCWiredBtns;
         addDeviceIfNotExists(deviceNode, deviceType);
     }
+    else if (strcmp(deviceNode->Value(), "dataline_output") == 0)
+    {
+        unsigned char const deviceType = sSwitchIHCWiredRelay;
+        addDeviceIfNotExists(deviceNode, deviceType);
+    }
     else if (strcmp(deviceNode->Value(), "inputs") == 0)
     {
         for (const TiXmlNode* node = deviceNode->FirstChild(); node; node = node->NextSibling())
