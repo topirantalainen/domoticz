@@ -26,6 +26,6 @@ private:
 	bool StopHardware();
 	void Do_Work();
     void iterateDevices(const TiXmlNode* );
-    void addDeviceIfNotExists(const TiXmlNode* device, const unsigned char deviceType);
+    void addDeviceIfNotExists(const TiXmlNode* device, const unsigned char deviceType, bool functionBlock = false);
 };
 

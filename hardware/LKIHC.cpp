@@ -216,6 +216,20 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
         const _tGeneralSwitch *general = reinterpret_cast<const _tGeneralSwitch*>(pdata);
         switch (pSen->ICMND.subtype)
         {
+
+        case sSwitchIHCFBInput:
+        {
+                                /* Boolean value */
+                                ResourceValue const t(general->id, general->cmnd == gswitch_sOn ? true : false);
+                                result = ihcC->resourceUpdate(t);
+                               /* sleep_milliseconds(500);
+                                ResourceValue const t2(general->id, false);
+                                result = ihcC->resourceUpdate(t2);*/
+                                break;
+                }
+        case sSwitchIHCFBOutput:
+            return true;
+            break;
         case sSwitchIHCWiredRelay:
         case sSwitchIHCWiredBtns:
         case sSwitchIHCAirRelay:
@@ -262,7 +276,7 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
     return result;
 }
 
-void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char deviceType)
+void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char deviceType, bool functionBlock)
 {
     std::string devID = device->ToElement()->Attribute("id");
     std::string d = devID.substr(3);
@@ -279,57 +293,76 @@ void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char d
                 _log.Log(LOG_NORM, "LK IHC: Added device %d %s: %s", id, sid ,devname);
         #endif
         char buff[100];
-        snprintf(buff, sizeof(buff), "%s | %s | %s",
-            device->Parent()->ToElement()->Parent()->ToElement()->Attribute("name"),
-            device->Parent()->ToElement()->Attribute("position"),
-            device->ToElement()->Attribute("name"));
+        if (functionBlock)
+        {
+            snprintf(buff, sizeof(buff), "%s | %s | %s",
+                device->Parent()->ToElement()->Parent()->ToElement()->Parent()->ToElement()->Attribute("name"),
+                device->Parent()->ToElement()->Parent()->ToElement()->Attribute("name"),
+                device->ToElement()->Attribute("name"));
 
+        }
+        else
+        {
+            snprintf(buff, sizeof(buff), "%s | %s | %s",
+                device->Parent()->ToElement()->Parent()->ToElement()->Attribute("name"),
+                device->Parent()->ToElement()->Attribute("position"),
+                device->ToElement()->Attribute("name"));
+        }
         switch (deviceType)
         {
+        case sSwitchIHCFBOutput:
+        case sSwitchIHCFBInput:
+        case sSwitchIHCWiredBtns:
         case sSwitchIHCAirBtns:
             m_sql.safe_query(
                 "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, AddjValue, sValue) "
                 "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, %f, ' ')",
-                m_HwdID, sid, pTypeGeneralSwitch, sSwitchIHCAirBtns, STYPE_PushOn, 1.0, buff);
+                m_HwdID, sid, pTypeGeneralSwitch, deviceType, STYPE_PushOn, 1.0, buff);
             break;
 
+        case sSwitchIHCWiredDimmer:
         case sSwitchIHCAirDimmer:
             m_sql.safe_query(
                 "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, sValue) "
                 "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, ' ')",
-                m_HwdID, sid, pTypeGeneralSwitch, sSwitchIHCAirDimmer, STYPE_Dimmer, buff);
+                m_HwdID, sid, pTypeGeneralSwitch, deviceType, STYPE_Dimmer, buff);
 
             break;
 
+
+        case sSwitchIHCWiredRelay:
         case sSwitchIHCAirRelay:
             m_sql.safe_query(
                 "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, sValue) "
                 "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, ' ')",
-                m_HwdID, sid, pTypeGeneralSwitch, sSwitchIHCAirRelay, STYPE_OnOff, buff);
+                m_HwdID, sid, pTypeGeneralSwitch, deviceType, STYPE_OnOff, buff);
 
             break;
-        case sSwitchIHCWiredBtns:
+
+
+
+        /*case sSwitchIHCWiredBtns:
             m_sql.safe_query(
                 "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, AddjValue, sValue) "
                 "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, %f, ' ')",
                 m_HwdID, sid, pTypeGeneralSwitch, sSwitchIHCWiredBtns, STYPE_PushOn, 1.0, buff);
             break;
-
-        case sSwitchIHCWiredDimmer:
+*/
+        /*case sSwitchIHCWiredDimmer:
             m_sql.safe_query(
                 "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, sValue) "
                 "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, ' ')",
                 m_HwdID, sid, pTypeGeneralSwitch, sSwitchIHCWiredDimmer, STYPE_Dimmer, buff);
 
             break;
-
-        case sSwitchIHCWiredRelay:
+*/
+  /*      case sSwitchIHCWiredRelay:
             m_sql.safe_query(
                 "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, sValue) "
                 "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, ' ')",
                 m_HwdID, sid, pTypeGeneralSwitch, sSwitchIHCWiredRelay, STYPE_OnOff, buff);
 
-            break;
+            break;*/
         }
     }
 }
@@ -356,6 +389,28 @@ void CLKIHC::iterateDevices(const TiXmlNode* deviceNode)
         unsigned char const deviceType = sSwitchIHCWiredBtns;
         addDeviceIfNotExists(deviceNode, deviceType);
     }
+    else if (strcmp(deviceNode->Value(), "inputs") == 0)
+    {
+        for (const TiXmlNode* node = deviceNode->FirstChild(); node; node = node->NextSibling())
+        {
+            if (strcmp(node->Value(), "resource_input") == 0)
+            {
+                unsigned char const deviceType = sSwitchIHCFBInput;
+                addDeviceIfNotExists(node, deviceType, true);
+            }
+        }
+    }
+    else if (strcmp(deviceNode->Value(), "outputs") == 0)
+    {
+        for (const TiXmlNode* node = deviceNode->FirstChild(); node; node = node->NextSibling())
+        {
+            if (strcmp(node->Value(), "resource_output") == 0)
+            {
+                unsigned char const deviceType = sSwitchIHCFBOutput;
+                addDeviceIfNotExists(node, deviceType, true);
+            }
+        }
+    }
 
     for (const TiXmlNode* node = deviceNode->FirstChild(); node; node = node->NextSibling())
     {
@@ -367,7 +422,7 @@ void CLKIHC::GetDevicesFromController()
 {
     TiXmlDocument doc = ihcC->loadProject();
 
-    TinyXPath::xpath_processor processor ( doc.RootElement(), "/utcs_project/groups/*/*[self::product_dataline or self::product_airlink]");
+    TinyXPath::xpath_processor processor ( doc.RootElement(), "/utcs_project/groups/*/*[self::functionblock or self::product_dataline or self::product_airlink]");
 
     unsigned const numberOfDevices = processor.u_compute_xpath_node_set();
 
