@@ -312,12 +312,6 @@ namespace Plugins {
 		return Py_None;
 	}
 
-	static PyObject*	PyDomoticz_Send(PyObject *self, PyObject *args, PyObject *keywds)
-	{
-		Py_INCREF(Py_None);
-		return Py_None;
-	}
-
 	static PyMethodDef DomoticzMethods[] = {
 		{ "Debug", PyDomoticz_Debug, METH_VARARGS, "Write message to Domoticz log only if verbose logging is turned on." },
 		{ "Log", PyDomoticz_Log, METH_VARARGS, "Write message to Domoticz log." },
@@ -325,7 +319,6 @@ namespace Plugins {
 		{ "Debugging", PyDomoticz_Debugging, METH_VARARGS, "Set logging level. 1 set verbose logging, all other values use default level" },
 		{ "Heartbeat", PyDomoticz_Heartbeat, METH_VARARGS, "Set the heartbeat interval, default 10 seconds." },
 		{ "Notifier", PyDomoticz_Notifier, METH_VARARGS, "Enable notification handling with supplied name." },
-		{ "Send", (PyCFunction)PyDomoticz_Send, METH_VARARGS | METH_KEYWORDS, "Send the specified message to the remote device." },
 		{ NULL, NULL, 0, NULL }
 	};
 
@@ -398,6 +391,7 @@ namespace Plugins {
 		m_PyInterpreter(NULL),
 		m_PyModule(NULL),
 		m_DeviceDict(NULL),
+		m_ImageDict(NULL),
 		m_SettingsDict(NULL)
 	{
 		m_HwdID = HwdID;
@@ -641,29 +635,32 @@ namespace Plugins {
 		try
 		{
 			m_stoprequested = true;
-			// If we have connections queue disconnects
-			if (m_Transports.size())
+			if (m_bIsStarted)
 			{
-				boost::lock_guard<boost::mutex> l(m_TransportsMutex);
-				for (std::vector<CPluginTransport*>::iterator itt = m_Transports.begin(); itt != m_Transports.end(); itt++)
+				// If we have connections queue disconnects
+				if (m_Transports.size())
 				{
-					CPluginTransport*	pPluginTransport = *itt;
-					// Tell transport to disconnect if required
-					if ((pPluginTransport) && (pPluginTransport->IsConnected()))
+					boost::lock_guard<boost::mutex> l(m_TransportsMutex);
+					for (std::vector<CPluginTransport*>::iterator itt = m_Transports.begin(); itt != m_Transports.end(); itt++)
 					{
-						DisconnectDirective*	DisconnectMessage = new DisconnectDirective(this, pPluginTransport->Connection());
-						boost::lock_guard<boost::mutex> l(PluginMutex);
-						PluginMessageQueue.push(DisconnectMessage);
+						CPluginTransport*	pPluginTransport = *itt;
+						// Tell transport to disconnect if required
+						if (pPluginTransport)
+						{
+							DisconnectDirective*	DisconnectMessage = new DisconnectDirective(this, pPluginTransport->Connection());
+							boost::lock_guard<boost::mutex> l(PluginMutex);
+							PluginMessageQueue.push(DisconnectMessage);
+						}
 					}
 				}
-			}
-			else
-			{
-				// otherwise just signal stop
-				StopMessage*	Message = new StopMessage(this);
+				else
 				{
-					boost::lock_guard<boost::mutex> l(PluginMutex);
-					PluginMessageQueue.push(Message);
+					// otherwise just signal stop
+					StopMessage*	Message = new StopMessage(this);
+					{
+						boost::lock_guard<boost::mutex> l(PluginMutex);
+						PluginMessageQueue.push(Message);
+					}
 				}
 			}
 
@@ -1143,19 +1140,24 @@ namespace Plugins {
 	{
 		DisconnectDirective*	pMessage = (DisconnectDirective*)pMess;
 		CConnection*	pConnection = (CConnection*)pMessage->m_pConnection;
-		if (pConnection->pTransport && (pConnection->pTransport->IsConnected()))
+
+		// Return any partial data to plugin
+		if (pConnection->pProtocol)
+		{
+			pConnection->pProtocol->Flush(pMessage->m_pPlugin, (PyObject*)pConnection);
+		}
+
+		if (pConnection->pTransport)
 		{
 			if (m_bDebug) _log.Log(LOG_NORM, "(%s) Disconnect directive received.", Name.c_str());
 			pConnection->pTransport->handleDisconnect();
-			if (pConnection->pProtocol)
-			{
-				pConnection->pProtocol->Flush(pMessage->m_pPlugin, (PyObject*)pConnection);
-			}
-			// inform the plugin
-			DisconnectMessage*	Message = new DisconnectMessage(this, (PyObject*)pConnection);
-			boost::lock_guard<boost::mutex> l(PluginMutex);
-			PluginMessageQueue.push(Message);
 		}
+	}
+
+	void CPlugin::DisconnectEvent(CEventBase * pMess)
+	{
+		DisconnectedEvent*	pMessage = (DisconnectedEvent*)pMess;
+		CConnection*	pConnection = (CConnection*)pMessage->m_pConnection;
 		if (pConnection->pTransport)
 		{
 			{
@@ -1173,7 +1175,15 @@ namespace Plugins {
 			delete pConnection->pTransport;
 			pConnection->pTransport = NULL;
 
-			if (m_stoprequested && !m_Transports.size()) // Plugin exiting, forced stop
+			// inform the plugin
+			{
+				DisconnectMessage*	Message = new DisconnectMessage(this, (PyObject*)pConnection);
+				boost::lock_guard<boost::mutex> l(PluginMutex);
+				PluginMessageQueue.push(Message);
+			}
+
+			// Plugin exiting and all connections have disconnect messages queued
+			if (m_stoprequested && !m_Transports.size()) 
 			{
 				StopMessage*	Message = new StopMessage(this);
 				{
@@ -1181,7 +1191,6 @@ namespace Plugins {
 					PluginMessageQueue.push(Message);
 				}
 			}
-
 		}
 	}
 

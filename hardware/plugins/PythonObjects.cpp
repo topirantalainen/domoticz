@@ -776,7 +776,8 @@ namespace Plugins {
 			{
 				_log.Log(LOG_ERROR, "(%s) %s: Failed to parse parameters: 'nValue', 'sValue', 'SignalLevel', 'BatteryLevel' or 'Options' expected.", __func__, sName.c_str());
 				LogPythonException(self->pPlugin, __func__);
-				return NULL;
+				Py_INCREF(Py_None);
+				return Py_None;
 			}
 
 			if (self->pPlugin->m_bDebug)
@@ -807,7 +808,6 @@ namespace Plugins {
 					mpOptions.insert(std::pair<std::string, std::string>(sOptionName, sOptionValue));
 				}
 				m_sql.SetDeviceOptions(self->ID, mpOptions);
-				Py_DECREF(pOptionsDict);
 			}
 
 			CDevice_refresh(self);
@@ -1000,7 +1000,7 @@ namespace Plugins {
 			{
 				self->pPlugin = pModState->pPlugin;
 				if (pName) {
-					Py_XDECREF(self->Address);
+					Py_XDECREF(self->Name);
 					self->Name = PyUnicode_FromString(pName);
 				}
 				if (pAddress) {

@@ -182,12 +182,12 @@
 #define sSwitchTypeSysfsGpio		0x75
 #define sSwitchIHCAirRelay			0x76
 #define sSwitchIHCAirDimmer			0x77
-#define sSwitchIHCAirBtns           0x78
-#define sSwitchIHCWiredRelay        0x79
-#define sSwitchIHCWiredDimmer       0x7a
-#define sSwitchIHCWiredBtns         0x7b
-#define sSwitchIHCFBInput           0x7c
-#define sSwitchIHCFBOutput          0x7d
+#define sSwitchIHCAirBtns			0x78
+#define sSwitchIHCWiredRelay		0x79
+#define sSwitchIHCWiredDimmer		0x7a
+#define sSwitchIHCWiredBtns			0x7b
+#define sSwitchIHCFBInput			0x7c
+#define sSwitchIHCFBOutput			0x7d
 
 //Switch commands
 #define gswitch_sOff				0x00
