@@ -299,6 +299,10 @@ define(['app'], function (app) {
 					return;
 				}
 				var extra = "";
+				if (text.indexOf("Evohome") >= 0) {
+					extra = $("#hardwarecontent #divevohometcp #controlleridevohometcp").val();
+				}
+
 				if (text.indexOf("S0 Meter") >= 0) {
 					extra = $.devExtra;
 				}
@@ -932,14 +936,14 @@ define(['app'], function (app) {
 				evo_installation = evo_installation + $("#hardwarecontent #divevohomeweb #comboevotcs").val()*16;
 
 				$.ajax({
-					url: "json.htm?type=command&param=updatehardware&htype=" + hardwaretype + 
-					"&username=" + encodeURIComponent(username) + 
-					"&password=" + encodeURIComponent(password) + 
+					url: "json.htm?type=command&param=updatehardware&htype=" + hardwaretype +
+					"&username=" + encodeURIComponent(username) +
+					"&password=" + encodeURIComponent(password) +
 					"&name=" + encodeURIComponent(name) +
-					"&enabled=" + bEnabled + 
-					"&idx=" + idx +	
-					"&datatimeout=" + datatimeout + 
-					"&Mode1=" + Pollseconds + 
+					"&enabled=" + bEnabled +
+					"&idx=" + idx +
+					"&datatimeout=" + datatimeout +
+					"&Mode1=" + Pollseconds +
 					"&Mode2=" + UseFlags +
 					"&Mode5=" + evo_installation,
 					async: false,
@@ -1098,8 +1102,12 @@ define(['app'], function (app) {
 					ShowNotify($.t('Please enter an Valid Port!'), 2500, true);
 					return;
 				}
+				var extra = "";
+				if (text.indexOf("Evohome") >= 0) {
+					extra = $("#hardwarecontent #divevohometcp #controlleridevohometcp").val();
+				}
 				$.ajax({
-					url: "json.htm?type=command&param=addhardware&htype=" + hardwaretype + "&address=" + address + "&port=" + port + "&name=" + encodeURIComponent(name) + "&enabled=" + bEnabled + "&datatimeout=" + datatimeout,
+					url: "json.htm?type=command&param=addhardware&htype=" + hardwaretype + "&address=" + address + "&port=" + port + "&name=" + encodeURIComponent(name) + "&enabled=" + bEnabled + "&datatimeout=" + datatimeout + "&extra=" + extra,
 					async: false,
 					dataType: 'json',
 					success: function (data) {
@@ -1321,8 +1329,12 @@ define(['app'], function (app) {
 					ShowNotify($.t('Please enter an Valid Port!'), 2500, true);
 					return;
 				}
+				var extra = "";
+				if (text.indexOf("Evohome") >= 0) {
+					extra = $("#hardwarecontent #divevohometcp #controlleridevohometcp").val();
+				}
 				$.ajax({
-					url: "json.htm?type=command&param=addhardware&htype=" + hardwaretype + "&address=" + address + "&port=" + port + "&name=" + encodeURIComponent(name) + "&enabled=" + bEnabled + "&datatimeout=" + datatimeout,
+					url: "json.htm?type=command&param=addhardware&htype=" + hardwaretype + "&address=" + address + "&port=" + port + "&name=" + encodeURIComponent(name) + "&enabled=" + bEnabled + "&datatimeout=" + datatimeout + "&extra=" + extra,
 					async: false,
 					dataType: 'json',
 					success: function (data) {
@@ -1759,14 +1771,14 @@ define(['app'], function (app) {
 				evo_installation = evo_installation + $("#hardwarecontent #divevohomeweb #comboevotcs").val()*16;
 
 				$.ajax({
-					url: "json.htm?type=command&param=addhardware&htype=" + hardwaretype + 
-					"&username=" + encodeURIComponent(username) + 
-					"&password=" + encodeURIComponent(password) + 
+					url: "json.htm?type=command&param=addhardware&htype=" + hardwaretype +
+					"&username=" + encodeURIComponent(username) +
+					"&password=" + encodeURIComponent(password) +
 					"&name=" + encodeURIComponent(name) +
-					"&enabled=" + bEnabled + 
-					"&idx=" + idx +	
-					"&datatimeout=" + datatimeout + 
-					"&Mode1=" + Pollseconds + 
+					"&enabled=" + bEnabled +
+					"&idx=" + idx +
+					"&datatimeout=" + datatimeout +
+					"&Mode1=" + Pollseconds +
 					"&Mode2=" + UseFlags +
 					"&Mode5=" + evo_installation,
 					async: false,
@@ -3175,42 +3187,8 @@ define(['app'], function (app) {
 			});
 		}
 
-		BleBoxUpdateNode = function (nodeid) {
-			if ($('#updelclr #nodedelete').attr("class") == "btnstyle3-dis") {
-				return;
-			}
-
-			var name = $("#hardwarecontent #bleboxnodeparamstable #nodename").val();
-			if (name == "") {
-				ShowNotify($.t('Please enter a Name!'), 2500, true);
-				return;
-			}
-			var ip = $("#hardwarecontent #bleboxnodeparamstable #nodeip").val();
-			if (ip == "") {
-				ShowNotify($.t('Please enter a IP Address!'), 2500, true);
-				return;
-			}
-
-			$.ajax({
-				url: "json.htm?type=command&param=bleboxupdatenode" +
-				"&idx=" + $.devIdx +
-				"&nodeid=" + nodeid +
-				"&name=" + encodeURIComponent(name) +
-				"&ip=" + ip,
-				async: false,
-				dataType: 'json',
-				success: function (data) {
-					RefreshBleBoxNodeTable();
-				},
-				error: function () {
-					ShowNotify($.t('Problem Updating Node!'), 2500, true);
-				}
-			});
-		}
-
 		RefreshBleBoxNodeTable = function () {
 			$('#modal').show();
-			$('#updelclr #nodeupdate').attr("class", "btnstyle3-dis");
 			$('#updelclr #nodedelete').attr("class", "btnstyle3-dis");
 			$("#hardwarecontent #bleboxnodeparamstable #nodename").val("");
 			$("#hardwarecontent #bleboxnodeparamstable #nodeip").val("");
@@ -3249,7 +3227,6 @@ define(['app'], function (app) {
 				$('#updelclr #nodedelete').attr("class", "btnstyle3-dis");
 				if ($(this).hasClass('row_selected')) {
 					$(this).removeClass('row_selected');
-					$('#updelclr #nodeupdate').attr("class", "btnstyle3-dis");
 					$("#hardwarecontent #bleboxnodeparamstable #nodename").val("");
 					$("#hardwarecontent #bleboxnodeparamstable #nodeip").val("");
 				}
@@ -3257,12 +3234,10 @@ define(['app'], function (app) {
 					var oTable = $('#bleboxnodestable').dataTable();
 					oTable.$('tr.row_selected').removeClass('row_selected');
 					$(this).addClass('row_selected');
-					$('#updelclr #nodeupdate').attr("class", "btnstyle3");
 					var anSelected = fnGetSelected(oTable);
 					if (anSelected.length !== 0) {
 						var data = oTable.fnGetData(anSelected[0]);
 						var idx = data["DT_RowId"];
-						$("#updelclr #nodeupdate").attr("href", "javascript:BleBoxUpdateNode(" + idx + ")");
 						$('#updelclr #nodedelete').attr("class", "btnstyle3");
 						$("#updelclr #nodedelete").attr("href", "javascript:BleBoxDeleteNode(" + idx + ")");
 						$("#hardwarecontent #bleboxnodeparamstable #nodename").val(data["1"]);
@@ -4900,7 +4875,7 @@ define(['app'], function (app) {
 								HwTypeStr += ' <span class="label label-info lcursor" onclick="CreateRFLinkDevices(' + item.idx + ',\'' + item.Name + '\');">' + $.t("Create RFLink Devices") + '</span>';
 							}
 							else if (HwTypeStr.indexOf("Evohome") >= 0) {
-								if (HwTypeStr.indexOf("via") >= 0)
+								if (HwTypeStr.indexOf("script") >= 0 || HwTypeStr.indexOf("Web") >= 0)
 									HwTypeStr += ' <span class="label label-info lcursor" onclick="CreateEvohomeSensors(' + item.idx + ',\'' + item.Name + '\');">' + $.t("Create Devices") + '</span>';
 								else {
 									HwTypeStr += ' <span class="label label-info lcursor" onclick="BindEvohome(' + item.idx + ',\'' + item.Name + '\',\'Relay\');">Bind Relay</span>';
@@ -5114,6 +5089,9 @@ define(['app'], function (app) {
 							if (data["Type"].indexOf("Eco Devices") >= 0) {
 								$("#hardwarecontent #divmodelecodevices #combomodelecodevices").val(data["Mode1"]);
 								$("#hardwarecontent #hardwareparamsratelimitp1 #ratelimitp1").val(data["Mode2"]);
+							}
+							if (data["Type"].indexOf("Evohome") >= 0) {
+								$("#hardwarecontent #divevohometcp #controlleridevohometcp").val(data["Extra"]);
 							}
 						}
 						else if ((((data["Type"].indexOf("LAN") >= 0) || data["Type"].indexOf("MySensors Gateway with MQTT") >= 0) && (data["Type"].indexOf("YouLess") >= 0)) || (data["Type"].indexOf("Domoticz") >= 0) || (data["Type"].indexOf("Denkovi") >= 0) || (data["Type"].indexOf("Relay-Net") >= 0) || (data["Type"].indexOf("Satel Integra") >= 0) || (data["Type"].indexOf("Logitech Media Server") >= 0) || (data["Type"].indexOf("HEOS by DENON") >= 0) || (data["Type"].indexOf("Xiaomi Gateway") >= 0) || (data["Type"].indexOf("MyHome OpenWebNet with LAN interface") >= 0) || (data["Type"].indexOf("LK IHC Controller") >= 0)) {
@@ -5376,6 +5354,7 @@ define(['app'], function (app) {
 			$("#hardwarecontent #lblusername").show();
 
 			$("#hardwarecontent #divevohome").hide();
+			$("#hardwarecontent #divevohometcp").hide();
 			$("#hardwarecontent #divevohomeweb").hide();
 			$("#hardwarecontent #divbaudratemysensors").hide();
 			$("#hardwarecontent #divbaudratep1").hide();
@@ -5447,7 +5426,6 @@ define(['app'], function (app) {
 			else if (text.indexOf("USB") >= 0 || text.indexOf("Teleinfo EDF") >= 0) {
 				if (text.indexOf("Evohome") >= 0) {
 					$("#hardwarecontent #divevohome").show();
-
 				}
 				if (text.indexOf("MySensors") >= 0) {
 					$("#hardwarecontent #divbaudratemysensors").show();
@@ -5483,6 +5461,9 @@ define(['app'], function (app) {
 				if (text.indexOf("P1 Smart Meter") >= 0) {
 					$("#hardwarecontent #divratelimitp1").show();
 					$("#hardwarecontent #divcrcp1").show();
+				}
+				if (text.indexOf("Evohome") >= 0) {
+					$("#hardwarecontent #divevohometcp").show();
 				}
 			}
 			else if ((text.indexOf("LAN") >= 0 || text.indexOf("MySensors Gateway with MQTT") >= 0) && (text.indexOf("YouLess") >= 0 || text.indexOf("Denkovi") >= 0 || text.indexOf("Relay-Net") >= 0 || text.indexOf("Satel Integra") >= 0) || (text.indexOf("Xiaomi Gateway") >= 0) || text.indexOf("MyHome OpenWebNet with LAN interface") >= 0) {
@@ -5907,4 +5888,3 @@ define(['app'], function (app) {
 		});
 	}]);
 });
-

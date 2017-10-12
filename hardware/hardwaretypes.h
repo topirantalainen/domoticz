@@ -180,14 +180,18 @@
 #define sSwitchTypeYW_Sensor		0x73
 #define sSwitchTypeLegrandcad		0x74
 #define sSwitchTypeSysfsGpio		0x75
-#define sSwitchIHCAirRelay			0x76
-#define sSwitchIHCAirDimmer			0x77
-#define sSwitchIHCAirBtns			0x78
-#define sSwitchIHCWiredRelay		0x79
-#define sSwitchIHCWiredDimmer		0x7a
-#define sSwitchIHCWiredBtns			0x7b
-#define sSwitchIHCFBInput			0x7c
-#define sSwitchIHCFBOutput			0x7d
+#define sSwitchTypeHager			0x76
+#define sSwitchTypeFaber			0x77
+#define sSwitchTypeDrayton			0x78
+#define sSwitchTypeV2Phoenix        0x79
+#define sSwitchIHCAirRelay          0x80
+#define sSwitchIHCAirDimmer         0x81
+#define sSwitchIHCAirBtns           0x82
+#define sSwitchIHCWiredRelay        0x83
+#define sSwitchIHCWiredDimmer       0x84
+#define sSwitchIHCWiredBtns         0x85
+#define sSwitchIHCFBInput           0x86
+#define sSwitchIHCFBOutput          0x87
 
 //Switch commands
 #define gswitch_sOff				0x00
