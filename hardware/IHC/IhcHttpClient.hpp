@@ -22,11 +22,11 @@ public:
 	    }
 
 	    ExtraHeaders.push_back("Content-Type: text/xml; charset=UTF-8");
+	    HTTPClient::SetTimeout(8);
 
 	    bool ret = HTTPClient::POST(httpUrl, query, ExtraHeaders, result);
 	    if (!ret) {
-	        std::cout << "Not good - throwing exception\n";
-	        throw std::runtime_error("asd");//std::logic_error("LK IHC: Error connecting to Server...");
+	        throw std::runtime_error("Seems like the IHC controller has crashed...");//std::logic_error("LK IHC: Error connecting to Server...");
 	    }
 	    return result;
 	}

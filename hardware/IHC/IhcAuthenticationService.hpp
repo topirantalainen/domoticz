@@ -44,14 +44,7 @@ public:
 	    query += "</x:Body>\r\n";
 	    query += "</x:Envelope>\r\n\r\n";
 
-	    try
-	    {
-           sResult = sendQuery(url, query);
-        }
-        catch (...)
-        {
-            throw std::runtime_error("asd2");
-        }
+        sResult = sendQuery(url, query);
 
 	    doc.Parse(sResult.c_str());
 

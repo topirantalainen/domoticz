@@ -133,6 +133,11 @@ void enableRuntimeValueNotifications2(std::vector<int> resourceIdList)
 std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(int const timeout)
 { return resourceInteractionService->waitResourceValueNotifications(timeout); }
 
+void reset()
+{
+	connState = DISCONNECTED;
+}
+
 void openConnection()
 {
     connState = CONNECTING;
@@ -272,7 +277,7 @@ TiXmlDocument LoadProjectFileFromController()
     int numberOfSegments = controllerService->getProjectNumberOfSegments();
     int segmentationSize = controllerService->getProjectSegmentationSize();
 
-    std::vector<char> asd;
+    std::vector<char> projectData;
     for (int i = 0; i < numberOfSegments; i++)
     {
 #ifdef _DEBUG
@@ -281,14 +286,14 @@ TiXmlDocument LoadProjectFileFromController()
         WSFile data = controllerService->getProjectSegment(i, getProjectInfo().getProjectMajorRevision(), getProjectInfo().getProjectMinorRevision());
 
         std::vector<char> t = data.getData();
-        asd.insert(asd.end(), t.begin(), t.end());
+        projectData.insert(projectData.end(), t.begin(), t.end());
 
     }
 #ifdef _DEBUG
-    std::cout << "Final size: " << asd.size() << std::endl;
+    std::cout << "Final size: " << projectData.size() << std::endl;
 #endif
 
-    std::string str(asd.begin(), asd.end());
+    std::string str(projectData.begin(), projectData.end());
     std::string decoded;
     decoded = b64decode(str);
     std::string extracted;

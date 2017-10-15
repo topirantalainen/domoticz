@@ -107,173 +107,206 @@ bool CLKIHC::StopHardware()
 void CLKIHC::Do_Work()
 {
     _log.Log(LOG_STATUS,"LK IHC: Worker started...");
+    int crashCounter = 0;
 
-    try
-    {
-        ihcC->openConnection();
-    }
-    catch (...)//const char* msg)
-    {
-        std::cout << "Fejl\n";
-        //_log.Log(LOG_ERROR, "LKIHC Plugin: Exception: '%s' connecting to '%s'", msg, m_IPAddress.c_str());
-    }
+    bool firstTime = true;
+    int sec_counter = 28;
 
-    if (ihcC->CONNECTED == ihcC->connState)
+    while (!m_stoprequested)
     {
 
-        /* Check version */
-        WSProjectInfo inf = ihcC->getProjectInfo();
-        std::cout << inf << std::endl;
+	if (m_stoprequested)
+	    break;
+	sec_counter++;
+	//if (sec_counter % 10 == 0) {
+	m_LastHeartbeat = mytime(NULL);
+	//}
 
-        std::vector<int> resourceIdList;
+	if (ihcC->CONNECTED != ihcC->connState)
+	    {
+	    try {
+		if (sec_counter % 30 == 0)
+		    ihcC->openConnection();
+	    }
+	    catch (...)
+		{
+		ihcC->reset();
+		firstTime = true;
+		}
+	    }
 
-        std::vector<std::vector<std::string> > result;
-        result = m_sql.safe_query("SELECT DeviceID FROM DeviceStatus WHERE HardwareID==%d AND Used == 1", m_HwdID);
+	if (ihcC->CONNECTED == ihcC->connState)
+	    {
 
-        if (result.size() > 0)
-        {
-            std::vector<std::vector<std::string> >::const_iterator itt;
-            for (itt = result.begin(); itt != result.end(); ++itt)
-            {
-                std::vector<std::string> sd = *itt;
-                resourceIdList.push_back(std::strtoul(sd[0].c_str(), NULL, 16));
-            }
-        }
+	    try {
+		if (firstTime)
+		    {
+		    firstTime = false;
 
-        ihcC->enableRuntimeValueNotification(resourceIdList);
+		    WSProjectInfo inf = ihcC->getProjectInfo();
+		    std::cout << inf;
 
-        int sec_counter = 0;
+		    std::vector<int> resourceIdList;
 
-        while (!m_stoprequested)
-        {
-            std::vector<boost::shared_ptr<ResourceValue> > updatedResources;
-            updatedResources = ihcC->waitResourceValueNotifications(RESOURCE_NOTIFICATION_TIMEOUT_S);
+		    std::vector<std::vector<std::string> > result;
+		    result = m_sql.safe_query("SELECT DeviceID FROM DeviceStatus WHERE HardwareID==%d AND Used == 1", m_HwdID);
 
-            // Handle object state changes
-            for (std::vector<boost::shared_ptr<ResourceValue> >::iterator it = updatedResources.begin(); it != updatedResources.end(); ++it)
-            {
-                ResourceValue & obj = *(*it);
+		    if (result.size() > 0)
+			{
+			std::vector<std::vector<std::string> >::const_iterator itt;
+			for (itt = result.begin(); itt != result.end(); ++itt)
+			    {
+			    std::vector<std::string> sd = *itt;
+			    resourceIdList.push_back(std::strtoul(sd[0].c_str(), NULL, 16));
+			    }
+			}
 
-                int nvalue = obj.intValue();
-                bool tIsOn = (nvalue != 0);
-                int lastLevel = 0;
-                int value = obj.intValue();
+		    ihcC->enableRuntimeValueNotification(resourceIdList);
 
-                _tGeneralSwitch ycmd;
-                ycmd.subtype = sSwitchIHCAirRelay;
-                char szID[10];
-                std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
+		    }
 
-                std::vector<std::vector<std::string> > result;
-                result = m_sql.safe_query("SELECT SubType FROM DeviceStatus WHERE (DeviceID='%q' AND HardwareID=='%d')", szID, m_HwdID);
-                if (result.size() != 0)
-                {
-                    ycmd.subtype =  atoi(result[0][0].c_str());
-                }
+		std::vector<boost::shared_ptr<ResourceValue> > updatedResources;
+		updatedResources = ihcC->waitResourceValueNotifications(RESOURCE_NOTIFICATION_TIMEOUT_S);
 
-                ycmd.id =  (long unsigned int)obj.ID;
-                ycmd.unitcode = 0;
-                ycmd.battery_level = 10;
+		// Handle object state changes
+		for (std::vector<boost::shared_ptr<ResourceValue> >::iterator it = updatedResources.begin(); it != updatedResources.end(); ++it)
+		    {
+		    ResourceValue & obj = *(*it);
 
-                if (obj.intValue() > 1)
-                {
-                    ycmd.cmnd = 2;
-                    ycmd.level=obj.intValue();
-                }
-                else
-                {
-                    ycmd.cmnd = obj.intValue();
-                    ycmd.level=0;
-                }
-                //TODO: FIX Rssi
-                ycmd.rssi = 12;
+		    int nvalue = obj.intValue();
+		    bool tIsOn = (nvalue != 0);
+		    int lastLevel = 0;
+		    int value = obj.intValue();
 
-                m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, NULL, 100);
+		    _tGeneralSwitch ycmd;
+		    ycmd.subtype = sSwitchIHCAirRelay;
+		    char szID[10];
+		    std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
 
-            }
+		    std::vector<std::vector<std::string> > result;
+		    result = m_sql.safe_query("SELECT SubType FROM DeviceStatus WHERE (DeviceID='%q' AND HardwareID=='%d')", szID, m_HwdID);
+		    if (result.size() != 0)
+			{
+			ycmd.subtype =  atoi(result[0][0].c_str());
+			}
 
-            sleep_seconds(1);
+		    ycmd.id =  (long unsigned int)obj.ID;
+		    ycmd.unitcode = 0;
+		    ycmd.battery_level = 10;
 
-            sec_counter++;
+		    if (obj.intValue() > 1)
+			{
+			ycmd.cmnd = 2;
+			ycmd.level=obj.intValue();
+			}
+		    else
+			{
+			ycmd.cmnd = obj.intValue();
+			ycmd.level=0;
+			}
+		    //TODO: FIX Rssi
+		    ycmd.rssi = 12;
 
-            if (sec_counter % 2 == 0)
-            {
-                m_LastHeartbeat = mytime(NULL);
-            }
-        }
+		    m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, NULL, 100);
+
+		    }
+
+	    }
+	    catch(...)
+		{
+		crashCounter++;
+		_log.Log(LOG_ERROR, "The IHC controller has crashed %d times since Domoticz was started", crashCounter);
+		ihcC->reset();
+		firstTime = true;
+		}
+
+	    }
+	sleep_seconds(1);
     }
 
     _log.Log(LOG_STATUS,"LK IHC: Worker stopped...");
 }
-
 bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 {
     bool result = false;
     const tRBUF *pSen = reinterpret_cast<const tRBUF*>(pdata);
-
-    if (pSen->ICMND.packettype == pTypeGeneralSwitch)
+    if (ihcC->CONNECTED == ihcC->connState)
     {
-        const _tGeneralSwitch *general = reinterpret_cast<const _tGeneralSwitch*>(pdata);
-        switch (pSen->ICMND.subtype)
-        {
+	try
+	{
+	    if (pSen->ICMND.packettype == pTypeGeneralSwitch)
+	    {
+		const _tGeneralSwitch *general = reinterpret_cast<const _tGeneralSwitch*>(pdata);
+		switch (pSen->ICMND.subtype)
+		{
 
-        case sSwitchIHCFBInput:
-        {
-                                /* Boolean value */
-                                ResourceValue const t(general->id, general->cmnd == gswitch_sOn ? true : false);
-                                result = ihcC->resourceUpdate(t);
-                               /* sleep_milliseconds(500);
-                                ResourceValue const t2(general->id, false);
-                                result = ihcC->resourceUpdate(t2);*/
-                                break;
-                }
-        case sSwitchIHCFBOutput:
-            return true;
-            break;
-        case sSwitchIHCWiredRelay:
-        case sSwitchIHCWiredBtns:
-        case sSwitchIHCAirRelay:
-        case sSwitchIHCAirBtns:
-            {
-                /* Boolean value */
-                ResourceValue const t(general->id, general->cmnd == gswitch_sOn ? true : false);
-                result = ihcC->resourceUpdate(t);
-                break;
-            }
-        case sSwitchIHCWiredDimmer:
-        case sSwitchIHCAirDimmer:
-            {
-                /* Integer value */
-                uint8_t val = 0;
-                if (general->cmnd == gswitch_sOff)
-                {
-                    val = 0;
-                }
-                else if (general->cmnd == gswitch_sOn)
-                {
-                    val = 100;
-                }
-                else
-                {
-                    val = general->level;
-                }
-                ResourceValue const t(general->id, RangedInteger(val));
-                result = ihcC->resourceUpdate(t);
-                break;
-            }
-        }
-    }
+		    case sSwitchIHCFBInput:
+		    {
+			/* Boolean value */
+			ResourceValue const t(general->id, general->cmnd == gswitch_sOn ? true : false);
+			result = ihcC->resourceUpdate(t);
+			/* sleep_milliseconds(500);
+				    ResourceValue const t2(general->id, false);
+				    result = ihcC->resourceUpdate(t2);*/
+			break;
+		    }
+		    case sSwitchIHCFBOutput:
+			return true;
+			break;
+		    case sSwitchIHCWiredRelay:
+		    case sSwitchIHCWiredBtns:
+		    case sSwitchIHCAirRelay:
+		    case sSwitchIHCAirBtns:
+		    {
+			/* Boolean value */
+			ResourceValue const t(general->id, general->cmnd == gswitch_sOn ? true : false);
+			result = ihcC->resourceUpdate(t);
+			break;
+		    }
+		    case sSwitchIHCWiredDimmer:
+		    case sSwitchIHCAirDimmer:
+		    {
+			/* Integer value */
+			uint8_t val = 0;
+			if (general->cmnd == gswitch_sOff)
+			{
+			val = 0;
+			    }
+			else if (general->cmnd == gswitch_sOn)
+			{
+			    val = 100;
+			}
+			else
+			{
+			    val = general->level;
+			}
+			ResourceValue const t(general->id, RangedInteger(val));
+			result = ihcC->resourceUpdate(t);
+			break;
+		    }
+		}
+	    }
 
-    if (result)
-    {
-        _log.Log(LOG_STATUS, "Resource update was successful");
+	    if (result)
+	    {
+		_log.Log(LOG_STATUS, "Resource update was successful");
+	    }
+	    else
+	    {
+		_log.Log(LOG_STATUS, "Failed resource update");
+	    }
+
+	}
+
+	catch (...)
+	{
+	    ihcC->reset();
+	}
+
+	return result;
     }
     else
-    {
-        _log.Log(LOG_STATUS, "Failed resource update");
-    }
-
-    return result;
+        return false;
 }
 
 void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char deviceType, bool functionBlock)
@@ -425,16 +458,23 @@ void CLKIHC::iterateDevices(const TiXmlNode* deviceNode)
 
 void CLKIHC::GetDevicesFromController()
 {
-    TiXmlDocument doc = ihcC->loadProject();
-
-    TinyXPath::xpath_processor processor ( doc.RootElement(), "/utcs_project/groups/*/*[self::functionblock or self::product_dataline or self::product_airlink]");
-
-    unsigned const numberOfDevices = processor.u_compute_xpath_node_set();
-
-    for (int i = 0; i < numberOfDevices; i++)
+    try
     {
-        TiXmlNode* thisNode = processor.XNp_get_xpath_node(i);
-        iterateDevices(thisNode);
+	TiXmlDocument doc = ihcC->loadProject();
+
+	TinyXPath::xpath_processor processor ( doc.RootElement(), "/utcs_project/groups/*/*[self::functionblock or self::product_dataline or self::product_airlink]");
+
+	unsigned const numberOfDevices = processor.u_compute_xpath_node_set();
+
+	for (int i = 0; i < numberOfDevices; i++)
+	{
+	    TiXmlNode* thisNode = processor.XNp_get_xpath_node(i);
+	    iterateDevices(thisNode);
+	}
+    }
+    catch (...)
+    {
+	ihcC->reset();
     }
 }
 
