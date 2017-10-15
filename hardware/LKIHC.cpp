@@ -343,10 +343,15 @@ void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char d
         }
         switch (deviceType)
         {
-        case sSwitchIHCFBOutput:
         case sSwitchIHCFBInput:
         case sSwitchIHCWiredBtns:
         case sSwitchIHCAirBtns:
+            m_sql.safe_query(
+                "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, AddjValue, AddjValue2, sValue) "
+                "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, %f, %f, ' ')",
+                m_HwdID, sid, pTypeGeneralSwitch, deviceType, STYPE_Contact, 1.0, 1.0, buff);
+            break;
+        case sSwitchIHCFBOutput:
             m_sql.safe_query(
                 "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, AddjValue, AddjValue2, sValue) "
                 "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, %f, %f, ' ')",
