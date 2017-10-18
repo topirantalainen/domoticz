@@ -349,13 +349,13 @@ void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char d
             m_sql.safe_query(
                 "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, AddjValue, AddjValue2, sValue) "
                 "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, %f, %f, ' ')",
-                m_HwdID, sid, pTypeGeneralSwitch, deviceType, STYPE_Contact, 1.0, 1.0, buff);
+                m_HwdID, sid, pTypeGeneralSwitch, deviceType, STYPE_Contact, buff, 1.0, 1.0);
             break;
         case sSwitchIHCFBOutput:
             m_sql.safe_query(
                 "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, AddjValue, AddjValue2, sValue) "
                 "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, %f, %f, ' ')",
-                m_HwdID, sid, pTypeGeneralSwitch, deviceType, STYPE_PushOn, 1.0, 1.0, buff);
+                m_HwdID, sid, pTypeGeneralSwitch, deviceType, STYPE_PushOn, buff, 1.0, 1.0);
             break;
 
         case sSwitchIHCWiredDimmer:
