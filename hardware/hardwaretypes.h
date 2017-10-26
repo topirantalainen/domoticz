@@ -184,14 +184,11 @@
 #define sSwitchTypeFaber			0x77
 #define sSwitchTypeDrayton			0x78
 #define sSwitchTypeV2Phoenix        0x79
-#define sSwitchIHCAirRelay          0x80
-#define sSwitchIHCAirDimmer         0x81
-#define sSwitchIHCAirBtns           0x82
-#define sSwitchIHCWiredRelay        0x83
-#define sSwitchIHCWiredDimmer       0x84
-#define sSwitchIHCWiredBtns         0x85
-#define sSwitchIHCFBInput           0x86
-#define sSwitchIHCFBOutput          0x87
+#define sSwitchIHCOutput          0x80
+#define sSwitchIHCDimmer         0x81
+#define sSwitchIHCInput           0x82
+#define sSwitchIHCFBInput           0x83
+#define sSwitchIHCFBOutput          0x84
 
 //Switch commands
 #define gswitch_sOff				0x00
