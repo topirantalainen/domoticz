@@ -113,7 +113,7 @@ bool doResourceUpdate(ResourceValue const &query)
 #endif
     std::string const sResult = sendQuery(url, query.toXml());
     doc.Parse(sResult.c_str());
-    return WSLoginResult::parseValueToBoolean(doc, "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:setResourceValue2/text()");
+    return WSLoginResult::parseValueToBoolean(doc, "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:setResourceValue2");
 
 }
 
