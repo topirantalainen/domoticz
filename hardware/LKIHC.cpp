@@ -200,7 +200,7 @@ void CLKIHC::Do_Work()
                     std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
 
                     std::vector<std::vector<std::string> > result;
-                    result = m_sql.safe_query("SELECT SubType FROM DeviceStatus WHERE (DeviceID='%q' AND HardwareID=='%d')", szID, m_HwdID);
+                    result = m_sql.safe_query("SELECT SubType, BatteryLevel, SignalLevel FROM DeviceStatus WHERE (DeviceID='%q' AND HardwareID=='%d')", szID, m_HwdID);
                     if (result.size() != 0)
                     {
                         switchcmd.subtype = atoi(result[0][0].c_str());
@@ -208,6 +208,8 @@ void CLKIHC::Do_Work()
 
                     switchcmd.id = (long unsigned int)obj.ID;
                     switchcmd.unitcode = 0;
+                    switchcmd.battery_level = atoi(result[0][1].c_str());
+                    switchcmd.rssi = atoi(result[0][2].c_str());
 
                     if (obj.intValue() > 1)
                     {
@@ -219,8 +221,7 @@ void CLKIHC::Do_Work()
                         switchcmd.cmnd = obj.intValue();
                         switchcmd.level=0;
                     }
-
-                    m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&switchcmd, NULL, 3);
+                    m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&switchcmd, NULL, atoi(result[0][1].c_str()));
                 }
             }
             catch(...)
@@ -242,7 +243,7 @@ bool CLKIHC::UpdateBatteryAndRSSI()
     _log.Log(LOG_STATUS, "LK IHC: Updating battery and RSSI levels");
     TiXmlDocument const RFandRSSIinfo =  ihcC->getRF();
     TinyXPath::xpath_processor processor ( RFandRSSIinfo.RootElement(), "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:getDetectedDeviceList1/ns1:arrayItem");
-    RFandRSSIinfo.Print();
+
     processor.u_compute_xpath_node_set(); // <-- this is important. It executes the Xpath expression
     if (processor.XNp_get_xpath_node(0)->FirstChild() != 0)
     {
