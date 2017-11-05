@@ -28,6 +28,7 @@
 #include "IhcAuthenticationService.hpp"
 #include "IhcResourceInteractionService.hpp"
 #include "IhcControllerService.hpp"
+#include "zlib.h"
 
 const char* B64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -54,12 +55,12 @@ private:
 	std::string password;
 	std::string ip;
 	std::string projectFile;
-	std::string dumpResourceToFile;
+	//std::string dumpResourceToFile;
 
 	IhcAuthenticationService* authenticationService;
 	IhcResourceInteractionService* resourceInteractionService;
 	IhcControllerService* controllerService;
-
+	IhcWireless* wire;
 	WSControllerState controllerState;
 
 public:
@@ -71,61 +72,8 @@ ihcClient(std::string const &ip, std::string const &username, std::string const 
     this->connState = DISCONNECTED;
 }
 
-std::string getUsername()
-{ return username; }
-
-void setUsername(std::string &username)
-{ this->username = username; }
-
-void setPassword(std::string &password)
-{ this->password = password; }
-
-std::string getIp()
-{ return ip; }
-
-void setIp(std::string &ip)
-{ this->ip = ip; }
-
-std::string getProjectFile()
-{ return projectFile; }
-
-void setProjectFile(std::string &path)
-{ this->projectFile = path; }
-
-std::string getDumpResourceInformationToFile()
-{ return dumpResourceToFile; }
-
-void setDumpResourcesInformationToFile(std::string const &value)
-{ this->dumpResourceToFile = value; }
-
-/*ConnectionState ConnectionState getConnectionState()
-{
-    return connState;
-}*/
-/*
-void addEventListener(IhcEventListener listener)
-{
-    eventListeners.add(listener);
-}
-
-void removeEventListener(IhcEventListener listener)
-{
-    eventListener.remove(listener);
-}
-*/
-/*
-std::unique_ptr<WSResourceValue> resourceQuery(int resoureId)
-{
-    return resourceInteractionService->resourceQuery(resoureId);
-
-}*/
 ResourceValue resourceQuery(int const &res)
 { return resourceInteractionService->resourceQuery(res); }
-/*
-void enableRuntimeValueNotifications(std::vector<int> resourceIdList)
-{
-    resourceInteractionService->enableRuntimeValueNotifications(resourceIdList);
-}*/
 
 void enableRuntimeValueNotifications2(std::vector<int> resourceIdList)
 { resourceInteractionService->enableRuntimeValueNotifications(resourceIdList); }
@@ -147,7 +95,6 @@ void openConnection()
     WSLoginResult* loginResult;
     try
     {
-
          loginResult= authenticationService->authenticate(username, password);
     }
     catch (...)
@@ -169,21 +116,24 @@ void openConnection()
         { throw "insufficient user rights"; }
 
         throw "unknown connection error";
-
     }
-
 
     connState = CONNECTED;
 
     resourceInteractionService = new IhcResourceInteractionService(ip);
     controllerService = new IhcControllerService(ip);
     controllerState = controllerService->getControllerState();
+    wire = new IhcWireless(ip);
     //loadProject(); //Todo: insert again
 
 
 }
 
 public:
+TiXmlDocument getRF()
+{
+	return wire->getRF();
+}
 
 WSProjectInfo getProjectInfo()
 { return controllerService->getProjectInfo(); }
@@ -199,7 +149,7 @@ TiXmlDocument loadProject()
     else
     {
         std::cout << "Loading IHC /ELKO LS project file from controller...\n";
-        TiXmlDocument doc = LoadProjectFileFromController();
+        TiXmlDocument const doc = LoadProjectFileFromController();
         return doc;
 
     }
@@ -238,19 +188,46 @@ std::string b64decode(const std::string& str64)
     return b64decode(str64.c_str(), str64.size());
 }
 
-static std::string decompress(const std::string& data)
+/* From: https://panthema.net/2007/0328-ZLibString.html */
+std::string decompress_string(const std::string& str)
 {
-    namespace bio = boost::iostreams;
+    z_stream zs;                        // z_stream is zlib's control structure
+    memset(&zs, 0, sizeof(zs));
 
-    std::stringstream compressed(data);
-    std::stringstream decompressed;
+    if (inflateInit2(&zs, 16+MAX_WBITS) != Z_OK)
+        throw(std::runtime_error("inflateInit failed while decompressing."));
 
-    bio::filtering_streambuf<bio::input> out;
-    out.push(bio::gzip_decompressor());
-    out.push(compressed);
-    bio::copy(out, decompressed);
+    zs.next_in = (Bytef*)str.data();
+    zs.avail_in = str.size();
 
-    return decompressed.str();
+    int ret;
+    char outbuffer[32768];
+    std::string outstring;
+
+    // get the decompressed bytes blockwise using repeated calls to inflate
+    do {
+        zs.next_out = reinterpret_cast<Bytef*>(outbuffer);
+        zs.avail_out = sizeof(outbuffer);
+
+        ret = inflate(&zs, 0);
+
+        if (outstring.size() < zs.total_out) {
+            outstring.append(outbuffer,
+                             zs.total_out - outstring.size());
+        }
+
+    } while (ret == Z_OK);
+
+    inflateEnd(&zs);
+
+    if (ret != Z_STREAM_END) {          // an error occurred that was not EOF
+        std::ostringstream oss;
+        oss << "Exception during zlib decompression: (" << ret << ") "
+            << zs.msg;
+        throw(std::runtime_error(oss.str()));
+    }
+
+    return outstring;
 }
 
 private:
@@ -273,19 +250,17 @@ std::string iso_8859_1_to_utf8(std::string str, size_t pos)
 
 TiXmlDocument LoadProjectFileFromController()
 {
-    WSProjectInfo projectInfo = getProjectInfo();
-    int numberOfSegments = controllerService->getProjectNumberOfSegments();
-    int segmentationSize = controllerService->getProjectSegmentationSize();
+    WSProjectInfo const projectInfo = getProjectInfo();
 
     std::vector<char> projectData;
-    for (int i = 0; i < numberOfSegments; i++)
+    for (int i = 0; i < controllerService->getProjectNumberOfSegments(); i++)
     {
 #ifdef _DEBUG
         std::cout << "Downloading segment " << i << "..." << std::endl;
 #endif
         WSFile data = controllerService->getProjectSegment(i, getProjectInfo().getProjectMajorRevision(), getProjectInfo().getProjectMinorRevision());
 
-        std::vector<char> t = data.getData();
+        std::vector<char> const t = data.getData();
         projectData.insert(projectData.end(), t.begin(), t.end());
 
     }
@@ -293,39 +268,35 @@ TiXmlDocument LoadProjectFileFromController()
     std::cout << "Final size: " << projectData.size() << std::endl;
 #endif
 
-    std::string str(projectData.begin(), projectData.end());
-    std::string decoded;
-    decoded = b64decode(str);
-    std::string extracted;
-    extracted = decompress(decoded);
+    std::string const str(projectData.begin(), projectData.end());
+
+    std::string decompressed_project = decompress_string(b64decode(str));
 
 #ifdef _DEBUG
     std::cout << "Final size decoded: " << decoded.size() << std::endl;
-    std::cout << "Final size extracted: " << extracted.size() << std::endl;
+    std::cout << "Final size extracted: " << decompressed_project.size() << std::endl;
 
     std::ofstream out("output.txt");
-    out << extracted;
+    out << decompressed_project;
     out.close();
 #endif
     // Skip unsupported statements
     size_t pos = 0;
     while (true) {
-        pos = extracted.find_first_of("<", pos);
-        if (extracted[pos + 1] == '?' || // <?xml...
-                extracted[pos + 1] == '!') { // <!DOCTYPE... or [<!ENTITY...
+        pos = decompressed_project.find_first_of("<", pos);
+        if (decompressed_project[pos + 1] == '?' || // <?xml...
+                decompressed_project[pos + 1] == '!') { // <!DOCTYPE... or [<!ENTITY...
             // Skip this line
-            pos = extracted.find_first_of("\n", pos);
+            pos = decompressed_project.find_first_of("\n", pos);
         } else
             break;
     }
-    //extracted = extracted.substr(pos);
-    //std::cout << "and here\n";
-    //std::string ext2;
-    extracted = iso_8859_1_to_utf8(extracted.substr(pos), pos);
+
+    decompressed_project = iso_8859_1_to_utf8(decompressed_project.substr(pos), pos);
 
     // Parse document as usual
     TiXmlDocument doc;
-    doc.Parse(extracted.c_str());
+    doc.Parse(decompressed_project.c_str());
 
     return doc;
 

@@ -94,22 +94,6 @@ public:
 		return controllerState;
 	}
 
-	void getRF()
-	{
-	    std::string url2 = url = "http://192.168.1.99/ws/AirlinkManagementService";
-        std::string sResult;
-        TiXmlDocument doc;
-
-        sResult = sendQuery(url, emptyQuery, "getDetectedDeviceList");
-        doc.Parse(sResult.c_str());
-        doc.Print();
-/*
-        WSControllerState controllerState;
-        controllerState.encodeData(doc);
-        std::cout << controllerState.getState() << std::endl;
-*/
-
-    }
 
 
 };

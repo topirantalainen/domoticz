@@ -854,8 +854,6 @@ const char *RFX_Type_SubType_Desc(const unsigned char dType, const unsigned char
 		{ pTypeGeneralSwitch, sSwitchIHCOutput, "IHC Output" },
 		{ pTypeGeneralSwitch, sSwitchIHCDimmer, "IHC Dimmer" },
 		{ pTypeGeneralSwitch, sSwitchIHCInput, "IHC Input" },
-		{ pTypeGeneralSwitch, sSwitchIHCFBInput, "IHC Functionblock Input" },
-		{ pTypeGeneralSwitch, sSwitchIHCFBOutput, "IHC Functionblock Output" },
 		{ pTypeGeneralSwitch, sSwitchTypeDoitrand, "Doitrand" },
 		{ pTypeGeneralSwitch, sSwitchTypeWarema, "Warema" },
 		{ pTypeGeneralSwitch, sSwitchTypeAnsluta, "Ansluta" },
