@@ -31,6 +31,9 @@
  *
  * This provides a interface to the LK IHC home automation system
  *
+ * Missing features:
+ * only show battery status for battery operated devices - currently, all wireless devices show a battery level (Why Schneider??)
+ *
  */
 
 #include "stdafx.h"
@@ -239,7 +242,7 @@ bool CLKIHC::UpdateBatteryAndRSSI()
     _log.Log(LOG_STATUS, "LK IHC: Updating battery and RSSI levels");
     TiXmlDocument const RFandRSSIinfo =  ihcC->getRF();
     TinyXPath::xpath_processor processor ( RFandRSSIinfo.RootElement(), "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:getDetectedDeviceList1/ns1:arrayItem");
-
+    RFandRSSIinfo.Print();
     processor.u_compute_xpath_node_set(); // <-- this is important. It executes the Xpath expression
     if (processor.XNp_get_xpath_node(0)->FirstChild() != 0)
     {
@@ -268,7 +271,7 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
     {
         try
         {
-            if (pSen->ICMND.packettype == pTypeGeneralSwitch)
+            if (pTypeGeneralSwitch == pSen->ICMND.packettype)
             {
                 const _tGeneralSwitch *general = reinterpret_cast<const _tGeneralSwitch*>(pdata);
                 switch (pSen->ICMND.subtype)
@@ -283,7 +286,6 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 
                     case sSwitchIHCInput:
                         return false;
-                        break;
 
                     case sSwitchIHCDimmer:
                     {
@@ -327,7 +329,6 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 
 void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char deviceType, bool functionBlock)
 {
-
     long unsigned int serialNumber = 0;
     std::string const devID_raw = device->ToElement()->Attribute("id");
     std::string devID = devID_raw.substr(3);
@@ -375,13 +376,6 @@ void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char d
                 m_HwdID, sid, pTypeGeneralSwitch, deviceType, STYPE_Contact, buff, 1.0, 1.0, serialNumber);
             break;
 
-/*        case sSwitchIHCFBInput:
-            m_sql.safe_query(
-                "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, AddjValue, AddjValue2, sValue, Options) "
-                "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, %f, %f, ' ','%lld')",
-                m_HwdID, sid, pTypeGeneralSwitch, deviceType, STYPE_PushOn, buff, 1.0, 1.0, serialNumber);
-            break;
-*/
         case sSwitchIHCDimmer:
             m_sql.safe_query(
                 "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, sValue, Options) "
@@ -468,7 +462,7 @@ void CLKIHC::GetDevicesFromController()
     }
     catch (...)
     {
-    ihcC->reset();
+        ihcC->reset();
     }
 }
 
@@ -507,8 +501,6 @@ void CWebServer::GetIHCProjectFromController(WebEmSession & session, const reque
         _log.Log(LOG_ERROR, "LK IHC: Exception: '%s'", msg);
     }
 
-
-    //m_mainworker.RestartHardware(idx);
 }
 
 }
