@@ -14,6 +14,35 @@
 #include <boost/variant.hpp>
 #include <iostream>
 #include <memory>
+static const std::string emptyQuery2 = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"><soapenv:Body></soapenv:Body></soapenv:Envelope>";
+class IhcWireless : public IhcHttpClient
+{
+private:
+	std::string url;
+
+public:
+	IhcWireless(std::string hostname)
+	{
+		url = "http://" + hostname + "/ws/ResourceInteractionService";
+	}
+	TiXmlDocument getRF()
+	{
+	    std::string url2 = url = "http://192.168.1.99/ws/AirlinkManagementService";
+        std::string sResult;
+        TiXmlDocument doc;
+
+        sResult = sendQuery(url, emptyQuery2, "getDetectedDeviceList");
+        doc.Parse(sResult.c_str());
+        //doc.Print();
+/*
+        WSControllerState controllerState;
+        controllerState.encodeData(doc);
+        std::cout << controllerState.getState() << std::endl;
+*/
+return doc;
+    }
+
+};
 class IhcResourceInteractionService : public IhcHttpClient
 {
 private:
