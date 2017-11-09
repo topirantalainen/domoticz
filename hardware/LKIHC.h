@@ -28,6 +28,7 @@ private:
     std::string getValue( TiXmlElement* a, std::string t);
     void iterateDevices(const TiXmlNode* );
     void addDeviceIfNotExists(const TiXmlNode* device, const unsigned char deviceType, bool functionBlock = false);
+    void addTempDeviceIfNotExists(const TiXmlNode* device, const unsigned char deviceType, bool functionBlock = false);
     bool UpdateBatteryAndRSSI();
 };
 

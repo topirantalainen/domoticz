@@ -498,6 +498,7 @@ const char *RFX_Type_Desc(const unsigned char i, const unsigned char snum)
 		{ pTypeEvohomeWater, "Heating" , "evohome" },
 		{ pTypeEvohomeRelay, "Heating" , "evohome" },
 		{ pTypeGeneralSwitch, "Light/Switch", "lightbulb" },
+		{ pTypeIHC, "IHCcc", "lightbulb" },
 		{ 0, NULL, NULL }
 	};
 	if (snum==1)
@@ -884,6 +885,7 @@ const char *RFX_Type_SubType_Desc(const unsigned char dType, const unsigned char
 		{ pTypeGeneralSwitch, sSwitchTypeFaber, "Faber" },
 		{ pTypeGeneralSwitch, sSwitchTypeDrayton, "Drayton" },
 		{ pTypeGeneralSwitch, sSwitchTypeV2Phoenix, "V2Phoenix" },
+		{ pTypeIHC, sTypeIHCTemperature, "aaV2Phoenix" },
 		{  0,0,NULL }
 	};
 	return findTableID1ID2(Table, dType, sType);

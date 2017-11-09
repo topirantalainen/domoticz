@@ -10577,6 +10577,81 @@ namespace http {
 						break;
 						}
 					}
+					else if(dType == pTypeIHC)
+					{
+					    std::cout << "IHC TYPE\n";
+					    switch (dSubType)
+					    {
+					    case 0:
+					    {
+	                           double tvalue = 1.7;
+	                            root["result"][ii]["Temp"] = tvalue;
+	                            sprintf(szData, "%.1f %c", tvalue, tempsign);
+	                            root["result"][ii]["Data"] = szData;
+	                            root["result"][ii]["TypeImg"] = "temperature";
+	                            root["result"][ii]["HaveTimeout"] = bHaveTimeout;
+					    }
+					        break;
+					    case 1:
+					    {
+					        std::string lstatus;
+	                           root["result"][ii]["TypeImg"] = "contact";
+	                            bool bIsOn = true;
+	                            if (bIsOn) {
+	                                lstatus = "Open";
+	                            }
+	                            else {
+	                                lstatus = "Closed";
+	                            }
+	                            root["result"][ii]["Status"] = lstatus;
+					    }
+					                                break;
+
+					    case 2:
+					    {
+                            root["result"][ii]["Level"] = 3;
+                            int iLevel = round((float(1.0) / 100.0f)*3);
+                            root["result"][ii]["LevelInt"] = 4;
+                            root["result"][ii]["Status"] = "On";
+
+					                            }
+					                                break;
+
+					    case 3:
+					    {
+					                                std::string lstatus;
+					                                   root["result"][ii]["TypeImg"] = "contact";
+					                                    bool bIsOn = true;
+					                                    if (bIsOn) {
+					                                        lstatus = "Open";
+					                                    }
+					                                    else {
+					                                        lstatus = "Closed";
+					                                    }
+					                                    root["result"][ii]["Status"] = lstatus;
+					                            }
+					                                break;
+
+					    case 4:
+					    {
+					                                std::string lstatus;
+					                                   root["result"][ii]["TypeImg"] = "contact";
+					                                    bool bIsOn = true;
+					                                    if (bIsOn) {
+					                                        lstatus = "Open";
+					                                    }
+					                                    else {
+					                                        lstatus = "Closed";
+					                                    }
+					                                    root["result"][ii]["Status"] = lstatus;
+					                            }
+					                                break;
+
+					    }
+
+
+
+					}
 					root["result"][ii]["Timers"] = (bHasTimers == true) ? "true" : "false";
 					ii++;
 				}

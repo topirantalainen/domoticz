@@ -10,6 +10,19 @@
 #include <string>
 #include <boost/variant.hpp>
 
+struct RangedFloat {
+    float min;
+    float max;
+    float value;
+
+    explicit RangedFloat(float value, float min = 0, float max = 100)
+      : min(min)
+      , max(max)
+      , value(value)
+    {}
+};
+
+
 struct RangedInteger {
     int min;
     int max;
@@ -37,6 +50,10 @@ struct valueVisitor : boost::static_visitor<int> {
         return value.value;
     }
 
+    int operator()(RangedFloat const value) const{
+        return (int)(value.value);
+    }
+
     template<typename T>
     int operator()(T const&) const
     {
@@ -59,6 +76,11 @@ struct ToStringVisitor : boost::static_visitor<std::string> {
 
     std::string operator()(RangedInteger const value) const{
     	std::string const out = "Object " + boost::to_string(ID) + ", value \"" + boost::lexical_cast<std::string>(value.value) + "\"";
+        return out;
+    }
+
+    std::string operator()(RangedFloat const value) const{
+        std::string const out = "Object " + boost::to_string(ID) + ", value \"" + boost::lexical_cast<std::string>(value.value) + "\"";
         return out;
     }
 
@@ -104,6 +126,20 @@ struct XmlVisitor : boost::static_visitor<std::string> {
         return query;
 	}
 
+	std::string operator()(RangedFloat const value) const
+    {
+        std::string query = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+        query += "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">";
+        query += "<soap:Body><setResourceValue1 xmlns=\"utcs\">";
+        query += "  <value xmlns:q1=\"utcs.values\" xsi:type=\"q1:WSFloatingPointValue\">";
+        query += "   <q1:maximumValue>" + boost::to_string(value.max) + "</q1:maximumValue><q1:minimumValue>" + boost::to_string(value.min) + "</q1:minimumValue>";
+        query += "   <q1:integer>" + boost::to_string(value.value) + "</q1:integer></value><resourceID>" + boost::to_string(ID) + "</resourceID>";
+        query += "  <isValueRuntime>true</isValueRuntime></setResourceValue1></soap:Body>";
+        query += "</soap:Envelope>";
+
+        return query;
+    }
+
 	template<typename T>
     std::string operator()(T const&) const
     {
@@ -115,7 +151,7 @@ struct Null {};
 
 struct ResourceValue {
     int ID;
-    boost::variant<Null, bool, RangedInteger> value;
+    boost::variant<Null, bool, RangedInteger, RangedFloat> value;
 
     explicit ResourceValue(int ID)
       : ID(ID)

@@ -193,7 +193,9 @@ void CLKIHC::Do_Work()
                 // Handle object state changes
                 for (std::vector<boost::shared_ptr<ResourceValue> >::iterator it = updatedResources.begin(); it != updatedResources.end(); ++it)
                 {
+
                     ResourceValue & obj = *(*it);
+                    std::cout << obj.toString() << std::endl;
 
                     _tGeneralSwitch switchcmd;
                     char szID[10];
@@ -394,6 +396,54 @@ void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char d
     }
 }
 
+void CLKIHC::addTempDeviceIfNotExists(const TiXmlNode* device, const unsigned char deviceType, bool functionBlock)
+{
+    long unsigned int serialNumber = 0;
+    std::string const devID_raw = device->ToElement()->Attribute("id");
+    std::string devID = devID_raw.substr(3);
+
+    char sid[10];
+    sprintf(sid, "%08X", (static_cast<unsigned int>(std::strtoul(devID.c_str(), NULL, 16))));
+
+    std::vector<std::vector<std::string> > result;
+    result = m_sql.safe_query("SELECT ID FROM DeviceStatus WHERE (HardwareID==%d) AND (DeviceID=='%q')",
+                              m_HwdID, sid);
+    if (result.size() < 1)
+    {
+        #ifdef _DEBUG
+            _log.Log(LOG_NORM, "LK IHC: Added device %d %s: %s", id, sid ,devname);
+        #endif
+        char buff[100];
+        //TODO: Fix null location
+        if (functionBlock)
+        {
+            snprintf(buff, sizeof(buff), "FB | %s | %s | %s",
+                device->Parent()->ToElement()->Parent()->ToElement()->Parent()->ToElement()->Attribute("name"),
+                device->Parent()->ToElement()->Parent()->ToElement()->Attribute("name"),
+                device->ToElement()->Attribute("name"));
+        }
+        else
+        {
+            snprintf(buff, sizeof(buff), "%s | %s | %s",
+                device->Parent()->ToElement()->Parent()->ToElement()->Attribute("name"),
+                device->Parent()->ToElement()->Attribute("position"),
+                device->ToElement()->Attribute("name"));
+
+            // If it's a wireless device, get the serial number so we can use it for the RSSI and battery level mappings
+            if (device->Parent()->ToElement()->Attribute("serialnumber") != 0){
+                std::string const serialNumber_raw = std::string(device->Parent()->ToElement()->Attribute("serialnumber")).substr(3);
+                serialNumber = std::strtoul(serialNumber_raw.c_str(), NULL, 16);
+            }
+        }
+            m_sql.safe_query(
+                "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, AddjValue, AddjValue2, sValue, Options) "
+                "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, %f, %f, ' ', '%lld')",
+                m_HwdID, sid, pTypeTEMP, 5, 0, buff, 1.0, 1.0, serialNumber);
+
+
+    }
+}
+
 void CLKIHC::iterateDevices(const TiXmlNode* deviceNode)
 {
 
@@ -402,6 +452,18 @@ void CLKIHC::iterateDevices(const TiXmlNode* deviceNode)
         unsigned char const deviceType = sSwitchIHCDimmer;
         addDeviceIfNotExists(deviceNode, deviceType);
     }
+    else if (strcmp(deviceNode->Value(), "resource_temperature") == 0)
+        {
+/*
+            std::string const devID_raw = deviceNode->ToElement()->Attribute("id");
+            std::string devID = devID_raw.substr(3);
+
+            char sid[10];
+            sprintf(sid, "%08X", (static_cast<unsigned int>(std::strtoul(devID.c_str(), NULL, 16))));
+            SendTempSensor(static_cast<unsigned int>(std::strtoul(devID.c_str(), NULL, 16)),0,1.2,"asdawd",2);*/
+
+            addTempDeviceIfNotExists(deviceNode,5);
+        }
     else if ((strcmp(deviceNode->Value(), "airlink_relay") == 0) || (strcmp(deviceNode->Value(), "dataline_output") == 0))
     {
         unsigned char const deviceType = sSwitchIHCOutput;
@@ -423,6 +485,8 @@ void CLKIHC::iterateDevices(const TiXmlNode* deviceNode)
             }
         }
     }
+
+
     else if (strcmp(deviceNode->Value(), "outputs") == 0)
     {
         for (const TiXmlNode* node = deviceNode->FirstChild(); node; node = node->NextSibling())

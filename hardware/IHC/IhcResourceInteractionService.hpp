@@ -97,8 +97,8 @@ ResourceValue resourceQuery(int resourceId)
             }
             else
             {
-                //std::cout << "Unknown type: (" << sss->FirstChildElement("ns1:value")->Value() << ")" << std::endl;
-                //doc.Print();
+                std::cout << "Unknown type: (" << sss->FirstChildElement("ns1:value")->Value() << ")" << std::endl;
+                doc.Print();
             }
         }
         else
@@ -174,6 +174,18 @@ boost::shared_ptr<ResourceValue> parseResourceValue(TiXmlElement* xmlRes, int co
 			return boost::move(var);
 		}
 
+		std::string const floatVal = getValue(xmlRes, "/ns1:value/ns" + boost::to_string(index) + ":floatingPointValue");
+		if (floatVal.size() > 0)
+		        {
+		            var->value = RangedFloat(boost::lexical_cast<float>(floatVal),
+		                    boost::lexical_cast<float>(getValue(xmlRes, "/ns1:value/ns" + boost::to_string(index) + ":maximumValue")),
+		                    boost::lexical_cast<float>(getValue(xmlRes, "/ns1:value/ns" + boost::to_string(index) + ":minimumValue")));
+		                            //  return val;
+
+		            return boost::move(var);
+		        }
+
+
 		//Todo: throw unknown type
 	}
 
@@ -220,6 +232,7 @@ std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(in
 
 	TiXmlDocument doc;
     doc.Parse(sResult.c_str());
+
 #ifdef _DEBUG
     doc.Print();
 #endif

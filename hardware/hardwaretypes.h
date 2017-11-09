@@ -266,6 +266,8 @@
 #define pTypeEvohomeRelay 0x44 //Relay
 #define sTypeEvohomeRelay 0x00
 
+#define pTypeIHC        0x49
+#define sTypeIHCTemperature 0x00
 //#define sTypeEvohomeOutside 0x30 //If connected
 //#define sTypeEvohomeStatus 0x40 //Not sure if we can do this in 1 sensor would be for things like zone valve status, boiler relay status (maybe OT values too) and comms errors (maybe seperature sensor or switch for each is easiest)
 
