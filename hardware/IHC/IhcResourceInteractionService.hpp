@@ -22,11 +22,13 @@ private:
 public:
 IhcResourceInteractionService(std::string hostname)
 {
+	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
 	url = "http://" + hostname + "/ws/ResourceInteractionService";
 }
 
 ResourceValue resourceQuery(int resourceId)
 {
+	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
 
 	std::stringstream sstr;
     std::string httpData = sstr.str();
@@ -83,6 +85,7 @@ ResourceValue resourceQuery(int resourceId)
 
 std::string getValue( TiXmlElement* a, std::string t)
 {
+	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
 	TinyXPath::xpath_processor proc(a, t.c_str());
 
 	if (1 == proc.u_compute_xpath_node_set())
@@ -98,6 +101,7 @@ std::string getValue( TiXmlElement* a, std::string t)
 
 bool resourceUpdate(ResourceValue const value)
 {
+	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
 	return doResourceUpdate(value);
 }
 
@@ -105,6 +109,7 @@ private:
 
 bool doResourceUpdate(ResourceValue const &query)
 {
+	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
 	TiXmlDocument doc;
 #ifdef _DEBUG
     std::cout << "------------------\n";
@@ -119,6 +124,7 @@ bool doResourceUpdate(ResourceValue const &query)
 
 boost::shared_ptr<ResourceValue> parseResourceValue(TiXmlElement* xmlRes, int const index)
 {
+	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
 	std::string resourceID = getValue(xmlRes, "/ns1:resourceID");
 
 	if (!resourceID.empty())
@@ -157,6 +163,7 @@ public:
 
 void enableRuntimeValueNotifications(std::vector<int> &items)
 {
+	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
 	std::string queryPrefix = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 	queryPrefix += "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">";
 	queryPrefix += "<soap:Body><enableRuntimeValueNotifications1 xmlns=\"utcs\">";
@@ -178,7 +185,7 @@ void enableRuntimeValueNotifications(std::vector<int> &items)
 
 std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(int const timeoutInSeconds)
 {
-
+	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
 	std::string query = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 	query += "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:utcs=\"utcs\">";
 	query += "<soapenv:Header/><soapenv:Body>";
@@ -194,6 +201,7 @@ std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(in
 #ifdef _DEBUG
     doc.Print();
 #endif
+    _log.Log(LOG_STATUS,"IHC_RESULT: %s", sResult.c_str());
     std::vector<boost::shared_ptr<ResourceValue> > resourceList;
 
     TinyXPath::xpath_processor processor ( doc.RootElement(), "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:waitForResourceValueChanges2/ns1:arrayItem");
