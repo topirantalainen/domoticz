@@ -206,9 +206,10 @@ std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(in
 
     TinyXPath::xpath_processor processor ( doc.RootElement(), "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:waitForResourceValueChanges2/ns1:arrayItem");
     int n = processor.u_compute_xpath_node_set(); // <-- this is important. It executes the Xpath expression
-    if (processor.XNp_get_xpath_node(0)->FirstChild() == 0)
+    if (n == 0 || processor.XNp_get_xpath_node(0)->FirstChild() == 0)
 	{
     	// Timed out, return empty list
+		_log.Log(LOG_STATUS,"IHC_RESULT: Controller crash!? ---------------------------------");
 		return resourceList;
 	}
 	else
