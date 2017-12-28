@@ -210,6 +210,7 @@ std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(in
 	{
     	// Timed out, return empty list
 		_log.Log(LOG_STATUS,"IHC_RESULT: Controller crash!? ---------------------------------");
+		throw std::runtime_error("Empty result");
 		return resourceList;
 	}
 	else
