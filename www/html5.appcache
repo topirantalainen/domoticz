@@ -1,6 +1,6 @@
 CACHE MANIFEST
 
-# ref 1446
+# ref 1492
 
 CACHE:
 # CSS
@@ -112,14 +112,14 @@ images/button.png
 images/camera_default.png
 images/camera-web.png
 images/capture.png
+images/ChristmasTree.png
+images/ChristmasTree48_Off.png
+images/ChristmasTree48_On.png
 images/clock.png
 images/clock48.png
 images/clock48_On.png
 images/collection.png
 images/collection_hover.png
-images/ChristmasTree.png
-images/ChristmasTree48_Off.png
-images/ChristmasTree48_On.png
 images/Computer.png
 images/Computer48_Off.png
 images/Computer48_On.png
@@ -456,12 +456,16 @@ i18n/domoticz-uk.json
 i18n/domoticz-zh.json
 
 # Scripts
+app/device-log/LightLog.js
+app/device-log/TemperatureLog.js
+app/device-log/TemperatureReport.js
 app/AboutController.js
 app/app.js
 app/CamController.js
 app/CustomIconsController.js
 app/DashboardController.js
 app/DevicesController.js
+app/DeviceTimers.js
 app/DPFibaroController.js
 app/DPHttpController.js
 app/DPInfluxController.js
@@ -501,14 +505,17 @@ js/angular-route.min.js
 js/angular-sanitize.min.js
 js/angular-scrollglue.js
 js/angular-tree-control.js
+js/angular-websocket.js
 js/angular.min.js
 js/angularAMD.min.js
+js/babel-polyfill-6.26.0.js
 js/blockly_compressed.js
 js/blocks_compressed.js
 js/bootbox.min.js
 js/bootstrap.min.js
 js/colpick.js
 js/d3.min.js
+js/dataTables.select.min.js
 js/dataTables.tableTools.min.js
 js/date.format.js
 js/domoticz.js
@@ -523,7 +530,7 @@ js/highcharts-ng.min.js
 js/highcharts.js
 js/html5shiv.js
 js/i18next-1.8.0.min.js
-js/jquery-1.12.0.min.js
+js/jquery-3.3.1.min.js
 js/jquery-ui.min.js
 js/jquery.dataTables.min.js
 js/jquery.ddslick.min.js
@@ -568,6 +575,9 @@ views/about.html
 views/cam.html
 views/customicons.html
 views/dashboard.html
+views/device_light_log.html
+views/device_temperature_log.html
+views/device_temperature_report.html
 views/devices.html
 views/dpfibaro.html
 views/dphttp.html
@@ -591,6 +601,7 @@ views/temperature.html
 views/temperature_widget.html
 views/temperature_custom_temp_log.html
 views/timerplan.html
+views/timers.html
 views/update.html
 views/users.html
 views/utility.html

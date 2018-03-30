@@ -231,8 +231,10 @@ MACRO(ADD_PRECOMPILED_HEADER _targetName _input)
       LIST(APPEND _compiler_FLAGS "-I${item}")
     ENDFOREACH(item)
 
-    GET_DIRECTORY_PROPERTY(_directory_flags DEFINITIONS)
-    LIST(APPEND _compiler_FLAGS ${_directory_flags})
+    GET_DIRECTORY_PROPERTY(_directory_flags COMPILE_DEFINITIONS)
+    FOREACH(item ${_directory_flags})
+      LIST(APPEND _compiler_FLAGS "-D${item}")
+    ENDFOREACH(item)
 
     SEPARATE_ARGUMENTS(_compiler_FLAGS)
     MESSAGE("${CMAKE_CXX_COMPILER} ${CMAKE_CXX_COMPILER_ARG1} ${_compiler_FLAGS} -x c++-header -o ${_output} ${_source}")
@@ -291,6 +293,7 @@ push/FibaroPush.cpp
 push/GooglePubSubPush.cpp
 push/HttpPush.cpp
 push/InfluxPush.cpp
+push/WebsocketPush.cpp
 httpclient/HTTPClient.cpp
 httpclient/UrlEncode.cpp
 hardware/1Wire.cpp
@@ -305,8 +308,9 @@ hardware/ASyncSerial.cpp
 hardware/ASyncTCP.cpp
 hardware/AtagOne.cpp
 hardware/BleBox.cpp
-hardware/Comm5TCP.cpp
 hardware/Comm5Serial.cpp
+hardware/Comm5SMTCP.cpp
+hardware/Comm5TCP.cpp
 hardware/csocket.cpp
 hardware/CurrentCostMeterBase.cpp
 hardware/CurrentCostMeterSerial.cpp
@@ -320,7 +324,12 @@ hardware/DomoticzHardware.cpp
 hardware/DomoticzInternal.cpp
 hardware/DomoticzTCP.cpp
 hardware/Dummy.cpp
+hardware/EcoCompteur.cpp
 hardware/EcoDevices.cpp
+hardware/eHouseTCP.cpp
+hardware/eHouse/EhouseEvents.cpp
+hardware/eHouse/EhouseTcpClient.cpp
+hardware/eHouse/EhouseUdpListener.cpp
 hardware/EnOceanESP2.cpp
 hardware/EnOceanESP3.cpp
 hardware/EnphaseAPI.cpp
@@ -338,6 +347,7 @@ hardware/Gpio.cpp
 hardware/GpioPin.cpp
 hardware/HardwareMonitor.cpp
 hardware/HarmonyHub.cpp
+hardware/Honeywell.cpp
 hardware/HEOS.cpp
 hardware/I2C.cpp
 hardware/ICYThermostat.cpp
@@ -361,6 +371,7 @@ hardware/MySensorsTCP.cpp
 hardware/MySensorsMQTT.cpp
 hardware/NefitEasy.cpp
 hardware/Nest.cpp
+hardware/NestOAuthAPI.cpp
 hardware/Netatmo.cpp
 hardware/HttpPoller.cpp
 hardware/OnkyoAVTCP.cpp
@@ -383,6 +394,7 @@ hardware/PhilipsHue/PhilipsHueSensors.cpp
 hardware/PiFace.cpp
 hardware/Pinger.cpp
 hardware/PVOutput_Input.cpp
+hardware/RAVEn.cpp
 hardware/Razberry.cpp
 hardware/Rego6XXSerial.cpp
 hardware/RelayNet.cpp
@@ -415,17 +427,16 @@ hardware/ToonThermostat.cpp
 hardware/USBtin.cpp
 hardware/USBtin_MultiblocV8.cpp
 hardware/VolcraftCO20.cpp
-hardware/RAVEn.cpp
 hardware/Winddelen.cpp
 hardware/WOL.cpp
 hardware/Wunderground.cpp
+hardware/XiaomiGateway.cpp
+hardware/Yeelight.cpp
 hardware/YouLess.cpp
 hardware/ZiBlueBase.cpp
 hardware/ZiBlueSerial.cpp
 hardware/ZiBlueTCP.cpp
 hardware/ZWaveBase.cpp
-hardware/Yeelight.cpp
-hardware/XiaomiGateway.cpp
 hardware/plugins/DelayedLink.cpp
 hardware/plugins/Plugins.cpp
 hardware/plugins/PluginManager.cpp
@@ -433,6 +444,7 @@ hardware/plugins/PluginProtocols.cpp
 hardware/plugins/PluginTransports.cpp
 hardware/plugins/PythonObjects.cpp
 notifications/NotificationBase.cpp
+notifications/NotificationBrowser.cpp
 notifications/NotificationEmail.cpp
 notifications/NotificationGCM.cpp
 notifications/NotificationHelper.cpp
@@ -446,7 +458,6 @@ notifications/NotificationPushover.cpp
 notifications/NotificationPushsafer.cpp
 notifications/NotificationPushalot.cpp
 notifications/NotificationSMS.cpp
-notifications/NotificationBrowser.cpp
 notifications/NotificationTelegram.cpp
 smtpclient/SMTPClient.cpp
 tcpserver/TCPClient.cpp
@@ -457,15 +468,14 @@ webserver/connection_manager.cpp
 webserver/cWebem.cpp
 webserver/fastcgi.cpp
 webserver/mime_types.cpp
+webserver/proxycommon.cpp
+webserver/proxyclient.cpp
 webserver/reply.cpp
 webserver/request_handler.cpp
 webserver/request_parser.cpp
 webserver/server.cpp
-webserver/proxycommon.cpp
-webserver/proxyclient.cpp
 webserver/Websockets.cpp
 webserver/WebsocketHandler.cpp
-push/WebsocketPush.cpp
 json/json_reader.cpp
 json/json_value.cpp
 json/json_writer.cpp
@@ -740,4 +750,3 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scripts DESTINATION ${CMAKE_INSTAL
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/plugins DESTINATION ${CMAKE_INSTALL_PREFIX})
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Config DESTINATION ${CMAKE_INSTALL_PREFIX})
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/updatedomo DESTINATION ${CMAKE_INSTALL_PREFIX} PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ)
-

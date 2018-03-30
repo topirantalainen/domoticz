@@ -17,6 +17,13 @@ CScheduler::CScheduler(void)
 {
 	m_tSunRise = 0;
 	m_tSunSet = 0;
+	m_tSunAtSouth = 0;
+	m_tCivTwStart = 0;
+	m_tCivTwEnd = 0;
+	m_tNautTwStart = 0;
+	m_tNautTwEnd = 0;
+	m_tAstTwStart = 0;
+	m_tAstTwEnd = 0;
 	m_stoprequested = false;
 	srand((int)mytime(NULL));
 }
@@ -353,9 +360,10 @@ void CScheduler::ReloadSchedules()
 	}
 }
 
-void CScheduler::SetSunRiseSetTimers(const std::string &sSunRise, const std::string &sSunSet)
+void CScheduler::SetSunRiseSetTimers(const std::string &sSunRise, const std::string &sSunSet, const std::string &sSunAtSouth, const std::string &sCivTwStart, const std::string &sCivTwEnd, const std::string &sNautTwStart, const std::string &sNautTwEnd, const std::string &sAstTwStart, const std::string &sAstTwEnd)
 {
 	bool bReloadSchedules = false;
+
 	{	//needed private scope for the lock
 		boost::lock_guard<boost::mutex> l(m_mutex);
 		int hour, min, sec;
@@ -364,32 +372,27 @@ void CScheduler::SetSunRiseSetTimers(const std::string &sSunRise, const std::str
 		time_t atime = mytime(NULL);
 		struct tm ltime;
 		localtime_r(&atime, &ltime);
-
-		hour = atoi(sSunRise.substr(0, 2).c_str());
-		min = atoi(sSunRise.substr(3, 2).c_str());
-		sec = atoi(sSunRise.substr(6, 2).c_str());
-
 		struct tm tm1;
-		constructTime(temptime,tm1,ltime.tm_year+1900,ltime.tm_mon+1,ltime.tm_mday,hour,min,sec,ltime.tm_isdst);
-		if ((m_tSunRise != temptime) && (temptime != 0))
-		{
-			if (m_tSunRise == 0)
-				bReloadSchedules = true;
-			m_tSunRise = temptime;
-		}
 
-		hour = atoi(sSunSet.substr(0, 2).c_str());
-		min = atoi(sSunSet.substr(3, 2).c_str());
-		sec = atoi(sSunSet.substr(6, 2).c_str());
-
-		constructTime(temptime,tm1,ltime.tm_year+1900,ltime.tm_mon+1,ltime.tm_mday,hour,min,sec,ltime.tm_isdst);
-		if ((m_tSunSet != temptime) && (temptime != 0))
+		std::string  allSchedules[] = {sSunRise, sSunSet, sSunAtSouth, sCivTwStart, sCivTwEnd, sNautTwStart, sNautTwEnd, sAstTwStart, sAstTwEnd};
+		time_t *allTimes[] = {&m_tSunRise, &m_tSunSet, &m_tSunAtSouth, &m_tCivTwStart, &m_tCivTwEnd, &m_tNautTwStart, &m_tNautTwEnd, &m_tAstTwStart, &m_tAstTwEnd};
+		for(unsigned int a = 0; a < sizeof(allSchedules)/sizeof(allSchedules[0]); a = a + 1)
 		{
-			if (m_tSunSet == 0)
-				bReloadSchedules = true;
-			m_tSunSet = temptime;
+			//std::cout << allSchedules[a].c_str() << ' ';
+			hour = atoi(allSchedules[a].substr(0, 2).c_str());
+			min = atoi(allSchedules[a].substr(3, 2).c_str());
+			sec = atoi(allSchedules[a].substr(6, 2).c_str());
+
+			constructTime(temptime,tm1,ltime.tm_year+1900,ltime.tm_mon+1,ltime.tm_mday,hour,min,sec,ltime.tm_isdst);
+			if ((*allTimes[a] != temptime) && (temptime != 0))
+			{
+				if (*allTimes[a] == 0)
+					bReloadSchedules = true;
+				*allTimes[a] = temptime;
+			}
 		}
 	}
+
 	if (bReloadSchedules)
 		ReloadSchedules();
 }
@@ -404,6 +407,9 @@ bool CScheduler::AdjustScheduleItem(tScheduleItem *pItem, bool bForceAddDay)
 	struct tm tm1;
 	tm1.tm_isdst = -1;
 
+	if (bForceAddDay)
+		ltime.tm_mday++;
+
 	unsigned long HourMinuteOffset = (pItem->startHour * 3600) + (pItem->startMin * 60);
 
 	int nRandomTimerFrame = 15;
@@ -416,12 +422,26 @@ bool CScheduler::AdjustScheduleItem(tScheduleItem *pItem, bool bForceAddDay)
 		if ((pItem->timerType == TTYPE_BEFORESUNRISE) ||
 			(pItem->timerType == TTYPE_AFTERSUNRISE) ||
 			(pItem->timerType == TTYPE_BEFORESUNSET) ||
-			(pItem->timerType == TTYPE_AFTERSUNSET))
+			(pItem->timerType == TTYPE_AFTERSUNSET) ||
+
+			(pItem->timerType == TTYPE_BEFORESUNATSOUTH) ||
+			(pItem->timerType == TTYPE_AFTERSUNATSOUTH) ||
+			(pItem->timerType == TTYPE_BEFORECIVTWSTART) ||
+			(pItem->timerType == TTYPE_AFTERCIVTWSTART) ||
+			(pItem->timerType == TTYPE_BEFORECIVTWEND) ||
+			(pItem->timerType == TTYPE_AFTERCIVTWEND) ||
+			(pItem->timerType == TTYPE_BEFORENAUTTWSTART) ||
+			(pItem->timerType == TTYPE_AFTERNAUTTWSTART) ||
+			(pItem->timerType == TTYPE_BEFORENAUTTWEND) ||
+			(pItem->timerType == TTYPE_AFTERNAUTTWEND) ||
+			(pItem->timerType == TTYPE_BEFOREASTTWSTART) ||
+			(pItem->timerType == TTYPE_AFTERASTTWSTART) ||
+			(pItem->timerType == TTYPE_BEFOREASTTWEND) ||
+			(pItem->timerType == TTYPE_AFTERASTTWEND))
 			roffset = rand() % (nRandomTimerFrame);
 		else
 			roffset = rand() % (nRandomTimerFrame * 2) - nRandomTimerFrame;
 	}
-
 	if ((pItem->timerType == TTYPE_ONTIME) ||
 		(pItem->timerType == TTYPE_DAYSODD) ||
 		(pItem->timerType == TTYPE_DAYSEVEN) ||
@@ -429,6 +449,13 @@ bool CScheduler::AdjustScheduleItem(tScheduleItem *pItem, bool bForceAddDay)
 		(pItem->timerType == TTYPE_WEEKSEVEN))
 	{
 		constructTime(rtime,tm1,ltime.tm_year+1900,ltime.tm_mon+1,ltime.tm_mday,pItem->startHour,pItem->startMin,roffset*60,isdst);
+		while (rtime < atime + 60)
+		{
+			ltime.tm_mday++;
+			constructTime(rtime,tm1,ltime.tm_year+1900,ltime.tm_mon+1,ltime.tm_mday,pItem->startHour,pItem->startMin,roffset*60,isdst);
+		}
+		pItem->startTime = rtime;
+		return true;
 	}
 	else if (pItem->timerType == TTYPE_FIXEDDATETIME)
 	{
@@ -461,6 +488,90 @@ bool CScheduler::AdjustScheduleItem(tScheduleItem *pItem, bool bForceAddDay)
 		if (m_tSunRise == 0)
 			return false;
 		rtime = m_tSunRise + HourMinuteOffset + (roffset * 60);
+	}
+	else if (pItem->timerType == TTYPE_BEFORESUNATSOUTH)
+	{
+		if (m_tSunAtSouth == 0)
+			return false;
+		rtime = m_tSunAtSouth - HourMinuteOffset - (roffset * 60);
+	}
+	else if (pItem->timerType == TTYPE_AFTERSUNATSOUTH)
+	{
+		if (m_tSunAtSouth == 0)
+			return false;
+		rtime = m_tSunAtSouth + HourMinuteOffset + (roffset * 60);
+	}
+	else if (pItem->timerType == TTYPE_BEFORECIVTWSTART)
+	{
+		if (m_tCivTwStart == 0)
+			return false;
+		rtime = m_tCivTwStart - HourMinuteOffset - (roffset * 60);
+	}
+	else if (pItem->timerType == TTYPE_AFTERCIVTWSTART)
+	{
+		if (m_tCivTwStart == 0)
+			return false;
+		rtime = m_tCivTwStart + HourMinuteOffset + (roffset * 60);
+	}
+	else if (pItem->timerType == TTYPE_BEFORECIVTWEND)
+	{
+		if (m_tCivTwEnd == 0)
+			return false;
+		rtime = m_tCivTwEnd - HourMinuteOffset - (roffset * 60);
+	}
+	else if (pItem->timerType == TTYPE_AFTERCIVTWEND)
+	{
+		if (m_tCivTwEnd == 0)
+			return false;
+		rtime = m_tCivTwEnd + HourMinuteOffset + (roffset * 60);
+	}
+	else if (pItem->timerType == TTYPE_BEFORENAUTTWSTART)
+	{
+		if (m_tNautTwStart == 0)
+			return false;
+		rtime = m_tNautTwStart - HourMinuteOffset - (roffset * 60);
+	}
+	else if (pItem->timerType == TTYPE_AFTERNAUTTWSTART)
+	{
+		if (m_tNautTwStart == 0)
+			return false;
+		rtime = m_tNautTwStart + HourMinuteOffset + (roffset * 60);
+	}
+	else if (pItem->timerType == TTYPE_BEFORENAUTTWEND)
+	{
+		if (m_tNautTwEnd == 0)
+			return false;
+		rtime = m_tNautTwEnd - HourMinuteOffset - (roffset * 60);
+	}
+	else if (pItem->timerType == TTYPE_AFTERNAUTTWEND)
+	{
+		if (m_tNautTwEnd == 0)
+			return false;
+		rtime = m_tNautTwEnd + HourMinuteOffset + (roffset * 60);
+	}
+	else if (pItem->timerType == TTYPE_BEFOREASTTWSTART)
+	{
+		if (m_tAstTwStart == 0)
+			return false;
+		rtime = m_tAstTwStart - HourMinuteOffset - (roffset * 60);
+	}
+	else if (pItem->timerType == TTYPE_AFTERASTTWSTART)
+	{
+		if (m_tAstTwStart == 0)
+			return false;
+		rtime = m_tAstTwStart + HourMinuteOffset + (roffset * 60);
+	}
+	else if (pItem->timerType == TTYPE_BEFOREASTTWEND)
+	{
+		if (m_tAstTwEnd == 0)
+			return false;
+		rtime = m_tAstTwEnd - HourMinuteOffset - (roffset * 60);
+	}
+	else if (pItem->timerType == TTYPE_AFTERASTTWEND)
+	{
+		if (m_tAstTwEnd == 0)
+			return false;
+		rtime = m_tAstTwEnd + HourMinuteOffset + (roffset * 60);
 	}
 	else if (pItem->timerType == TTYPE_MONTHLY)
 	{
@@ -559,25 +670,39 @@ bool CScheduler::AdjustScheduleItem(tScheduleItem *pItem, bool bForceAddDay)
 	else
 		return false; //unknown timer type
 
-	// Adjust timer by 1 day if item is scheduled for next day or we are in the past
-        while (bForceAddDay || (rtime < atime + 60) )
-        {
-                if (tm1.tm_isdst == -1) // rtime was loaded from sunset/sunrise values; need to initialize tm1
-		{
-                        localtime_r(&rtime, &tm1);
+	if (tm1.tm_isdst == -1) // rtime was loaded from sunset/sunrise values; need to initialize tm1
+	{
+		if (bForceAddDay) // Adjust timer by 1 day if item is scheduled for next day
+			rtime += 86400;
 
-			//FIXME: because we are referencing the wrong date for sunset/sunrise values (i.e. today)
-			//	 we actually need to add 24 hours rather than a day and NOT correct for DST change
-			isdst = -1;
-	                tm1.tm_mday--;
-			tm1.tm_hour += 24;
-			// end of FIXME block
+		//FIXME: because we are referencing the wrong date for sunset/sunrise values (i.e. today)
+		//	 it may lead to incorrect results if we use localtime_r for finding the correct time
+		while (rtime < atime + 60)
+		{
+			rtime += 86400;
 		}
-                tm1.tm_mday++;
-                struct tm tm2;
-                constructTime(rtime, tm2, tm1.tm_year + 1900, tm1.tm_mon + 1, tm1.tm_mday, tm1.tm_hour, tm1.tm_min, tm1.tm_sec, isdst);
-                bForceAddDay = false;
-        }
+		pItem->startTime = rtime;
+		return true;
+		// end of FIXME block
+
+		//FIXME: keep for future reference
+		//tm1.tm_isdst = isdst; // load our current DST value and allow localtime_r to correct our 'mistake'
+		//localtime_r(&rtime, &tm1);
+		//isdst = tm1.tm_isdst;
+	}
+
+	// Adjust timer by 1 day if we are in the past
+	//FIXME: this part of the code currently seems impossible to reach, but I may be overseeing something. Therefore:
+	//	 it should be noted that constructTime() can return a time where tm1.tm_hour is different from pItem->startHour
+	//	 The main cause for this to happen is that startHour is not a valid time on that day due to changing to Summertime
+	//	 in which case the hour will be incremented by 1. By using tm1.tm_hour here this adjustment will propagate into
+	//	 whatever following day may result from this loop and cause the timer to be set 1 hour later than it should be.
+	while (rtime < atime + 60)
+	{
+		tm1.tm_mday++;
+		struct tm tm2;
+		constructTime(rtime, tm2, tm1.tm_year + 1900, tm1.tm_mon + 1, tm1.tm_mday, tm1.tm_hour, tm1.tm_min, tm1.tm_sec, isdst);
+	}
 
 	pItem->startTime = rtime;
 	return true;
@@ -771,7 +896,7 @@ void CScheduler::CheckSchedules()
 									float fLevel = (maxDimLevel / 100.0f)*itt->Level;
 									if (fLevel > 100)
 										fLevel = 100;
-									ilevel = int(fLevel) + 1;
+									ilevel = int(fLevel);
 								}
 								else if (itt->timerCmd == TCMD_OFF)
 									ilevel = 0;
@@ -1174,7 +1299,7 @@ namespace http {
 			unsigned char icmd = atoi(scmd.c_str());
 			int days = atoi(sdays.c_str());
 			unsigned char level = atoi(slevel.c_str());
-			int hue = atoi(shue.c_str());
+			uint32_t hue = atoi(shue.c_str());
 			int mday = atoi(smday.c_str());
 			int month = atoi(smonth.c_str());
 			int occurence = atoi(soccurence.c_str());
@@ -1279,7 +1404,7 @@ namespace http {
 			unsigned char icmd = atoi(scmd.c_str());
 			int days = atoi(sdays.c_str());
 			unsigned char level = atoi(slevel.c_str());
-			int hue = atoi(shue.c_str());
+			uint32_t hue = atoi(shue.c_str());
 			int mday = atoi(smday.c_str());
 			int month = atoi(smonth.c_str());
 			int occurence = atoi(soccurence.c_str());
