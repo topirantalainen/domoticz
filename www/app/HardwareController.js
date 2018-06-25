@@ -965,6 +965,49 @@ define(['app'], function (app) {
 					}
 				});
 			}
+			else if (text.indexOf("LK IHC Controller") >= 0)
+			{
+				var address=$("#hardwarecontent #divremote #tcpaddress").val();
+				if (address=="")
+				{
+					ShowNotify($.t('Please enter an Address!'), 2500, true);
+					return;
+				}
+				var port=$("#hardwarecontent #divremote #tcpport").val();
+				if (port=="")
+				{
+					ShowNotify($.t('Please enter an Port!'), 2500, true);
+					return;
+				}
+				var intRegex = /^\d+$/;
+				if(!intRegex.test(port)) {
+					ShowNotify($.t('Please enter an Valid Port!'), 2500, true);
+					return;
+				}
+				var username=$("#hardwarecontent #divlogin #username").val();
+				var password=$("#hardwarecontent #divlogin #password").val();
+
+				$.ajax({
+					url: "json.htm?type=command&param=updatehardware&htype=" + hardwaretype +
+						"&address=" + address +
+						"&port=" + port +
+						"&username=" + encodeURIComponent(username) +
+						"&password=" + encodeURIComponent(password) +
+						"&name=" + encodeURIComponent(name) +
+						"&enabled=" + bEnabled +
+						"&idx=" + idx +
+						"&datatimeout=" + datatimeout +
+						"&Mode1=" + Mode1 + "&Mode2=" + Mode2 + "&Mode3=" + Mode3 + "&Mode4=" + Mode4 + "&Mode5=" + Mode5 + "&Mode6=" + Mode6,
+					async: false,
+					dataType: 'json',
+					success: function(data) {
+						RefreshHardwareTable();
+					},
+					error: function(){
+						ShowNotify($.t('Problem updating hardware!'), 2500, true);
+					}
+				});
+			}
 			else if (text.indexOf("Goodwe solar inverter via Web") >= 0) {
 				var username = $("#hardwarecontent #divgoodweweb #username").val();
 				if (username == "") {
@@ -1634,6 +1677,7 @@ define(['app'], function (app) {
 				(text.indexOf("MQTT") >= 0) ||
 				(text.indexOf("Logitech Media Server") >= 0) ||
 				(text.indexOf("HEOS by DENON") >= 0) ||
+				(text.indexOf("LK IHC Controller") >= 0) ||
 				(text.indexOf("Razberry") >= 0)
 			) {
 				var address = $("#hardwarecontent #divremote #tcpaddress").val();
@@ -4850,6 +4894,13 @@ define(['app'], function (app) {
 			$("#dialog-addyeelight").dialog("open");
 		}
 
+		ReloadLKIhc = function(idx,name)
+		{
+			$.post("reloadlkihc.webem", { 'idx':idx }, function(data) {
+				ShowNotify($.t('Device list updated!'), 2500);
+			});
+		}
+
 		AddArilux = function (idx, name) {
 			$.devIdx = idx;
 
@@ -5081,6 +5132,9 @@ define(['app'], function (app) {
 							}
 							else if (HwTypeStr.indexOf("HEOS by DENON") >= 0) {
 								HwTypeStr += ' <span class="label label-info lcursor" onclick="EditHEOS by DENON(' + item.idx + ',\'' + item.Name + '\',' + item.Mode1 + ',' + item.Mode2 + ',' + item.Mode3 + ',' + item.Mode4 + ',' + item.Mode5 + ',' + item.Mode6 + ');">' + $.t("Setup") + '</span>';
+							}
+							else if (HwTypeStr.indexOf("LK IHC Controller") >= 0) {
+								HwTypeStr += ' <span class="label label-info lcursor" onclick="ReloadLKIhc(' + item.idx + ',\'' + item.Name + '\',' + item.Mode1 + ',' + item.Mode2 + ',' + item.Mode3 + ',' + item.Mode4 + ',' + item.Mode5 + ',' + item.Mode6 + ');">' + $.t("Get devices") + '</span>';
 							}
 							else if (HwTypeStr.indexOf("Dummy") >= 0) {
 								HwTypeStr += ' <span class="label label-info lcursor" onclick="CreateDummySensors(' + item.idx + ',\'' + item.Name + '\');">' + $.t("Create Virtual Sensors") + '</span>';
@@ -5367,7 +5421,8 @@ define(['app'], function (app) {
 							(data["Type"].indexOf("Logitech Media Server") >= 0) || 
 							(data["Type"].indexOf("HEOS by DENON") >= 0) || 
 							(data["Type"].indexOf("Xiaomi Gateway") >= 0) || 
-							(data["Type"].indexOf("MyHome OpenWebNet with LAN interface") >= 0)
+							(data["Type"].indexOf("MyHome OpenWebNet with LAN interface") >= 0) ||
+							(data["Type"].indexOf("LK IHC Controller") >= 0)
 							) {
 							$("#hardwarecontent #hardwareparamsremote #tcpaddress").val(data["Address"]);
 							$("#hardwarecontent #hardwareparamsremote #tcpport").val(data["Port"]);
@@ -5520,6 +5575,7 @@ define(['app'], function (app) {
                             (data["Type"].indexOf("Tado") >= 0) ||
 							(data["Type"].indexOf("Logitech Media Server") >= 0) ||
 							(data["Type"].indexOf("HEOS by DENON") >= 0) ||
+							(data["Type"].indexOf("LK IHC Controller") >= 0) ||
 							(data["Type"].indexOf("Razberry") >= 0) ||
 							(data["Type"].indexOf("Comm5") >= 0)
 						) {
@@ -5977,6 +6033,13 @@ define(['app'], function (app) {
 				$("#hardwarecontent #divremote").show();
 				$("#hardwarecontent #divlogin").show();
 				$("#hardwarecontent #hardwareparamsremote #tcpport").val(1255);
+			}
+			else if (text.indexOf("LK IHC Controller") >= 0)
+			{
+				$("#hardwarecontent #divserial").hide();
+				$("#hardwarecontent #divremote").show();
+				$("#hardwarecontent #divlogin").show();
+				$("#hardwarecontent #hardwareparamsremote #tcpport").val(443);
 			}
 			else if (text.indexOf("MyHome OpenWebNet") >= 0) {
 				$("#hardwarecontent #divserial").hide();

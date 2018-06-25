@@ -180,7 +180,12 @@
 #define sSwitchTypeHager			0x76
 #define sSwitchTypeFaber			0x77
 #define sSwitchTypeDrayton			0x78
-#define sSwitchTypeV2Phoenix		0x79
+#define sSwitchTypeV2Phoenix        0x79
+#define sSwitchIHCOutput          0x80
+#define sSwitchIHCDimmer         0x81
+#define sSwitchIHCInput           0x82
+#define sSwitchIHCFBInput           0x83
+#define sSwitchIHCFBOutput          0x84
 
 //Switch commands
 #define gswitch_sOff				0x00

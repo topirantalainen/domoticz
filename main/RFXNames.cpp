@@ -278,6 +278,7 @@ const char *Hardware_Type_Desc(int hType)
 		{ HTYPE_Honeywell, "Honeywell Thermostat" },
 		{ HTYPE_Tado, "Tado Thermostat"},
 		{ HTYPE_DenkoviDevices, "Denkovi Modules with LAN (HTTP) Interface"},
+        { HTYPE_IHC, "LK IHC Controller" },
 		{ 0, NULL, NULL }
 	};
 	return findTableIDSingle1(Table, hType);
@@ -894,6 +895,11 @@ const char *RFX_Type_SubType_Desc(const unsigned char dType, const unsigned char
 		{ pTypeGeneralSwitch, sSwitchMiLightv1, "MiLightv1" },
 		{ pTypeGeneralSwitch, sSwitchMiLightv2, "MiLightv2" },
 		{ pTypeGeneralSwitch, sSwitchHT6P20, "HT6P20" },
+		{ pTypeGeneralSwitch, sSwitchIHCOutput, "IHC Output" },
+		{ pTypeGeneralSwitch, sSwitchIHCDimmer, "IHC Dimmer" },
+		{ pTypeGeneralSwitch, sSwitchIHCInput, "IHC Input" },
+		{ pTypeGeneralSwitch, sSwitchIHCFBInput, "IHC Functionblock Input" },
+		{ pTypeGeneralSwitch, sSwitchIHCFBOutput, "IHC Functionblock Output" },
 		{ pTypeGeneralSwitch, sSwitchTypeDoitrand, "Doitrand" },
 		{ pTypeGeneralSwitch, sSwitchTypeWarema, "Warema" },
 		{ pTypeGeneralSwitch, sSwitchTypeAnsluta, "Ansluta" },
@@ -909,6 +915,7 @@ const char *RFX_Type_SubType_Desc(const unsigned char dType, const unsigned char
 		{ pTypeGeneralSwitch, sSwitchTypeLiwin, "Liwin" },
 		{ pTypeGeneralSwitch, sSwitchBlindsT2, "Legrand MyHome Blind Zigbee" },
 		{ pTypeGeneralSwitch, sSwitchLightT2, "Legrand MyHome Light Zigbee" },
+
 		{ pTypeGeneralSwitch, sSwitchTypeYW_Secu, "YW_Secu" },
 		{ pTypeGeneralSwitch, sSwitchTypeMertik_GV60, "Mertik_GV60" },
 		{ pTypeGeneralSwitch, sSwitchTypeNingbo64, "Ningbo64"},

@@ -359,6 +359,7 @@ namespace http {
 			m_pWebEm->RegisterActionCode("setrego6xxtype", boost::bind(&CWebServer::SetRego6XXType, this, _1, _2, _3));
 			m_pWebEm->RegisterActionCode("sets0metertype", boost::bind(&CWebServer::SetS0MeterType, this, _1, _2, _3));
 			m_pWebEm->RegisterActionCode("setlimitlesstype", boost::bind(&CWebServer::SetLimitlessType, this, _1, _2, _3));
+			m_pWebEm->RegisterActionCode("reloadlkihc", boost::bind(&CWebServer::GetIHCProjectFromController, this, _1, _2, _3));
 
 			m_pWebEm->RegisterActionCode("uploadfloorplanimage", boost::bind(&CWebServer::UploadFloorplanImage, this, _1, _2, _3));
 
@@ -1212,6 +1213,9 @@ namespace http {
 			}
 			else if (htype == HTYPE_USBtinGateway) {
 				//All fine here
+	    	}
+			else if (htype == HTYPE_IHC) {
+				//all fine here!
 			}
 			else if (
 				(htype == HTYPE_Wunderground) ||
@@ -1580,6 +1584,9 @@ namespace http {
 				//All fine here
 			}
 			else if (htype == HTYPE_USBtinGateway) {
+				//All fine here
+			}
+			else if (htype == HTYPE_IHC) {
 				//All fine here
 			}
 			else if (

@@ -392,6 +392,7 @@ hardware/KMTronicTCP.cpp
 hardware/KMTronicUDP.cpp
 hardware/Kodi.cpp
 hardware/Limitless.cpp
+hardware/LKIHC.cpp
 hardware/LogitechMediaServer.cpp
 hardware/Meteostick.cpp
 hardware/MochadTCP.cpp
@@ -570,7 +571,7 @@ set(Boost_USE_STATIC_LIBS ${USE_STATIC_BOOST})
 set(Boost_USE_MULTITHREADED ON)
 unset(Boost_INCLUDE_DIR CACHE)
 unset(Boost_LIBRARY_DIRS CACHE)
-find_package(Boost REQUIRED COMPONENTS thread system)
+find_package(Boost REQUIRED COMPONENTS thread date_time system iostreams)
 
 if(USE_STATIC_BOOST)
    message(STATUS "Linking against boost static libraries")
