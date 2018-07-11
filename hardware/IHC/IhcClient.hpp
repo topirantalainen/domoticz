@@ -47,7 +47,7 @@ public:
 		DISCONNECTED,
 		CONNECTING,
 		CONNECTED
-	} connState;
+	} connectionState;
 
 private:
 	std::string username;
@@ -68,7 +68,7 @@ ihcClient(std::string const &ip, std::string const &username, std::string const 
     this->ip = ip;
     this->username = username;
     this->password = password;
-    this->connState = DISCONNECTED;
+    this->connectionState = DISCONNECTED;
 }
 
 std::string getUsername()
@@ -135,12 +135,12 @@ std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(in
 
 void reset()
 {
-	connState = DISCONNECTED;
+	connectionState = DISCONNECTED;
 }
 
 void openConnection()
 {
-    connState = CONNECTING;
+    connectionState = CONNECTING;
 
     authenticationService = new IhcAuthenticationService(ip);
 
@@ -157,7 +157,7 @@ void openConnection()
 
     if (!loginResult->isLoginWasSuccessful())
     {
-        connState = DISCONNECTED;
+        connectionState = DISCONNECTED;
 
         if (loginResult->isLoginFailedDueToAccountInvalid())
         { throw "invalid username or password"; }
@@ -173,7 +173,7 @@ void openConnection()
     }
 
 
-    connState = CONNECTED;
+    connectionState = CONNECTED;
 
     resourceInteractionService = new IhcResourceInteractionService(ip);
     controllerService = new IhcControllerService(ip);
@@ -190,19 +190,9 @@ WSProjectInfo getProjectInfo()
 
 TiXmlDocument loadProject()
 {
-    if (!projectFile.empty())
-    {
-        //TODO: Load from file
-        //std::cout << "Loading IHC /ELKO LS project file from path " << projectFile << "\n";
-
-    }
-    else
-    {
-        std::cout << "Loading IHC /ELKO LS project file from controller...\n";
-        TiXmlDocument doc = LoadProjectFileFromController();
-        return doc;
-
-    }
+	std::cout << "Loading IHC /ELKO LS project file from controller...\n";
+	TiXmlDocument doc = LoadProjectFileFromController();
+	return doc;
 }
 
 std::string b64decode(const void* data, const size_t len)
@@ -294,19 +284,18 @@ TiXmlDocument LoadProjectFileFromController()
 #endif
 
     std::string str(projectData.begin(), projectData.end());
-    std::string decoded;
-    decoded = b64decode(str);
-    std::string extracted;
-    extracted = decompress(decoded);
+    std::string decoded = b64decode(str);
+    std::string extracted = decompress(decoded);
 
 #ifdef _DEBUG
     std::cout << "Final size decoded: " << decoded.size() << std::endl;
     std::cout << "Final size extracted: " << extracted.size() << std::endl;
 
-    std::ofstream out("output.txt");
+    std::ofstream out("project_file.vis");
     out << extracted;
     out.close();
 #endif
+
     // Skip unsupported statements
     size_t pos = 0;
     while (true) {
@@ -318,9 +307,7 @@ TiXmlDocument LoadProjectFileFromController()
         } else
             break;
     }
-    //extracted = extracted.substr(pos);
-    //std::cout << "and here\n";
-    //std::string ext2;
+
     extracted = iso_8859_1_to_utf8(extracted.substr(pos), pos);
 
     // Parse document as usual
@@ -328,7 +315,6 @@ TiXmlDocument LoadProjectFileFromController()
     doc.Parse(extracted.c_str());
 
     return doc;
-
 }
 public:
 

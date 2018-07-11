@@ -33,6 +33,31 @@
  *
  */
 
+/*
+ * if (firstRun)
+ * {
+ *     connect to controller and get project info
+ *     if (project info has changed)
+ *     {
+ *         update database with new items
+ *     }
+ * }
+ *
+ * if (watched devices > 0)
+ * {
+ *     connect to controller
+ *     updated watchlist
+ *
+ *     wait for changes
+ *     if changes
+ *     {
+ *         handle changes
+ *     }
+ *
+ * }
+ *
+ */
+
 #include "stdafx.h"
 #include "LKIHC.h"
 #include "../main/Helper.h"
@@ -55,7 +80,7 @@
 #include <boost/format.hpp>
 
 #define RESOURCE_NOTIFICATION_TIMEOUT_S 5
-
+std::vector<int> activeResourceIdList;
 CLKIHC::CLKIHC(const int ID, const std::string &IPAddress, const unsigned short Port, const std::string &Username, const std::string &Password) :
 m_IPAddress(IPAddress),
 m_UserName(Username),
@@ -119,7 +144,7 @@ void CLKIHC::Do_Work()
 		m_LastHeartbeat = mytime(NULL);
 		//}
 
-		if (ihcC->CONNECTED != ihcC->connState)
+		if (ihcC->CONNECTED != ihcC->connectionState)
 		{
 			try
 			{
@@ -133,7 +158,7 @@ void CLKIHC::Do_Work()
 			}
 		}
 
-		if (ihcC->CONNECTED == ihcC->connState)
+		//if (ihcC->CONNECTED == ihcC->connectionState)
 		{
 
 			try
@@ -142,73 +167,86 @@ void CLKIHC::Do_Work()
 				{
 					firstTime = false;
 
-					WSProjectInfo inf = ihcC->getProjectInfo();
-					_log.Log(LOG_STATUS, "LK IHC: Project info. %s", inf);
+					//WSProjectInfo inf = ihcC->getProjectInfo();
+					//_log.Log(LOG_STATUS, "LK IHC: Project info. %s", inf);
+				}
 
+				std::vector<std::vector<std::string> > result;
+				result = m_sql.safe_query("SELECT DeviceID FROM DeviceStatus WHERE HardwareID==%d AND Used == 1", m_HwdID);
+				if (result.size() > 0)
+				{
+					if (ihcC->CONNECTED != ihcC->connectionState)
+					{
+						ihcC->openConnection();
+					}
 					std::vector<int> resourceIdList;
 
-					std::vector<std::vector<std::string> > result;
-					result = m_sql.safe_query("SELECT DeviceID FROM DeviceStatus WHERE HardwareID==%d AND Used == 1", m_HwdID);
-
-					if (result.size() > 0)
+					std::vector<std::vector<std::string> >::const_iterator itt;
+					for (itt = result.begin(); itt != result.end(); ++itt)
 					{
-						std::vector<std::vector<std::string> >::const_iterator itt;
-						for (itt = result.begin(); itt != result.end(); ++itt)
+						std::vector<std::string> sd = *itt;
+						resourceIdList.push_back(std::strtoul(sd[0].c_str(), NULL, 16));
+					}
+					if (resourceIdList != activeResourceIdList)
+					{
+						activeResourceIdList = resourceIdList;
+						ihcC->enableRuntimeValueNotification(activeResourceIdList);
+					}
+
+					std::vector<boost::shared_ptr<ResourceValue> > updatedResources;
+					updatedResources = ihcC->waitResourceValueNotifications(RESOURCE_NOTIFICATION_TIMEOUT_S);
+
+					// Handle object state changes
+					for (std::vector<boost::shared_ptr<ResourceValue> >::iterator it = updatedResources.begin(); it != updatedResources.end(); ++it)
+					{
+						ResourceValue & obj = *(*it);
+
+						int nvalue = obj.intValue();
+						bool tIsOn = (nvalue != 0);
+						int lastLevel = 0;
+						int value = obj.intValue();
+
+						_tGeneralSwitch ycmd;
+						ycmd.subtype = sSwitchIHCOutput;
+						char szID[10];
+						std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
+
+						std::vector<std::vector<std::string> > result;
+						result = m_sql.safe_query("SELECT SubType FROM DeviceStatus WHERE (DeviceID='%q' AND HardwareID=='%d')", szID, m_HwdID);
+						if (result.size() != 0)
 						{
-							std::vector<std::string> sd = *itt;
-							resourceIdList.push_back(std::strtoul(sd[0].c_str(), NULL, 16));
+							ycmd.subtype =  atoi(result[0][0].c_str());
 						}
+
+						ycmd.id =  (long unsigned int)obj.ID;
+						ycmd.unitcode = 0;
+						ycmd.battery_level = 10;
+
+						if (obj.intValue() > 1)
+						{
+							ycmd.cmnd = 2;
+							ycmd.level=obj.intValue();
+						}
+						else
+						{
+							ycmd.cmnd = obj.intValue();
+							ycmd.level=0;
+						}
+						//TODO: FIX Rssi
+						ycmd.rssi = 12;
+
+						m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, NULL, 100);
+
 					}
-
-					ihcC->enableRuntimeValueNotification(resourceIdList);
-
 				}
-
-				std::vector<boost::shared_ptr<ResourceValue> > updatedResources;
-				updatedResources = ihcC->waitResourceValueNotifications(RESOURCE_NOTIFICATION_TIMEOUT_S);
-
-				// Handle object state changes
-				for (std::vector<boost::shared_ptr<ResourceValue> >::iterator it = updatedResources.begin(); it != updatedResources.end(); ++it)
+				else
 				{
-					ResourceValue & obj = *(*it);
-
-					int nvalue = obj.intValue();
-					bool tIsOn = (nvalue != 0);
-					int lastLevel = 0;
-					int value = obj.intValue();
-
-					_tGeneralSwitch ycmd;
-					ycmd.subtype = sSwitchIHCOutput;
-					char szID[10];
-					std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
-
-					std::vector<std::vector<std::string> > result;
-					result = m_sql.safe_query("SELECT SubType FROM DeviceStatus WHERE (DeviceID='%q' AND HardwareID=='%d')", szID, m_HwdID);
-					if (result.size() != 0)
-					{
-						ycmd.subtype =  atoi(result[0][0].c_str());
-					}
-
-					ycmd.id =  (long unsigned int)obj.ID;
-					ycmd.unitcode = 0;
-					ycmd.battery_level = 10;
-
-					if (obj.intValue() > 1)
-					{
-						ycmd.cmnd = 2;
-						ycmd.level=obj.intValue();
-					}
-					else
-					{
-						ycmd.cmnd = obj.intValue();
-						ycmd.level=0;
-					}
-					//TODO: FIX Rssi
-					ycmd.rssi = 12;
-
-					m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, NULL, 100);
-
+					std::cout << "No devices added\n";
+							sleep_seconds(10);
+							ihcC->reset();
 				}
+
+
 
 			}
 			catch(...)
@@ -230,7 +268,7 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 {
 	bool result = false;
 	const tRBUF *pSen = reinterpret_cast<const tRBUF*>(pdata);
-	if (ihcC->CONNECTED == ihcC->connState)
+	if (ihcC->CONNECTED == ihcC->connectionState)
 	{
 		try
 		{
@@ -245,9 +283,6 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 						/* Boolean value */
 						ResourceValue const t(general->id, general->cmnd == gswitch_sOn ? true : false);
 						result = ihcC->resourceUpdate(t);
-						/* sleep_milliseconds(500);
-								ResourceValue const t2(general->id, false);
-								result = ihcC->resourceUpdate(t2);*/
 						break;
 					}
 					case sSwitchIHCFBOutput:
@@ -269,8 +304,8 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 						uint8_t val = 0;
 						if (general->cmnd == gswitch_sOff)
 						{
-						val = 0;
-							}
+							val = 0;
+						}
 						else if (general->cmnd == gswitch_sOn)
 						{
 							val = 100;
@@ -288,11 +323,11 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 
 			if (result)
 			{
-			_log.Log(LOG_STATUS, "LK IHC: Resource update was successful");
+				_log.Log(LOG_STATUS, "LK IHC: Resource update was successful");
 			}
 			else
 			{
-			_log.Log(LOG_STATUS, "LK IHC: Failed resource update");
+				_log.Log(LOG_STATUS, "LK IHC: Failed resource update");
 			}
 		}
 		catch (...)
@@ -300,7 +335,7 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 			ihcC->reset();
 		}
 
-	return result;
+		return result;
 	}
 	else
 		return false;
@@ -422,22 +457,24 @@ void CLKIHC::iterateDevices(const TiXmlNode* deviceNode)
 void CLKIHC::GetDevicesFromController()
 {
     try
-    { // TODO: Wait for connection
-		TiXmlDocument doc = ihcC->loadProject();
+    {
+    	if (ihcC->CONNECTED != ihcC->connectionState) {
+			TiXmlDocument doc = ihcC->loadProject();
 
-		TinyXPath::xpath_processor processor ( doc.RootElement(), "/utcs_project/groups/*/*[self::functionblock or self::product_dataline or self::product_airlink]");
+			TinyXPath::xpath_processor processor ( doc.RootElement(), "/utcs_project/groups/*/*[self::functionblock or self::product_dataline or self::product_airlink]");
 
-		unsigned const numberOfDevices = processor.u_compute_xpath_node_set();
+			unsigned const numberOfDevices = processor.u_compute_xpath_node_set();
 
-		for (int i = 0; i < numberOfDevices; i++)
-		{
-			TiXmlNode* thisNode = processor.XNp_get_xpath_node(i);
-			iterateDevices(thisNode);
-		}
+			for (int i = 0; i < numberOfDevices; i++)
+			{
+				TiXmlNode* thisNode = processor.XNp_get_xpath_node(i);
+				iterateDevices(thisNode);
+			}
+    	}
     }
     catch (...)
     {
-	ihcC->reset();
+    	ihcC->reset();
     }
 }
 
@@ -476,8 +513,6 @@ void CWebServer::GetIHCProjectFromController(WebEmSession & session, const reque
         _log.Log(LOG_ERROR, "LK IHC: Exception: '%s'", msg);
     }
 
-
-    //m_mainworker.RestartHardware(idx);
 }
 
 }
