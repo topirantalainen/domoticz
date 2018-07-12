@@ -463,9 +463,9 @@ void CLKIHC::iterateDevices(const TiXmlNode* deviceNode)
 
 void CLKIHC::GetDevicesFromController()
 {
-    try
-    {
-    	if (ihcC->CONNECTED != ihcC->connectionState) {
+    /*try
+    {*/
+    	if (ihcC->CONNECTED == ihcC->connectionState) {
 			TiXmlDocument doc = ihcC->loadProject();
 
 			TinyXPath::xpath_processor processor ( doc.RootElement(), "/utcs_project/groups/*/*[self::functionblock or self::product_dataline or self::product_airlink]");
@@ -478,12 +478,12 @@ void CLKIHC::GetDevicesFromController()
 				iterateDevices(thisNode);
 			}
     	}
-    }
+    /*}
     catch (const char* msg)
     {
     	_log.Log(LOG_ERROR, "LK IHC: Error: '%s'", msg);
     	ihcC->reset();
-    }
+    }*/
 }
 
 //Webserver helpers
