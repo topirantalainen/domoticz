@@ -250,8 +250,9 @@ void CLKIHC::Do_Work()
 
 
 			}
-			catch(...)
+			catch (const char* msg)
 			{
+				_log.Log(LOG_ERROR, "LK IHC: Error: '%s'", msg);
 				crashCounter++;
 				_log.Log(LOG_ERROR, "LK IHC: The IHC controller has crashed %d times since Domoticz was started", crashCounter);
 				ihcC->reset();
@@ -267,10 +268,11 @@ void CLKIHC::Do_Work()
 
 bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 {
-	bool result = false;
-	const tRBUF *pSen = reinterpret_cast<const tRBUF*>(pdata);
 	if (ihcC->CONNECTED == ihcC->connectionState)
 	{
+		bool result = false;
+		const tRBUF *pSen = reinterpret_cast<const tRBUF*>(pdata);
+
 		try
 		{
 			if (pSen->ICMND.packettype == pTypeGeneralSwitch)
@@ -282,8 +284,8 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 					case sSwitchIHCFBInput:
 					{
 						/* Boolean value */
-						ResourceValue const t(general->id, general->cmnd == gswitch_sOn ? true : false);
-						result = ihcC->resourceUpdate(t);
+						ResourceValue const output_value(general->id, general->cmnd == gswitch_sOn ? true : false);
+						result = ihcC->resourceUpdate(output_value);
 						break;
 					}
 					case sSwitchIHCFBOutput:
@@ -294,29 +296,29 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 					case sSwitchIHCInput:
 					{
 					/* Boolean value */
-						ResourceValue const t(general->id, general->cmnd == gswitch_sOn ? true : false);
-						result = ihcC->resourceUpdate(t);
+						ResourceValue const output_value(general->id, general->cmnd == gswitch_sOn ? true : false);
+						result = ihcC->resourceUpdate(output_value);
 						break;
 					}
 
 					case sSwitchIHCDimmer:
 					{
 						/* Integer value */
-						uint8_t val = 0;
+						uint8_t dimmer_value = 0;
 						if (general->cmnd == gswitch_sOff)
 						{
-							val = 0;
+							dimmer_value = 0;
 						}
 						else if (general->cmnd == gswitch_sOn)
 						{
-							val = 100;
+							dimmer_value = 100;
 						}
 						else
 						{
-							val = general->level;
+							dimmer_value = general->level;
 						}
-						ResourceValue const t(general->id, RangedInteger(val));
-						result = ihcC->resourceUpdate(t);
+						ResourceValue const output_value(general->id, RangedInteger(dimmer_value));
+						result = ihcC->resourceUpdate(output_value);
 						break;
 					}
 				}
@@ -331,15 +333,19 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 				_log.Log(LOG_STATUS, "LK IHC: Failed resource update");
 			}
 		}
-		catch (...)
+		catch (const char* msg)
 		{
+			_log.Log(LOG_ERROR, "LK IHC: Error: '%s'", msg);
 			ihcC->reset();
 		}
 
 		return result;
 	}
 	else
+	{
+		// Not connected to controller
 		return false;
+	}
 }
 
 void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char deviceType, bool functionBlock)
@@ -356,7 +362,7 @@ void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char d
     if (result.size() < 1)
     {
         #ifdef _DEBUG
-			_log.Log(LOG_NORM, "LK IHC: Added device %d %s: %s", id, sid ,devname);
+			_log.Log(LOG_NORM, "LK IHC: Added device %d %s", m_HwdID, sid);
         #endif
         char buff[100];
         if (functionBlock)
@@ -473,8 +479,9 @@ void CLKIHC::GetDevicesFromController()
 			}
     	}
     }
-    catch (...)
+    catch (const char* msg)
     {
+    	_log.Log(LOG_ERROR, "LK IHC: Error: '%s'", msg);
     	ihcC->reset();
     }
 }

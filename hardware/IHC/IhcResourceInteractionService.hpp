@@ -201,7 +201,7 @@ std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(in
 #ifdef _DEBUG
     doc.Print();
 #endif
-    _log.Log(LOG_STATUS,"IHC_RESULT: %s", sResult.c_str());
+    //_log.Log(LOG_STATUS,"IHC_RESULT: %s", sResult.c_str());
     std::vector<boost::shared_ptr<ResourceValue> > resourceList;
 
     TinyXPath::xpath_processor processor ( doc.RootElement(), "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:waitForResourceValueChanges2/ns1:arrayItem");
