@@ -160,13 +160,16 @@ void openConnection()
         connectionState = DISCONNECTED;
 
         if (loginResult->isLoginFailedDueToAccountInvalid())
-        { throw "invalid username or password"; }
+        { std::cout << "account\n";
+            throw "invalid username or password"; }
 
         if (loginResult->isLoginFailedDueToConnectionRestrictions())
-        { throw "connection restrictions"; }
+        { std::cout << "connect\n";
+            throw "connection restrictions"; }
 
         if (loginResult->isLoginFailedDueToInsufficientUserRights())
-        { throw "insufficient user rights"; }
+        { std::cout << "rights\n";
+            throw "insufficient user rights"; }
 
         throw "unknown connection error";
 

@@ -151,8 +151,9 @@ void CLKIHC::Do_Work()
 				if (0 == sec_counter % 30)
 					ihcC->openConnection();
 			}
-			catch (...)
-			{
+            catch (const char* msg)
+            {
+        _log.Log(LOG_ERROR, "LK IHC: Error: '%s'", msg);
 				ihcC->reset();
 				firstTime = true;
 			}

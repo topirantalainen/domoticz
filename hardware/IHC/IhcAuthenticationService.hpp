@@ -50,7 +50,7 @@ public:
 
 	    WSLoginResult * loginResult = new WSLoginResult;
 	    loginResult->encodeData(doc);
-
+        std::cout << sResult.c_str() << "\n";
 	    return loginResult;
 	}
 };
