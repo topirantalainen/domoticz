@@ -60,28 +60,14 @@ ihcClient(std::string const &ip, std::string const &username, std::string const 
     this->username = username;
     this->password = password;
     this->connectionState = DISCONNECTED;
+
+    authenticationService = new IhcAuthenticationService(ip);
+    resourceInteractionService = new IhcResourceInteractionService(ip);
+    controllerService = new IhcControllerService(ip);
+    controllerState = controllerService->getControllerState();
 }
-
-std::string getUsername()
-{ return username; }
-
-void setUsername(std::string &username)
-{ this->username = username; }
-
-void setPassword(std::string &password)
-{ this->password = password; }
-
-std::string getIp()
-{ return ip; }
-
-void setIp(std::string &ip)
-{ this->ip = ip; }
-
 std::string getProjectFile()
 { return projectFile; }
-
-void setProjectFile(std::string &path)
-{ this->projectFile = path; }
 
 std::string getDumpResourceInformationToFile()
 { return dumpResourceToFile; }
@@ -89,37 +75,8 @@ std::string getDumpResourceInformationToFile()
 void setDumpResourcesInformationToFile(std::string const &value)
 { this->dumpResourceToFile = value; }
 
-/*ConnectionState ConnectionState getConnectionState()
-{
-    return connState;
-}*/
-/*
-void addEventListener(IhcEventListener listener)
-{
-    eventListeners.add(listener);
-}
-
-void removeEventListener(IhcEventListener listener)
-{
-    eventListener.remove(listener);
-}
-*/
-/*
-std::unique_ptr<WSResourceValue> resourceQuery(int resoureId)
-{
-    return resourceInteractionService->resourceQuery(resoureId);
-
-}*/
 ResourceValue resourceQuery(int const &res)
 { return resourceInteractionService->resourceQuery(res); }
-/*
-void enableRuntimeValueNotifications(std::vector<int> resourceIdList)
-{
-    resourceInteractionService->enableRuntimeValueNotifications(resourceIdList);
-}*/
-
-void enableRuntimeValueNotifications2(std::vector<int> resourceIdList)
-{ resourceInteractionService->enableRuntimeValueNotifications(resourceIdList); }
 
 std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(int const timeout)
 { return resourceInteractionService->waitResourceValueNotifications(timeout); }
@@ -133,7 +90,6 @@ void openConnection()
 {
     connectionState = CONNECTING;
 
-    authenticationService = new IhcAuthenticationService(ip);
 
     WSLoginResult* loginResult;
     try
@@ -170,9 +126,7 @@ void openConnection()
 
     connectionState = CONNECTED;
 
-    resourceInteractionService = new IhcResourceInteractionService(ip);
-    controllerService = new IhcControllerService(ip);
-    controllerState = controllerService->getControllerState();
+
     //loadProject(); //Todo: insert again
 
 
