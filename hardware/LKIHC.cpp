@@ -250,9 +250,9 @@ void CLKIHC::Do_Work()
 
 
 			}
-			catch (const char* msg)
+			catch (...)
 			{
-				_log.Log(LOG_ERROR, "LK IHC: Error: '%s'", msg);
+				//_log.Log(LOG_ERROR, "LK IHC: Error: '%s'", msg);
 				crashCounter++;
 				_log.Log(LOG_ERROR, "LK IHC: The IHC controller has crashed %d times since Domoticz was started", crashCounter);
 				ihcC->reset();
