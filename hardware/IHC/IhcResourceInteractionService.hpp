@@ -171,10 +171,13 @@ void enableRuntimeValueNotifications(std::vector<int> &items)
 	std::string querySuffix = "</enableRuntimeValueNotifications1></soap:Body></soap:Envelope>";
 
 	std::string query = queryPrefix;
+	int itemCounter = 0;
 	for (std::vector<int>::iterator it = items.begin(); it != items.end(); ++it)
 	{
+		itemCounter++;
 		query += "<xsd:arrayItem>" + boost::to_string(*it) + "</xsd:arrayItem>";
 	}
+	_log.Log(LOG_STATUS,"IHC_RESULT: waiting for changes on %d items", itemCounter);
 
 	query += querySuffix;
 
@@ -209,24 +212,25 @@ std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(in
     if (n > 0)
     {
         if (processor.XNp_get_xpath_node(0)->FirstChild() == 0)
-	{
-    	// Timed out, return empty list
-		return resourceList;
-	}
-	else
-	{
-		for (int i = 0; i < processor.u_compute_xpath_node_set(); i++)
 		{
-			TiXmlNode* thisNode = processor.XNp_get_xpath_node(i);
-
-			TiXmlElement * res = thisNode->FirstChild()->ToElement();
-			resourceList.push_back(parseResourceValue(res, i + 2));
+			// Timed out, return empty list
+			return resourceList;
 		}
-	}
+		else
+		{
+			for (int i = 0; i < processor.u_compute_xpath_node_set(); i++)
+			{
+				TiXmlNode* thisNode = processor.XNp_get_xpath_node(i);
+
+				TiXmlElement * res = thisNode->FirstChild()->ToElement();
+				resourceList.push_back(parseResourceValue(res, i + 2));
+			}
+		}
     }
     else
     {
         _log.Log(LOG_STATUS,"IHC_RESULT: Controller crash!? ---------------------------------");
+        _log.Log(LOG_STATUS,"IHC DUMP: %s", sResult.c_str());
         throw std::runtime_error("Empty result");
     }
 
