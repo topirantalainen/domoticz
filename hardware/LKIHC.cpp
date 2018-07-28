@@ -167,7 +167,7 @@ void CLKIHC::Do_Work()
 				if (firstTime)
 				{
 					firstTime = false;
-
+					activeResourceIdList.clear();
 					//WSProjectInfo inf = ihcC->getProjectInfo();
 					//_log.Log(LOG_STATUS, "LK IHC: Project info. %s", inf);
 				}
@@ -190,8 +190,10 @@ void CLKIHC::Do_Work()
 					}
 					if (resourceIdList != activeResourceIdList)
 					{
+
 						activeResourceIdList = resourceIdList;
 						ihcC->enableRuntimeValueNotification(activeResourceIdList);
+						_log.Log(LOG_STATUS, "LK IHC: Updating listener resource list with %d elements", activeResourceIdList.size());
 					}
 
 					std::vector<boost::shared_ptr<ResourceValue> > updatedResources;
