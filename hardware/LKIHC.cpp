@@ -480,13 +480,6 @@ void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char d
 
             break;
 
-        case sTypeTemperature:
-            m_sql.safe_query(
-                "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, sValue) "
-                "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, ' ')",
-                m_HwdID, sid, pTypeIHCDevice, sTypeIHCTemperature, 0, buff);
-
-            break;
         }
     }
     else
