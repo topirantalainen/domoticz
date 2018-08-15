@@ -50,6 +50,7 @@ private:
 	IhcAuthenticationService* authenticationService;
 	IhcResourceInteractionService* resourceInteractionService;
 	IhcControllerService* controllerService;
+	IhcWireless* wire;
 
 	WSControllerState controllerState;
 
@@ -65,6 +66,7 @@ ihcClient(std::string const &ip, std::string const &username, std::string const 
     resourceInteractionService = new IhcResourceInteractionService(ip);
     controllerService = new IhcControllerService(ip);
     controllerState = controllerService->getControllerState();
+    wire = new IhcWireless(ip);
 }
 std::string getProjectFile()
 { return projectFile; }
@@ -125,8 +127,6 @@ void openConnection()
 
 
     connectionState = CONNECTED;
-
-
     //loadProject(); //Todo: insert again
 
 
@@ -134,6 +134,8 @@ void openConnection()
 
 public:
 
+TiXmlDocument getRF()
+{ return wire->getRF();}
 WSProjectInfo getProjectInfo()
 { return controllerService->getProjectInfo(); }
 

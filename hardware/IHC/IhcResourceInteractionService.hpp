@@ -14,6 +14,31 @@
 #include <boost/variant.hpp>
 #include <iostream>
 #include <memory>
+
+
+static const std::string emptyQuery2 = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"><soapenv:Body></soapenv:Body></soapenv:Envelope>";
+class IhcWireless : public IhcHttpClient
+{
+private:
+	std::string url;
+
+public:
+	IhcWireless(std::string hostname)
+	{
+		url = "http://" + hostname + "/ws/AirlinkManagementService";
+	}
+	TiXmlDocument getRF()
+	{
+	    //std::string url = url = "http://192.168.1.99/ws/AirlinkManagementService";
+        std::string sResult;
+        TiXmlDocument doc;
+        sResult = sendQuery(url, emptyQuery2, "getDetectedDeviceList");
+        doc.Parse(sResult.c_str());
+
+        return doc;
+    }
+};
+
 class IhcResourceInteractionService : public IhcHttpClient
 {
 private:
@@ -88,12 +113,12 @@ std::string getValue( TiXmlElement* a, std::string t)
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
 	TinyXPath::xpath_processor proc(a, t.c_str());
 
+
 	if (1 == proc.u_compute_xpath_node_set())
 	{
 		TiXmlNode* thisNode = proc.XNp_get_xpath_node(0);
 
 		std::string res = thisNode->ToElement()->GetText();
-
 		return res;
 	}
 	return "";
@@ -151,6 +176,16 @@ boost::shared_ptr<ResourceValue> parseResourceValue(TiXmlElement* xmlRes, int co
 			return boost::move(var);
 		}
 
+		std::string const floatVal = getValue(xmlRes, "/ns1:value/ns" + boost::to_string(index) + ":floatingPointValue");
+		if (floatVal.size() > 0)
+		{
+			var->value = RangedFloatingPointValue(boost::lexical_cast<float>(floatVal),
+					boost::lexical_cast<float>(getValue(xmlRes, "/ns1:value/ns" + boost::to_string(index) + ":maximumValue")),
+					boost::lexical_cast<float>(getValue(xmlRes, "/ns1:value/ns" + boost::to_string(index) + ":minimumValue")));
+							//	return val;
+			return boost::move(var);
+		}
+
 		//Todo: throw unknown type
 	}
 
@@ -163,7 +198,9 @@ public:
 
 void enableRuntimeValueNotifications(std::vector<int> &items)
 {
+#ifdef _DEBUG
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
+#endif
 	std::string queryPrefix = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 	queryPrefix += "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">";
 	queryPrefix += "<soap:Body><enableRuntimeValueNotifications1 xmlns=\"utcs\">";
@@ -188,7 +225,9 @@ void enableRuntimeValueNotifications(std::vector<int> &items)
 
 std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(int const timeoutInSeconds)
 {
+#ifdef _DEBUG
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
+#endif
 	std::string query = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 	query += "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:utcs=\"utcs\">";
 	query += "<soapenv:Header/><soapenv:Body>";

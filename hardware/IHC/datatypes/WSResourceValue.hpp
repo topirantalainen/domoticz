@@ -22,11 +22,25 @@ struct RangedInteger {
     {}
 };
 
+struct RangedFloatingPointValue {
+    float min;
+    float max;
+    float value;
+
+    explicit RangedFloatingPointValue(float value, float min = 0, float max = 100)
+      : min(min)
+      , max(max)
+      , value(value)
+    {}
+};
+
 struct valueVisitor : boost::static_visitor<int> {
 	int ID;
 
 	valueVisitor()
-	{}
+	{
+		ID = 0;
+	}
 
     int operator()(bool const value) const{
     	int const val = (value) ? 1 : 0;
@@ -35,6 +49,10 @@ struct valueVisitor : boost::static_visitor<int> {
 
     int operator()(RangedInteger const value) const{
         return value.value;
+    }
+
+    float operator()(RangedFloatingPointValue const value) const{
+            return value.value;
     }
 
     template<typename T>
@@ -60,6 +78,11 @@ struct ToStringVisitor : boost::static_visitor<std::string> {
     std::string operator()(RangedInteger const value) const{
     	std::string const out = "Object " + boost::to_string(ID) + ", value \"" + boost::lexical_cast<std::string>(value.value) + "\"";
         return out;
+    }
+
+    std::string operator()(RangedFloatingPointValue const value) const{
+        	std::string const out = "Object " + boost::to_string(ID) + ", value \"" + boost::lexical_cast<std::string>(value.value) + "\"";
+            return out;
     }
 
     template<typename T>
@@ -115,7 +138,7 @@ struct Null {};
 
 struct ResourceValue {
     int ID;
-    boost::variant<Null, bool, RangedInteger> value;
+    boost::variant<Null, bool, RangedInteger, RangedFloatingPointValue> value;
 
     explicit ResourceValue(int ID)
       : ID(ID)
@@ -136,6 +159,11 @@ struct ResourceValue {
     {
     	return boost::apply_visitor(valueVisitor(), value);
     }
+
+    float floatValue() const
+        {
+        	return boost::apply_visitor(valueVisitor(), value);
+        }
 
     std::string toXml( ) const
     {
