@@ -65,7 +65,7 @@ matrix:
       - tar xfz boost_1_67_0.tar.gz
       - cd boost_1_67_0/
       - ./bootstrap.sh
-      - ./b2 stage threading=multi link=static --with-thread --with-system --with-chrono >> /dev/null 2>&1
+      - ./b2 stage threading=multi link=static --with-thread --with-system --with-chrono --with-iostreams >> /dev/null 2>&1
       - sudo ./b2 install threading=multi link=static --with-thread --with-system --with-chrono --with-iostreams >> /dev/null 2>&1
       - cd ..
       - (cd open-zwave-read-only; wget http://www.domoticz.com/domo.patch; patch -p1 < domo.patch; make)
