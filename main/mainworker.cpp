@@ -10233,9 +10233,10 @@ void MainWorker::decode_GeneralSwitch(const int HwdID, const _eHardwareTypes Hwd
 	unsigned char cmnd = pSwitch->cmnd;
 	unsigned char level = pSwitch->level;
 	unsigned char SignalLevel = pSwitch->rssi;
+	unsigned char BatteryLevel = pSwitch->battery_level;
 
 	sprintf(szTmp, "%d", level);
-	uint64_t DevRowIdx = m_sql.UpdateValue(HwdID, ID.c_str(), Unit, devType, subType, SignalLevel, -1, cmnd, szTmp, procResult.DeviceName);
+	uint64_t DevRowIdx = m_sql.UpdateValue(HwdID, ID.c_str(), Unit, devType, subType, SignalLevel, BatteryLevel, cmnd, szTmp, procResult.DeviceName);
 	if (DevRowIdx == -1)
 		return;
 	unsigned char check_cmnd = cmnd;
@@ -10823,7 +10824,7 @@ bool MainWorker::SwitchLightInt(const std::vector<std::string> &sd, std::string 
 	int HardwareID = atoi(sd[0].c_str());
 
 	_log.Debug(DEBUG_NORM, "MAIN SwitchLightInt : switchcmd:%s level:%d HWid:%d  sd:%s %s %s %s %s %s", switchcmd.c_str(), level, HardwareID,
-		sd[0].c_str(), sd[1].c_str(), sd[2].c_str(), sd[3].c_str(), sd[4].c_str(), sd[5].c_str());
+		sd[0].c_str(), sd[1].c_str(), sd[2].c_str(), sd[3].c_str(), sd[4].c_str(), sd[6].c_str());
 
 	int hindex = FindDomoticzHardware(HardwareID);
 	if (hindex == -1)
@@ -10859,6 +10860,8 @@ bool MainWorker::SwitchLightInt(const std::vector<std::string> &sd, std::string 
 	unsigned char dSubType = atoi(sd[4].c_str());
 	_eSwitchType switchtype = (_eSwitchType)atoi(sd[5].c_str());
 	std::map<std::string, std::string> options = m_sql.BuildDeviceOptions(sd[10].c_str());
+	unsigned char rssi = (atoi(sd[11].c_str()) > 0 ) ? atoi(sd[11].c_str()) : 12;
+	unsigned char batteryLevel = (atoi(sd[12].c_str()) > 0 ) ? atoi(sd[12].c_str()) : -1;
 
 	//when asking for Toggle, just switch to the opposite value
 	if (switchcmd == "Toggle") {
@@ -11757,7 +11760,8 @@ bool MainWorker::SwitchLightInt(const std::vector<std::string> &sd, std::string 
 			gswitch.cmnd = gswitch_sOn;
 
 		gswitch.level = (unsigned char)level;
-		gswitch.rssi = 12;
+		gswitch.rssi = rssi;
+		gswitch.battery_level = batteryLevel;
 		if (switchtype != STYPE_Motion) //dont send actual motion off command
 		{
 			if (!WriteToHardware(HardwareID, (const char*)&gswitch, sizeof(_tGeneralSwitch)))
@@ -11863,7 +11867,7 @@ bool MainWorker::SwitchLight(const uint64_t idx, const std::string &switchcmd, c
 	_log.Debug(DEBUG_NORM, "MAIN SwitchLight idx:%" PRId64 " cmd:%s lvl:%d ", idx, switchcmd.c_str(), level);
 	std::vector<std::vector<std::string> > result;
 	result = m_sql.safe_query(
-		"SELECT HardwareID,DeviceID,Unit,Type,SubType,SwitchType,AddjValue2,nValue,sValue,Name,Options FROM DeviceStatus WHERE (ID == %" PRIu64 ")",
+		"SELECT HardwareID,DeviceID,Unit,Type,SubType,SwitchType,AddjValue2,nValue,sValue,Name,Options,SignalLevel,BatteryLevel FROM DeviceStatus WHERE (ID == %" PRIu64 ")",
 		idx);
 	if (result.empty())
 		return false;
