@@ -98,13 +98,13 @@ CLKIHC::~CLKIHC(void)
 }
 
 ihcClient* ihcC;
+
 void CLKIHC::Init()
 {
-
 }
+
 bool CLKIHC::StartHardware()
 {
-
     /*Start worker thread*/
     m_bIsStarted=true;
     sOnConnected(this);
@@ -128,6 +128,7 @@ bool CLKIHC::StopHardware()
 }
 
 struct IhcObject {
+	int SerialNumber = 0;
 	int Type = 0;
 	int SubType = 0;
 	int RSSI = 0;
@@ -136,30 +137,32 @@ struct IhcObject {
 };
 
 using IhcDeviceID = unsigned long;
-
 using IhcDeviceTypeCache = std::map<IhcDeviceID, IhcObject>;
-using MapIhcDeviceIDToType = std::pair<IhcDeviceID, int>;
 
 void CLKIHC::Do_Work()
 {
     _log.Log(LOG_STATUS,"LK IHC: Worker started...");
-    int crashCounter = 0;
-    int rssiCounter = 0;
-    bool firstTime = true;
-    int sec_counter = 28;
+    auto crashCounter = 0;
+    auto rssiAndBatteryUpdate = 0;
+    auto firstTime = true;
+    auto sec_counter = 28;
+
     IhcDeviceTypeCache cache;
+
     while (!m_stoprequested)
     {
 
-		if (m_stoprequested)
-			break;
-		sec_counter++;
-		//if (sec_counter % 10 == 0) {
+//		if (m_stoprequested)
+//			break;
+
+    	sec_counter++;
 		m_LastHeartbeat = mytime(NULL);
-		//}
 
 		if (ihcC->CONNECTED != ihcC->connectionState)
 		{
+#ifdef _DEBUG
+		    _log.Log(LOG_STATUS,"LK IHC: Connecting to IHC controller...");
+#endif
 			try
 			{
 				if (0 == sec_counter % 30)
@@ -167,7 +170,7 @@ void CLKIHC::Do_Work()
 			}
             catch (const char* msg)
             {
-        _log.Log(LOG_ERROR, "LK IHC: Error: '%s'", msg);
+            	_log.Log(LOG_ERROR, "LK IHC: Error: '%s'", msg);
 				ihcC->reset();
 				firstTime = true;
 			}
@@ -184,7 +187,7 @@ void CLKIHC::Do_Work()
 					activeResourceIdList.clear();
 
 					// Lets create a device cache
-					{
+					/*{
 						std::vector<std::vector<std::string>> result;
 						int deviceCounter = 0;
 						result = m_sql.safe_query("SELECT DeviceID, Type, SubType FROM DeviceStatus WHERE HardwareID==%d", m_HwdID);
@@ -212,19 +215,25 @@ void CLKIHC::Do_Work()
 						//Value v = iter->second;
 						}
 
-					}
+					}*/
 					//WSProjectInfo inf = ihcC->getProjectInfo();
 					//_log.Log(LOG_STATUS, "LK IHC: Project info. %s", inf);
 				}
 
-				std::vector<std::vector<std::string> > result;
-				result = m_sql.safe_query("SELECT DeviceID FROM DeviceStatus WHERE HardwareID==%d AND Used == 1", m_HwdID);
-				if (result.size() > 0)
+
+				const auto result = m_sql.safe_query("SELECT DeviceID FROM DeviceStatus WHERE HardwareID==%d AND Used == 1", m_HwdID);
+				if (!result.empty())
 				{
 					if (ihcC->CONNECTED != ihcC->connectionState)
 					{
 						ihcC->openConnection();
 					}
+
+					if (rssiAndBatteryUpdate % 10 == 0)
+						UpdateBatteryAndRSSI();
+					rssiAndBatteryUpdate++;
+
+
 					std::vector<int> resourceIdList;
 
 					std::vector<std::vector<std::string> >::const_iterator itt;
@@ -235,17 +244,14 @@ void CLKIHC::Do_Work()
 					}
 					if (resourceIdList != activeResourceIdList)
 					{
-
 						activeResourceIdList = resourceIdList;
 						ihcC->enableRuntimeValueNotification(activeResourceIdList);
 						_log.Log(LOG_STATUS, "LK IHC: Updating listener resource list with %d elements", activeResourceIdList.size());
 					}
 
-					std::vector<boost::shared_ptr<ResourceValue> > updatedResources;
-					updatedResources = ihcC->waitResourceValueNotifications(RESOURCE_NOTIFICATION_TIMEOUT_S);
-rssiCounter++;
-					if (rssiCounter % 3 == 0)
-						UpdateBatteryAndRSSI();
+					//std::vector<boost::shared_ptr<ResourceValue> > updatedResources;
+					auto updatedResources = ihcC->waitResourceValueNotifications(RESOURCE_NOTIFICATION_TIMEOUT_S);
+
 					// Handle object state changes
 					for (std::vector<boost::shared_ptr<ResourceValue> >::iterator it = updatedResources.begin(); it != updatedResources.end(); ++it)
 					{
@@ -254,13 +260,9 @@ rssiCounter++;
 						char szID[10];
 						std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
 
-						std::vector<std::vector<std::string> > result;
-						result = m_sql.safe_query("SELECT Type, SubType FROM DeviceStatus WHERE (DeviceID='%q' AND HardwareID=='%d')", szID, m_HwdID);
+						const auto result = m_sql.safe_query("SELECT Type, SubType, SignalLevel FROM DeviceStatus WHERE (DeviceID='%q' AND HardwareID=='%d')", szID, m_HwdID);
 						if (!result.empty())
 						{
-
-							if (atoi(result[0][0].c_str()) == pTypeTEMP)
-							{
 
 							_tGeneralSwitch ycmd;
 							//ycmd.subtype = sSwitchIHCOutput;
@@ -295,10 +297,9 @@ rssiCounter++;
 								ycmd.level=0;
 							}
 							//TODO: FIX Rssi
-							ycmd.rssi = 12;
+							ycmd.rssi =  atoi(result[0][2].c_str());
 
 							m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, NULL, 100);
-							}
 						}
 					}
 				}
