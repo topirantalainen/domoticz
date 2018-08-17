@@ -270,6 +270,10 @@ bool CNotificationHelper::CheckAndHandleNotification(const uint64_t DevRowIdx, c
 					break;
 			}
 			break;
+		case pTypeIHCDevice:
+			_log.Log(LOG_STATUS, "Got here");
+
+			return CheckAndHandleTempHumidityNotification(DevRowIdx, sName, fValue, 0, true, false);
 		case pTypeTEMP:
 			return CheckAndHandleTempHumidityNotification(DevRowIdx, sName, fValue, 0, true, false);
 		case pTypeHUM:

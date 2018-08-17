@@ -3785,6 +3785,7 @@ namespace http {
 						std::vector<std::string> sd = itt;
 
 						std::string ID = sd[0];
+						std::cout << sd[0] << std::endl;
 						std::string Name = sd[1];
 						int Type = atoi(sd[2].c_str());
 						int SubType = atoi(sd[3].c_str());
@@ -3816,6 +3817,7 @@ namespace http {
 						case pTypeRemote:
 						case pTypeRadiator1:
 						case pTypeGeneralSwitch:
+						case pTypeIHCDevice:
 						case pTypeHomeConfort:
 						case pTypeFS20:
 							bdoAdd = true;
@@ -5473,6 +5475,7 @@ namespace http {
 						(dType == pTypeEvohomeWater) ||
 						(dType == pTypeThermostat1) ||
 						(dType == pTypeRego6XXTemp) ||
+						(dType == pTypeIHCDevice) ||
 						((dType == pTypeRFXSensor) && (dSubType == sTypeRFXSensorTemp))
 						) ||
 						((dType == pTypeUV) && (dSubType == sTypeUV3)) ||
@@ -8577,6 +8580,7 @@ namespace http {
 								(dType != pTypeThermostat4) &&
 								(dType != pTypeRemote) &&
 								(dType != pTypeGeneralSwitch) &&
+
 								(dType != pTypeHomeConfort) &&
 								(dType != pTypeChime) &&
 								(dType != pTypeFS20) &&
@@ -8598,6 +8602,7 @@ namespace http {
 								(!((dType == pTypeWIND) && (dSubType == sTypeWIND4))) &&
 								(!((dType == pTypeUV) && (dSubType == sTypeUV3))) &&
 								(!((dType == pTypeGeneral) && (dSubType == sTypeSystemTemp))) &&
+								(dType != pTypeIHCDevice) &&
 								(dType != pTypeThermostat1) &&
 								(!((dType == pTypeRFXSensor) && (dSubType == sTypeRFXSensorTemp))) &&
 								(dType != pTypeRego6XXTemp)
@@ -8795,16 +8800,20 @@ namespace http {
 							(dType == pTypeAirQuality) ||
 							(dType == pTypeRFXSensor) ||
 							(dType == pTypeP1Power) ||
-							(dType == pTypeP1Gas)
+							(dType == pTypeP1Gas)/* ||
+							(dType == pTypeIHCDevice)*/
 							)
 						{
 							root["result"][ii]["ID"] = szData;
+							std::cout << "a" << std::endl;
 						}
 						else
 						{
 							root["result"][ii]["ID"] = sd[1];
+							std::cout << "b" << std::endl;
 						}
 					}
+					std::cout << "c" << std::endl;
 					root["result"][ii]["Unit"] = atoi(sd[2].c_str());
 					root["result"][ii]["Type"] = RFX_Type_Desc(dType, 1);
 					root["result"][ii]["SubType"] = RFX_Type_SubType_Desc(dType, dSubType);
@@ -8860,6 +8869,7 @@ namespace http {
 						(dType == pTypeThermostat4) ||
 						(dType == pTypeRemote) ||
 						(dType == pTypeGeneralSwitch) ||
+
 						(dType == pTypeHomeConfort) ||
 						(dType == pTypeFS20) ||
 						((dType == pTypeRadiator1) && (dSubType == sTypeSmartwaresSwitchRadiator)) ||
@@ -9275,7 +9285,7 @@ namespace http {
 							root["result"][ii]["HaveTimeout"] = bHaveTimeout;
 						}
 					}
-					else if ((dType == pTypeTEMP) || (dType == pTypeRego6XXTemp))
+					else if ((dType == pTypeTEMP) || (dType == pTypeRego6XXTemp) || ((dType == pTypeIHCDevice) && (dSubType == sIHCTEMPInput)))
 					{
 						double tvalue = ConvertTemperature(atof(sValue.c_str()), tempsign);
 						root["result"][ii]["Temp"] = tvalue;
@@ -13373,7 +13383,8 @@ namespace http {
 								((dType == pTypeGeneral) && (dSubType == sTypeBaro)) ||
 								((dType == pTypeThermostat) && (dSubType == sTypeThermSetpoint)) ||
 								(dType == pTypeEvohomeZone) ||
-								(dType == pTypeEvohomeWater)
+								(dType == pTypeEvohomeWater) ||
+								(dType == pTypeIHCDevice)
 								)
 							{
 								double tvalue = ConvertTemperature(atof(sd[0].c_str()), tempsign);
@@ -15028,7 +15039,8 @@ namespace http {
 								((dType == pTypeGeneral) && (dSubType == sTypeSystemTemp)) ||
 								((dType == pTypeThermostat) && (dSubType == sTypeThermSetpoint)) ||
 								(dType == pTypeEvohomeZone) || (dType == pTypeEvohomeWater) ||
-								((dType == pTypeGeneral) && (dSubType == sTypeBaro))
+								((dType == pTypeGeneral) && (dSubType == sTypeBaro)) ||
+								(dType == pTypeIHCDevice)
 								)
 							{
 								bool bOK = true;
@@ -15118,7 +15130,8 @@ namespace http {
 							((dType == pTypeUV) && (dSubType == sTypeUV3)) ||
 							((dType == pTypeWIND) && (dSubType == sTypeWIND4)) ||
 							((dType == pTypeWIND) && (dSubType == sTypeWINDNoTemp)) ||
-							(dType == pTypeEvohomeZone) || (dType == pTypeEvohomeWater)
+							(dType == pTypeEvohomeZone) || (dType == pTypeEvohomeWater) ||
+							(dType == pTypeIHCDevice)
 							)
 						{
 							double te = ConvertTemperature(atof(sd[1].c_str()), tempsign);
@@ -15204,7 +15217,8 @@ namespace http {
 								((dType == pTypeUV) && (dSubType == sTypeUV3)) ||
 								((dType == pTypeGeneral) && (dSubType == sTypeSystemTemp)) ||
 								((dType == pTypeThermostat) && (dSubType == sTypeThermSetpoint)) ||
-								(dType == pTypeEvohomeZone) || (dType == pTypeEvohomeWater)
+								(dType == pTypeEvohomeZone) || (dType == pTypeEvohomeWater) ||
+								(dType == pTypeIHCDevice)
 								)
 							{
 								bool bOK = true;
@@ -16604,7 +16618,8 @@ namespace http {
 							((dType == pTypeWIND) && (dSubType == sTypeWINDNoTemp)) ||
 							((dType == pTypeRFXSensor) && (dSubType == sTypeRFXSensorTemp)) ||
 							((dType == pTypeThermostat) && (dSubType == sTypeThermSetpoint)) ||
-							(dType == pTypeEvohomeZone) || (dType == pTypeEvohomeWater)
+							(dType == pTypeEvohomeZone) || (dType == pTypeEvohomeWater) ||
+							(dType == pTypeIHCDevice)
 							)
 						)
 					{

@@ -1887,6 +1887,13 @@ uint64_t MainWorker::PerformRealActionFromDomoticzClient(const unsigned char *pR
 		ID = szTmp;
 		Unit = pSwitch->unitcode;
 	}
+	case pTypeIHCDevice:
+	{
+		const _tIHCDevice *pSwitch = reinterpret_cast<const _tIHCDevice*>(pResponse);
+		sprintf(szTmp, "%08X", pSwitch->id);
+		ID = szTmp;
+		Unit = pSwitch->unitcode;
+	}
 	break;
 	default:
 		return -1;
@@ -2173,6 +2180,7 @@ void MainWorker::ProcessRXMessage(const CDomoticzHardwareBase *pHardware, const 
 			case pTypeThermostat4:
 			case pTypeRadiator1:
 			case pTypeGeneralSwitch:
+			case pTypeIHCDevice:
 			case pTypeHomeConfort:
 			case pTypeFan:
 			case pTypeFS20:
@@ -2383,6 +2391,9 @@ void MainWorker::ProcessRXMessage(const CDomoticzHardwareBase *pHardware, const 
 			break;
 		case pTypeColorSwitch:
 			decode_ColorSwitch(HwdID, HwdType, reinterpret_cast<const tRBUF *>(pRXCommand), procResult);
+			break;
+		case pTypeIHCDevice:
+			decode_IHCDevice(HwdID, HwdType, reinterpret_cast<const tRBUF *>(pRXCommand), procResult);
 			break;
 		case pTypeGeneralSwitch:
 			decode_GeneralSwitch(HwdID, HwdType, reinterpret_cast<const tRBUF *>(pRXCommand), procResult);
@@ -3316,14 +3327,170 @@ void MainWorker::decode_Wind(const int HwdID, const _eHardwareTypes HwdType, con
 	}
 	procResult.DeviceRowIdx = DevRowIdx;
 }
+void MainWorker::decode_IHCDevice(const int HwdID, const _eHardwareTypes HwdType, const tRBUF *pResponse, _tRxMessageProcessingResult & procResult)
+{
+	std::cout << "Got IHC device" << std::endl;
+	const _tIHCDevice *pIHCDevice = reinterpret_cast<const _tIHCDevice*>(pResponse);
+	char szTmp[100];
+	char szTmp2[100];
+		unsigned char devType = pIHCDevice->type;
 
+		unsigned char subType = pIHCDevice->subtype;
+		sprintf(szTmp, "%08X", pIHCDevice->id);
+		std::string ID = szTmp;
+		unsigned char Unit = 0;
+		unsigned char cmnd = 0;
+		unsigned char SignalLevel = 12;
+		unsigned char BatteryLevel;
+		BatteryLevel = 100;
+float temp = 1.23f;
+		/*
+
+		float temp;
+		if (!pResponse->TEMP.tempsign)
+		{
+			temp = float((pResponse->TEMP.temperatureh * 256) + pResponse->TEMP.temperaturel) / 10.0f;
+		}
+		else
+		{
+			temp = -(float(((pResponse->TEMP.temperatureh & 0x7F) * 256) + pResponse->TEMP.temperaturel) / 10.0f);
+		}
+		if ((temp < -200) || (temp > 380))
+		{
+			WriteMessage(" Invalid Temperature");
+			return;
+		}
+
+		float AddjValue = 0.0f;
+		float AddjMulti = 1.0f;
+		m_sql.GetAddjustment(HwdID, ID.c_str(), Unit, devType, subType, AddjValue, AddjMulti);
+		temp += AddjValue;
+*/
+float AddjValue = 0.0f;
+float AddjMulti = 1.0f;
+		//sprintf(szTmp, "%.1f", 123);
+    sprintf(szTmp2, "%.1f", temp);
+	    uint64_t DevRowIdx = m_sql.UpdateValue(HwdID, szTmp, Unit, devType, subType, SignalLevel, BatteryLevel, cmnd, szTmp2, procResult.DeviceName);
+		if (DevRowIdx == -1)
+			return;
+std::cout << "Got past here" << std::endl;
+		bool bHandledNotification = false;
+		unsigned char humidity = 0;
+		if (pIHCDevice->subtype == 0)
+		{
+			//check if we already had a humidity for this device, if so, keep it!
+			char szTmp[300];
+			std::vector<std::vector<std::string> > result;
+
+			result = m_sql.safe_query(
+				"SELECT nValue,sValue FROM DeviceStatus WHERE (HardwareID=%d AND DeviceID='%q' AND Unit=%d AND Type=%d AND SubType=%d)",
+				HwdID, szTmp, 1, devType, subType);
+
+			if (result.size() == 1)
+			{
+				std::cout << "got result" << std::endl;
+				m_sql.GetAddjustment(HwdID, ID.c_str(), 2, pTypeTEMP_HUM, sTypeTH_LC_TC, AddjValue, AddjMulti);
+				temp += AddjValue;
+				humidity = atoi(result[0][0].c_str());
+				unsigned char humidity_status = atoi(result[0][1].c_str());
+				sprintf(szTmp, "%.1f;%d;%d", temp, humidity, humidity_status);
+				DevRowIdx = m_sql.UpdateValue(HwdID, szTmp, Unit, devType, subType, SignalLevel, BatteryLevel, 0, szTmp2, procResult.DeviceName);
+				m_notifications.CheckAndHandleNotification(DevRowIdx, HwdID, szTmp, procResult.DeviceName, Unit, devType, subType, temp);
+
+				bHandledNotification = true;
+			}
+		}
+
+		if (!bHandledNotification)
+			m_notifications.CheckAndHandleNotification(DevRowIdx, HwdID, ID, procResult.DeviceName, Unit, devType, subType, temp);
+/*
+		if (_log.IsDebugLevelEnabled(DEBUG_RECEIVED))
+		{
+			WriteMessageStart();
+			switch (pResponse->TEMP.subtype)
+			{
+			case sTypeTEMP1:
+				WriteMessage("subtype       = TEMP1 - THR128/138, THC138");
+				sprintf(szTmp, "                channel %d", pResponse->TEMP.id2);
+				WriteMessage(szTmp);
+				break;
+			case sTypeTEMP2:
+				WriteMessage("subtype       = TEMP2 - THC238/268,THN132,THWR288,THRN122,THN122,AW129/131");
+				sprintf(szTmp, "                channel %d", pResponse->TEMP.id2);
+				WriteMessage(szTmp);
+				break;
+			case sTypeTEMP3:
+				WriteMessage("subtype       = TEMP3 - THWR800");
+				break;
+			case sTypeTEMP4:
+				WriteMessage("subtype       = TEMP4 - RTHN318");
+				sprintf(szTmp, "                channel %d", pResponse->TEMP.id2);
+				WriteMessage(szTmp);
+				break;
+			case sTypeTEMP5:
+				WriteMessage("subtype       = TEMP5 - LaCrosse TX2, TX3, TX4, TX17");
+				break;
+			case sTypeTEMP6:
+				WriteMessage("subtype       = TEMP6 - TS15C");
+				break;
+			case sTypeTEMP7:
+				WriteMessage("subtype       = TEMP7 - Viking 02811, Proove TSS330");
+				break;
+			case sTypeTEMP8:
+				WriteMessage("subtype       = TEMP8 - LaCrosse WS2300");
+				break;
+			case sTypeTEMP9:
+				if (pResponse->TEMP.id2 & 0xFF)
+					WriteMessage("subtype       = TEMP9 - RUBiCSON 48659 stektermometer");
+				else
+					WriteMessage("subtype       = TEMP9 - RUBiCSON 48695");
+				break;
+			case sTypeTEMP10:
+				WriteMessage("subtype       = TEMP10 - TFA 30.3133");
+				break;
+			case sTypeTEMP11:
+				WriteMessage("subtype       = WT0122 pool sensor");
+				break;
+			case sTypeTEMP_SYSTEM:
+				WriteMessage("subtype       = System");
+				break;
+			default:
+				sprintf(szTmp, "ERROR: Unknown Sub type for Packet type= %02X:%02X", pResponse->TEMP.packettype, pResponse->TEMP.subtype);
+				WriteMessage(szTmp);
+				break;
+			}
+
+			sprintf(szTmp, "Sequence nbr  = %d", pResponse->TEMP.seqnbr);
+			WriteMessage(szTmp);
+			sprintf(szTmp, "ID            = %d", (pResponse->TEMP.id1 * 256) + pResponse->TEMP.id2);
+			WriteMessage(szTmp);
+
+			sprintf(szTmp, "Temperature   = %.1f C", temp);
+			WriteMessage(szTmp);
+
+			sprintf(szTmp, "Signal level  = %d", pResponse->TEMP.rssi);
+			WriteMessage(szTmp);
+
+			if ((pResponse->TEMP.battery_level & 0x0F) == 0)
+				WriteMessage("Battery       = Low");
+			else
+				WriteMessage("Battery       = OK");
+			WriteMessageEnd();
+		}*/
+		std::cout << "and done" << std::endl;
+		procResult.DeviceRowIdx = DevRowIdx;
+}
 void MainWorker::decode_Temp(const int HwdID, const _eHardwareTypes HwdType, const tRBUF *pResponse, _tRxMessageProcessingResult & procResult)
 {
+	std::cout << "got here!!!" << std::endl;
 	char szTmp[100];
 	unsigned char devType = pTypeTEMP;
 	unsigned char subType = pResponse->TEMP.subtype;
 	sprintf(szTmp, "%d", (pResponse->TEMP.id1 * 256) + pResponse->TEMP.id2);
-	std::string ID = szTmp;
+	//std::string ID = szTmp;
+
+	sprintf(szTmp, "%08X", 6968084);
+		std::string ID = szTmp;
 	unsigned char Unit = pResponse->TEMP.id2;
 
 	unsigned char cmnd = 0;
@@ -11710,8 +11877,35 @@ bool MainWorker::SwitchLightInt(const std::vector<std::string> &sd, std::string 
 			PushAndWaitRxMessage(m_hardwaredevices[hindex], (const unsigned char *)&lcmd, NULL, -1);
 		}
 		return true;
+	case pTypeIHCDevice:
+	{
+		_tIHCDevice ihcdevice;
+		ihcdevice.type = dType;
+		ihcdevice.subtype = dSubType;
+		ihcdevice.seqnbr = m_hardwaredevices[hindex]->m_SeqNr++;
+		ihcdevice.id = ID;
+		ihcdevice.unitcode = Unit;
+		std::cout << switchcmd << std::endl;
+		if (switchcmd == "Off")
+		{
+			ihcdevice.cmnd = gswitch_sOff;
+		}
+		else if (switchcmd == "On")
+		{
+			ihcdevice.cmnd = gswitch_sOn;
+		}
+		ihcdevice.rssi = rssi;
+		ihcdevice.battery_level = batteryLevel;
+		//ihcdevice.cmnd = gswitch_sOn;
+
+		if (!WriteToHardware(HardwareID, (const char*)&ihcdevice, sizeof(_tIHCDevice)))
+			return false;
+		PushAndWaitRxMessage(m_hardwaredevices[hindex], (const unsigned char *)&ihcdevice, NULL, -1);
+	}
+	return true;
 	case pTypeGeneralSwitch:
 	{
+		std::cout << "got here" << std::endl;
 
 		_tGeneralSwitch gswitch;
 		gswitch.type = dType;
@@ -11722,12 +11916,12 @@ bool MainWorker::SwitchLightInt(const std::vector<std::string> &sd, std::string 
 
 		if (!GetLightCommand(dType, dSubType, switchtype, switchcmd, gswitch.cmnd, options))
 			return false;
-
+std::cout << "a" << std::endl;
 		if ((switchtype != STYPE_Selector) && (dSubType != sSwitchGeneralSwitch))
 		{
 			level = (level > 99) ? 99 : level;
 		}
-
+		std::cout << "b" << std::endl;
 		if (switchtype == STYPE_Doorbell) {
 			int rnvalue = 0;
 			m_sql.GetPreferencesVar("DoorbellCommand", rnvalue);
@@ -11758,17 +11952,19 @@ bool MainWorker::SwitchLightInt(const std::vector<std::string> &sd, std::string 
 			(switchtype == STYPE_BlindsPercentageInverted)) &&
 			(gswitch.cmnd == gswitch_sSetLevel) && (level == 100))
 			gswitch.cmnd = gswitch_sOn;
-
+		std::cout << "c" << std::endl;
 		gswitch.level = (unsigned char)level;
 		gswitch.rssi = rssi;
 		gswitch.battery_level = batteryLevel;
 		if (switchtype != STYPE_Motion) //dont send actual motion off command
 		{
+			std::cout << "d" << std::endl;
 			if (!WriteToHardware(HardwareID, (const char*)&gswitch, sizeof(_tGeneralSwitch)))
 				return false;
 		}
 		if (!IsTesting) {
 			//send to internal for now (later we use the ACK)
+			std::cout << "e" << std::endl;
 			PushAndWaitRxMessage(m_hardwaredevices[hindex], (const unsigned char *)&gswitch, NULL, -1);
 		}
 	}

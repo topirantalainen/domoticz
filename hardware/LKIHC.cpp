@@ -127,17 +127,25 @@ bool CLKIHC::StopHardware()
     return true;
 }
 
-struct IhcObject {
-	int SerialNumber = 0;
-	int Type = 0;
-	int SubType = 0;
-	int RSSI = 0;
-	int Battery = 0;
+using IhcDeviceID = unsigned long int;
+using IhcDeviceSerial = long unsigned int;
+using IhcDeviceSerialToID = std::multimap<IhcDeviceSerial, IhcDeviceID>;
 
+struct IhcObject {
+	IhcDeviceSerial SerialNumber;
+	uint8_t Type;
+	uint8_t SubType;
+	uint8_t RSSI;
+	uint8_t Battery;
+    IhcObject () : SerialNumber(0), Type(0), SubType(0), RSSI(0), Battery(0) {}
+	IhcObject (IhcDeviceSerial serial, uint8_t ttype, uint8_t subtype, int rssi, int battery) :
+		SerialNumber(serial), Type(ttype), SubType(subtype), RSSI(rssi), Battery(battery) {}
 };
 
-using IhcDeviceID = unsigned long;
 using IhcDeviceTypeCache = std::map<IhcDeviceID, IhcObject>;
+
+IhcDeviceSerialToID IhcDeviceSerialToDeviceID;
+IhcDeviceTypeCache DeviceCache;
 
 void CLKIHC::Do_Work()
 {
@@ -147,13 +155,8 @@ void CLKIHC::Do_Work()
     auto firstTime = true;
     auto sec_counter = 28;
 
-    IhcDeviceTypeCache cache;
-
     while (!m_stoprequested)
     {
-
-//		if (m_stoprequested)
-//			break;
 
     	sec_counter++;
 		m_LastHeartbeat = mytime(NULL);
@@ -175,8 +178,7 @@ void CLKIHC::Do_Work()
 				firstTime = true;
 			}
 		}
-
-		//if (ihcC->CONNECTED == ihcC->connectionState)
+		else
 		{
 
 			try
@@ -184,40 +186,63 @@ void CLKIHC::Do_Work()
 				if (firstTime)
 				{
 					firstTime = false;
+					rssiAndBatteryUpdate = 0;
 					activeResourceIdList.clear();
+					DeviceCache.clear();
+					IhcDeviceSerialToDeviceID.clear();
 
-					// Lets create a device cache
-					/*{
-						std::vector<std::vector<std::string>> result;
-						int deviceCounter = 0;
-						result = m_sql.safe_query("SELECT DeviceID, Type, SubType FROM DeviceStatus WHERE HardwareID==%d", m_HwdID);
-						if (!result.empty())
+					// Lets create a device cache and a map for device serialnumbers -> deviceID
+					const auto result = m_sql.safe_query("SELECT DeviceID, Type, SubType, BatteryLevel, SignalLevel, Options FROM DeviceStatus WHERE HardwareID==%d", m_HwdID);
+					if (!result.empty())
+					{
+						for (auto itt = result.begin(); itt != result.end(); ++itt)
 						{
-							std::vector<std::vector<std::string> >::const_iterator itt;
-							for (itt = result.begin(); itt != result.end(); ++itt)
+							auto sd = *itt;
+
+							auto DeviceID = std::strtoul(sd[0].c_str(), NULL, 16);
+							auto DeviceType = atoi(sd[1].c_str());
+							auto DeviceSubType = atoi(sd[2].c_str());
+							auto DeviceSerialNumber = std::strtoul(sd[5].c_str(), NULL, 10);
+							auto DeviceBatteryValue = atoi(sd[3].c_str());
+							auto DeviceRSSIValue = atoi(sd[4].c_str());
+
+							IhcObject IhcDevice (DeviceSerialNumber, DeviceType, DeviceSubType, DeviceBatteryValue, DeviceRSSIValue);
+							DeviceCache.insert(std::make_pair( DeviceID, IhcDevice));
+
+							if (DeviceSerialNumber != 0)
 							{
-								std::vector<std::string> sd = *itt;
-								IhcObject s;
-								s.SubType = atoi(result[0][1].c_str());
-								s.Type = atoi(result[0][2].c_str());
-								std::cout << std::strtoul(sd[0].c_str(), NULL, 16) << " inserted" << std::endl;
-								cache.insert(std::make_pair( std::strtoul(sd[0].c_str(), NULL, 16),  s));
-								deviceCounter++;
+								IhcDeviceSerialToDeviceID.insert(std::make_pair(DeviceSerialNumber, DeviceID));
 							}
 						}
-						_log.Log(LOG_STATUS, "%d devices in cache", deviceCounter);
-						std::cout << "Length: " << cache.size() << std::endl;
-						for(std::map<IhcDeviceID, IhcObject>::iterator iter = cache.begin(); iter != cache.end(); ++iter)
-						{
-						int k =  iter->first;
-						std::cout << cache[k].Type << "." << cache[k].SubType << std::endl;
+					}
+
+					/*std::cout << "Cache length: " << DeviceCache.size() << std::endl;
+					std::cout << "Length: " << IhcDeviceSerialToDeviceID.size() << std::endl;*/
+					/*for(std::multimap<IhcDeviceSerial, IhcDeviceID>::iterator iter = IhcSerialList.begin(); iter != IhcSerialList.end(); ++iter)
+					{
+						IhcDeviceSerial k =  (*iter).first;
+						IhcDeviceID l = (*iter).second;
+						//std::cout << k << " .. " << l << std::endl;
+						//std::cout << cache[k].Type << "." << cache[k].SubType << std::endl;
 						//ignore value
 						//Value v = iter->second;
-						}
-
-					}*/
+					}
 					//WSProjectInfo inf = ihcC->getProjectInfo();
 					//_log.Log(LOG_STATUS, "LK IHC: Project info. %s", inf);
+					for(std::multimap<IhcDeviceSerial, IhcDeviceID>::iterator it = IhcSerialList.begin(), end = IhcSerialList.end(); it != end; it = IhcSerialList.upper_bound(it->first))
+					{
+					      std::cout << it->first << ' ' << it->second << std::endl;
+
+					}
+					IhcDeviceSerial id = 109955793651093;
+					auto receiversEntries = IhcSerialList.equal_range(id);
+					for (auto receiverEntry = receiversEntries.first; receiverEntry != receiversEntries.second; ++receiverEntry)
+					    {
+
+						std::cout << receiverEntry->second << std::endl;
+					    }
+
+*/
 				}
 
 
@@ -229,19 +254,19 @@ void CLKIHC::Do_Work()
 						ihcC->openConnection();
 					}
 
-					if (rssiAndBatteryUpdate % 10 == 0)
+					if (rssiAndBatteryUpdate % 100 == 0)
 						UpdateBatteryAndRSSI();
 					rssiAndBatteryUpdate++;
 
 
 					std::vector<int> resourceIdList;
-
-					std::vector<std::vector<std::string> >::const_iterator itt;
-					for (itt = result.begin(); itt != result.end(); ++itt)
+					for (auto itt = result.begin(); itt != result.end(); ++itt)
 					{
 						std::vector<std::string> sd = *itt;
+						IhcDeviceID DeviceID = std::strtoul(sd[0].c_str(), NULL, 16);
 						resourceIdList.push_back(std::strtoul(sd[0].c_str(), NULL, 16));
 					}
+
 					if (resourceIdList != activeResourceIdList)
 					{
 						activeResourceIdList = resourceIdList;
@@ -250,42 +275,45 @@ void CLKIHC::Do_Work()
 					}
 
 					//std::vector<boost::shared_ptr<ResourceValue> > updatedResources;
-					auto updatedResources = ihcC->waitResourceValueNotifications(RESOURCE_NOTIFICATION_TIMEOUT_S);
+					const auto updatedResources = ihcC->waitResourceValueNotifications(RESOURCE_NOTIFICATION_TIMEOUT_S);
 
 					// Handle object state changes
-					for (std::vector<boost::shared_ptr<ResourceValue> >::iterator it = updatedResources.begin(); it != updatedResources.end(); ++it)
+					//for (std::vector<boost::shared_ptr<ResourceValue> >::iterator it = updatedResources.begin(); it != updatedResources.end(); ++it)
+					for (auto  it = updatedResources.begin(); it != updatedResources.end(); ++it)
 					{
 						ResourceValue & obj = *(*it);
 
 						char szID[10];
 						std::sprintf(szID, "%08lX", (long unsigned int)obj.ID);
+						std::cout << (long unsigned int)obj.ID << std::endl;
+						std::cout << obj.ID << std::endl;
 
-						const auto result = m_sql.safe_query("SELECT Type, SubType, SignalLevel FROM DeviceStatus WHERE (DeviceID='%q' AND HardwareID=='%d')", szID, m_HwdID);
-						if (!result.empty())
+						auto device = DeviceCache.find(obj.ID);
+						if (device != DeviceCache.end())
 						{
+							std::cout << "found something" << std::endl;
+							std::cout << int ((*device).second.Type) << std::endl;
+							if ((*device).second.Type ==  pTypeIHCDevice)
+							{
+								//MainWorker::decode_Temp();
+								std::cout << "got temp" << std::endl;
+								tIHCDevice lcmd;
+								lcmd.type = pTypeIHCDevice;
 
+
+
+								lcmd.id = (long unsigned int)obj.ID;
+								lcmd.subtype = 6;//(*device).second.SubType;
+
+								m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&lcmd, NULL, (*device).second.Battery);
+							}
+							else
+							{
 							_tGeneralSwitch ycmd;
-							//ycmd.subtype = sSwitchIHCOutput;
-							ycmd.subtype =  atoi(result[0][1].c_str());
-
-
-							//if (typeid(obj.value.type()) == typeid(RangedFloatingPointValue))
-							//	std::cout << "Is float" << std::endl;
-							//std::cout << "aaaaaa" << obj.floatValue() << std::endl;
-
-
-							int nvalue = obj.intValue();
-							bool tIsOn = (nvalue != 0);
-							int lastLevel = 0;
-							int value = obj.intValue();
-
-
-
-
+							ycmd.subtype = (*device).second.SubType;
+							ycmd.rssi = (*device).second.RSSI;
 							ycmd.id =  (long unsigned int)obj.ID;
 							ycmd.unitcode = 0;
-							ycmd.battery_level = 10;
-
 							if (obj.intValue() > 1)
 							{
 								ycmd.cmnd = 2;
@@ -296,32 +324,25 @@ void CLKIHC::Do_Work()
 								ycmd.cmnd = obj.intValue();
 								ycmd.level=0;
 							}
-							//TODO: FIX Rssi
-							ycmd.rssi =  atoi(result[0][2].c_str());
+							m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, NULL, (*device).second.Battery);
+							}
 
-							m_mainworker.PushAndWaitRxMessage(this, (const unsigned char *)&ycmd, NULL, 100);
 						}
 					}
 				}
 				else
 				{
-					std::cout << "No devices added\n";
-							sleep_seconds(10);
-							ihcC->reset();
+					sleep_seconds(10);
+					ihcC->reset();
 				}
-
-
-
 			}
 			catch (...)
 			{
-				//_log.Log(LOG_ERROR, "LK IHC: Error: '%s'", msg);
 				crashCounter++;
 				_log.Log(LOG_ERROR, "LK IHC: The IHC controller has crashed %d times since Domoticz was started", crashCounter);
 				ihcC->reset();
 				firstTime = true;
 			}
-
 		}
 		sleep_seconds(1);
     }
@@ -333,14 +354,14 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 {
 	if (ihcC->CONNECTED == ihcC->connectionState)
 	{
-		bool result = false;
-		const tRBUF *pSen = reinterpret_cast<const tRBUF*>(pdata);
+		auto result = false;
+		const auto *pSen = reinterpret_cast<const tRBUF*>(pdata);
 
 		try
 		{
 			if (pSen->ICMND.packettype == pTypeGeneralSwitch)
 			{
-				const _tGeneralSwitch *general = reinterpret_cast<const _tGeneralSwitch*>(pdata);
+				const auto *general = reinterpret_cast<const _tGeneralSwitch*>(pdata);
 				switch (pSen->ICMND.subtype)
 				{
 
@@ -367,7 +388,7 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 					case sSwitchIHCDimmer:
 					{
 						/* Integer value */
-						uint8_t dimmer_value = 0;
+						auto dimmer_value = 0;
 						if (general->cmnd == gswitch_sOff)
 						{
 							dimmer_value = 0;
@@ -411,17 +432,15 @@ bool CLKIHC::WriteToHardware(const char *pdata, const unsigned char length)
 	}
 }
 
-void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char deviceType, bool functionBlock)
+void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char deviceType, bool isFunctionBlock)
 {
-	long unsigned int serialNumber = 0;
-    std::string devID = device->ToElement()->Attribute("id");
-    std::string d = devID.substr(3);
+	IhcDeviceSerial serialNumber = 0;
+    const auto deviceID = std::string(device->ToElement()->Attribute("id")).substr(3);
 
     char sid[10];
-    sprintf(sid, "%08X", (static_cast<unsigned int>(std::strtoul(d.c_str(), NULL, 16))));
+    sprintf(sid, "%08X", (std::stoul(deviceID, NULL, 16)));
 
-    std::vector<std::vector<std::string> > result;
-    result = m_sql.safe_query("SELECT ID FROM DeviceStatus WHERE (HardwareID==%d) AND (DeviceID=='%q')",
+    const auto result = m_sql.safe_query("SELECT ID FROM DeviceStatus WHERE (HardwareID==%d) AND (DeviceID=='%q')",
 							  m_HwdID, sid);
     if (result.size() < 1)
     {
@@ -429,7 +448,8 @@ void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char d
 			_log.Log(LOG_NORM, "LK IHC: Added device %d %s", m_HwdID, sid);
         #endif
         char buff[100];
-        if (functionBlock)
+
+        if (isFunctionBlock)
         {
             snprintf(buff, sizeof(buff), "FB | %s | %s | %s",
                 device->Parent()->ToElement()->Parent()->ToElement()->Parent()->ToElement()->Attribute("name"),
@@ -442,56 +462,49 @@ void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char d
                 device->Parent()->ToElement()->Parent()->ToElement()->Attribute("name"),
                 device->Parent()->ToElement()->Attribute("position"),
                 device->ToElement()->Attribute("name"));
+
             // If it's a wireless device, get the serial number so we can use it for the RSSI and battery level mappings
-            if (device->Parent()->ToElement()->Attribute("serialnumber") != 0){
-                std::string const serialNumber_raw = std::string(device->Parent()->ToElement()->Attribute("serialnumber")).substr(3);
+            if (device->Parent()->ToElement()->Attribute("serialnumber") != 0)
+            {
+                const auto serialNumber_raw = std::string(device->Parent()->ToElement()->Attribute("serialnumber")).substr(3);
                 serialNumber = std::strtoul(serialNumber_raw.c_str(), NULL, 16);
             }
         }
+        _eSwitchType device;
         switch (deviceType)
         {
         case sSwitchIHCFBOutput:
         case sSwitchIHCInput:
-            m_sql.safe_query(
-                "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, AddjValue, AddjValue2, sValue, Options) "
-                "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, %f, %f, ' ', '%lld')",
-                m_HwdID, sid, pTypeGeneralSwitch, deviceType, STYPE_Contact, buff, 1.0, 1.0, serialNumber);
+        	device = STYPE_Contact;
             break;
-
         case sSwitchIHCFBInput:
-            m_sql.safe_query(
-                "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, AddjValue, AddjValue2, sValue, Options) "
-                "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, %f, %f, ' ', '%lld')",
-                m_HwdID, sid, pTypeGeneralSwitch, deviceType, STYPE_PushOn, buff, 1.0, 1.0, serialNumber);
+        	device = STYPE_PushOn;
             break;
-
         case sSwitchIHCDimmer:
-            m_sql.safe_query(
-                "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, sValue, Options) "
-                "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, ' ', '%lld')",
-                m_HwdID, sid, pTypeGeneralSwitch, deviceType, STYPE_Dimmer, buff, serialNumber);
-
+        	device = STYPE_Dimmer;
             break;
-
         case sSwitchIHCOutput:
-            m_sql.safe_query(
-                "INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, sValue, Options) "
-                "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, ' ', '%lld')",
-                m_HwdID, sid, pTypeGeneralSwitch, deviceType, STYPE_OnOff, buff, serialNumber);
-
+        	device = STYPE_OnOff;
             break;
-
+        default:
+        	return;
         }
+
+        m_sql.safe_query(
+        	"INSERT INTO DeviceStatus (HardwareID, DeviceID, Type, SubType, SwitchType, SignalLevel, BatteryLevel, Name, nValue, AddjValue, AddjValue2, sValue, Options) "
+            "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, '', '', '', '%lld')",
+            m_HwdID, sid, pTypeGeneralSwitch, deviceType, STYPE_OnOff, buff,1.0,1.0, serialNumber);
     }
     else
     {
+    	// TODO: Remove when merging to master
     	// Device already exists - add serialnumber
         // If it's a wireless device, get the serial number so we can use it for the RSSI and battery level mappings
-        if (device->Parent()->ToElement()->Attribute("serialnumber") != 0){
+        if (device->Parent()->ToElement()->Attribute("serialnumber") != 0)
+        {
             std::string const serialNumber_raw = std::string(device->Parent()->ToElement()->Attribute("serialnumber")).substr(3);
             serialNumber = std::strtoul(serialNumber_raw.c_str(), NULL, 16);
-            m_sql.safe_query(
-                            "UPDATE DeviceStatus SET Options = '%lld' WHERE HardwareID = '%d' AND DeviceID = '%q'", serialNumber, m_HwdID, sid);
+            m_sql.safe_query("UPDATE DeviceStatus SET Options = '%lld' WHERE HardwareID = '%d' AND DeviceID = '%q'", serialNumber, m_HwdID, sid);
 
         }
     }
@@ -499,48 +512,39 @@ void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char d
 
 void CLKIHC::iterateDevices(const TiXmlNode* deviceNode)
 {
+	bool isFunctionBlock = false;
+	unsigned char deviceType = -1;
+
     if (strcmp(deviceNode->Value(), "airlink_dimming") == 0)
     {
-        unsigned char const deviceType = sSwitchIHCDimmer;
-        addDeviceIfNotExists(deviceNode, deviceType);
+    	deviceType = sSwitchIHCDimmer;
     }
     else if ((strcmp(deviceNode->Value(), "airlink_relay") == 0) || (strcmp(deviceNode->Value(), "dataline_output") == 0))
     {
-        unsigned char const deviceType = sSwitchIHCOutput;
-        addDeviceIfNotExists(deviceNode, deviceType);
+    	deviceType = sSwitchIHCOutput;
     }
     else if ((strcmp(deviceNode->Value(), "airlink_input") == 0) || (strcmp(deviceNode->Value(), "dataline_input") == 0))
     {
-        unsigned char const deviceType = sSwitchIHCInput;
-        addDeviceIfNotExists(deviceNode, deviceType);
+    	deviceType = sSwitchIHCInput;
     }
-    else if (strcmp(deviceNode->Value(), "inputs") == 0)
-    {
-        for (const TiXmlNode* node = deviceNode->FirstChild(); node; node = node->NextSibling())
-        {
-            if (strcmp(node->Value(), "resource_input") == 0)
-            {
-                unsigned char const deviceType = sSwitchIHCInput;
-                addDeviceIfNotExists(node, deviceType, true);
-            }
-        }
-    }
-    else if (strcmp(deviceNode->Value(), "outputs") == 0)
-    {
-        for (const TiXmlNode* node = deviceNode->FirstChild(); node; node = node->NextSibling())
-        {
-            if (strcmp(node->Value(), "resource_output") == 0)
-            {
-                unsigned char const deviceType = sSwitchIHCOutput;
-                addDeviceIfNotExists(node, deviceType, true);
-            }
-        }
-    }
-    else if ((strcmp(deviceNode->Value(), "resource_temperature") == 0))
-        {
-            unsigned char const deviceType = sTypeTemperature;
-            addDeviceIfNotExists(deviceNode, deviceType);
-        }
+    else if (strcmp(deviceNode->Value(), "resource_input") == 0)
+	{
+    	deviceType = sSwitchIHCInput;
+    	isFunctionBlock = true;
+	}
+    else if (strcmp(deviceNode->Value(), "resource_output") == 0)
+	{
+    	deviceType = sSwitchIHCOutput;
+    	isFunctionBlock = true;
+	}
+    else if (strcmp(deviceNode->Value(), "resource_temperature") == 0)
+    	{
+        	deviceType = sSwitchIHCOutput;
+        	isFunctionBlock = true;
+    	}
+
+    if (deviceType != -1)
+    	addDeviceIfNotExists(deviceNode, deviceType, isFunctionBlock);
 
     for (const TiXmlNode* node = deviceNode->FirstChild(); node; node = node->NextSibling())
     {
@@ -550,27 +554,20 @@ void CLKIHC::iterateDevices(const TiXmlNode* deviceNode)
 
 void CLKIHC::GetDevicesFromController()
 {
-    /*try
-    {*/
-    	if (ihcC->CONNECTED == ihcC->connectionState) {
-			TiXmlDocument doc = ihcC->loadProject();
+	if (ihcC->CONNECTED != ihcC->connectionState) {
+		ihcC->openConnection();
+	}
+	TiXmlDocument doc = ihcC->loadProject();
 
-			TinyXPath::xpath_processor processor ( doc.RootElement(), "/utcs_project/groups/*/*[self::functionblock or self::product_dataline or self::product_airlink]");
+	TinyXPath::xpath_processor processor ( doc.RootElement(), "/utcs_project/groups/*/*[self::functionblock or self::product_dataline or self::product_airlink]");
 
-			unsigned const numberOfDevices = processor.u_compute_xpath_node_set();
+	unsigned const numberOfDevices = processor.u_compute_xpath_node_set();
 
-			for (int i = 0; i < numberOfDevices; i++)
-			{
-				TiXmlNode* thisNode = processor.XNp_get_xpath_node(i);
-				iterateDevices(thisNode);
-			}
-    	}
-    /*}
-    catch (const char* msg)
-    {
-    	_log.Log(LOG_ERROR, "LK IHC: Error: '%s'", msg);
-    	ihcC->reset();
-    }*/
+	for (int i = 0; i < numberOfDevices; i++)
+	{
+		TiXmlNode* thisNode = processor.XNp_get_xpath_node(i);
+		iterateDevices(thisNode);
+	}
 }
 std::string CLKIHC::getValue( TiXmlElement* const a, std::string const t)
 {
@@ -585,7 +582,9 @@ std::string CLKIHC::getValue( TiXmlElement* const a, std::string const t)
 }
 bool CLKIHC::UpdateBatteryAndRSSI()
 {
+#ifdef _DEBUG
     _log.Log(LOG_STATUS, "LK IHC: Updating battery and RSSI levels");
+#endif
     TiXmlDocument const RFandRSSIinfo =  ihcC->getRF();
     TinyXPath::xpath_processor processor ( RFandRSSIinfo.RootElement(), "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:getDetectedDeviceList1/ns1:arrayItem");
     processor.u_compute_xpath_node_set(); // <-- this is important. It executes the Xpath expression
@@ -597,9 +596,16 @@ bool CLKIHC::UpdateBatteryAndRSSI()
             TiXmlElement * const res = thisNode->FirstChild()->ToElement();
             int const batteryLevel = boost::lexical_cast<int>(getValue(res, "/ns1:batteryLevel"));
             int const signalStrength = (int)(boost::lexical_cast<int>(getValue(res, "/ns1:signalStrength"))>>2);
-            unsigned long const serialNumber   = boost::lexical_cast<unsigned long>(getValue(res, "/ns1:serialNumber"));
+            IhcDeviceSerial serialNumber   = boost::lexical_cast<unsigned long>(getValue(res, "/ns1:serialNumber"));
+
+            auto receiversEntries = IhcDeviceSerialToDeviceID.equal_range(serialNumber);
+            for (auto receiverEntry = receiversEntries.first; receiverEntry != receiversEntries.second; ++receiverEntry)
+            {
+            	DeviceCache[receiverEntry->second].Battery = batteryLevel*100;
+            	DeviceCache[receiverEntry->second].RSSI = signalStrength;
+            }
             m_sql.safe_query("UPDATE DeviceStatus SET BatteryLevel=%d, SignalLevel=%d WHERE (HardwareID==%d) AND (Options==%lld)",
-                    (batteryLevel*100), signalStrength, m_HwdID, serialNumber);
+                    (batteryLevel * 100), signalStrength, m_HwdID, serialNumber);
         }
         return true;
     }
@@ -640,7 +646,6 @@ void CWebServer::GetIHCProjectFromController(WebEmSession & session, const reque
     {
         _log.Log(LOG_ERROR, "LK IHC: Exception: '%s'", msg);
     }
-
 }
 
 }

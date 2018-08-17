@@ -68,14 +68,6 @@ ihcClient(std::string const &ip, std::string const &username, std::string const 
     controllerState = controllerService->getControllerState();
     wire = new IhcWireless(ip);
 }
-std::string getProjectFile()
-{ return projectFile; }
-
-std::string getDumpResourceInformationToFile()
-{ return dumpResourceToFile; }
-
-void setDumpResourcesInformationToFile(std::string const &value)
-{ this->dumpResourceToFile = value; }
 
 ResourceValue resourceQuery(int const &res)
 { return resourceInteractionService->resourceQuery(res); }
@@ -92,17 +84,15 @@ void openConnection()
 {
     connectionState = CONNECTING;
 
-
     WSLoginResult* loginResult;
     try
     {
-
-         loginResult= authenticationService->authenticate(username, password);
+         loginResult = authenticationService->authenticate(username, password);
     }
     catch (const char* msg)
-                {
-            _log.Log(LOG_ERROR, "LK IHC: Error: '%s'", msg);
-        throw std::runtime_error("asd3");
+    {
+        _log.Log(LOG_ERROR, "LK IHC: Error: '%s'", msg);
+        throw std::runtime_error(msg);
     }
 
     if (!loginResult->isLoginWasSuccessful())
@@ -122,14 +112,9 @@ void openConnection()
             throw "insufficient user rights"; }
 
         throw "unknown connection error";
-
     }
 
-
     connectionState = CONNECTED;
-    //loadProject(); //Todo: insert again
-
-
 }
 
 public:
@@ -161,11 +146,22 @@ static std::string decompress(const std::string& data)
     return decompressed.str();
 }
 
+
+template <typename T> bool resourceUpdate(T value)
+{
+	return resourceInteractionService->resourceUpdate(value);
+}
+
+void enableRuntimeValueNotification(std::vector<int> resourceIdLis)
+{
+	resourceInteractionService->enableRuntimeValueNotifications(resourceIdLis);
+}
+
 private:
 std::string iso_8859_1_to_utf8(std::string str, size_t pos)
 {
     std::string strOut;
-    for (std::string::iterator it = str.begin(); it != str.end(); ++it)
+    for (auto it = str.begin(); it != str.end(); ++it)
     {
         uint8_t ch = *it;
         if (ch < 0x80) {
@@ -193,7 +189,7 @@ TiXmlDocument LoadProjectFileFromController()
 #endif
         WSFile data = controllerService->getProjectSegment(i, getProjectInfo().getProjectMajorRevision(), getProjectInfo().getProjectMinorRevision());
 
-        std::vector<char> t = data.getData();
+        auto t = data.getData();
         projectData.insert(projectData.end(), t.begin(), t.end());
 
     }
@@ -208,7 +204,7 @@ TiXmlDocument LoadProjectFileFromController()
 #ifdef _DEBUG
     std::cout << "Final size decoded: " << decoded.size() << std::endl;
     std::cout << "Final size extracted: " << extracted.size() << std::endl;
-
+    std::cout << "Project saved as project_file.vis" << std::endl;
     std::ofstream out("project_file.vis");
     out << extracted;
     out.close();
@@ -234,17 +230,7 @@ TiXmlDocument LoadProjectFileFromController()
 
     return doc;
 }
-public:
 
-template <typename T> bool resourceUpdate(T value)
-{
-	return resourceInteractionService->resourceUpdate(value);
-}
-
-void enableRuntimeValueNotification(std::vector<int> resourceIdLis)
-{
-	resourceInteractionService->enableRuntimeValueNotifications(resourceIdLis);
-}
 };
 
 #endif /* IHC_IHCCLIENT_HPP_ */

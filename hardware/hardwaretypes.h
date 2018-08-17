@@ -265,8 +265,47 @@
 #define pTypeEvohomeRelay 0x44 //Relay
 #define sTypeEvohomeRelay 0x00
 
+#define pTypeIHCDevice 0xEF
+#define sSwitchIHCOutput1          0x00
+#define sSwitchIHCDimmer1         0x01
+#define sSwitchIHCInput1           0x02
+#define sSwitchIHCFBInput1           0x03
+#define sSwitchIHCFBOutput1          0x04
+#define sIHCHUMInput          0x05
+#define sIHCTEMPInput          0x06
+
 //#define sTypeEvohomeOutside 0x30 //If connected
 //#define sTypeEvohomeStatus 0x40 //Not sure if we can do this in 1 sensor would be for things like zone valve status, boiler relay status (maybe OT values too) and comms errors (maybe seperature sensor or switch for each is easiest)
+
+typedef struct _tIHCDevice {
+	uint8_t len;
+	uint8_t type;
+	uint8_t subtype;
+	int32_t id;
+	int32_t unitcode;
+	uint8_t cmnd;
+	uint8_t level;
+	uint8_t rssi;
+	uint8_t battery_level;
+	uint8_t seqnbr;
+	int32_t reserved_int;
+	float	reserved_float;
+	_tIHCDevice()
+	{
+		len = sizeof(_tIHCDevice) - 1;
+		type = pTypeIHCDevice;
+		subtype = sSwitchIHCOutput1;
+		id = 1;
+		unitcode = 1;
+		seqnbr = 0;
+		reserved_int = 0;
+		reserved_float = 0;
+		level = 0;
+		battery_level = 255;
+		rssi = 12;
+		cmnd = 0;
+	}
+} tIHCDevice;
 
 typedef struct _tThermostat {
 	uint8_t len;

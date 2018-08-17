@@ -3860,12 +3860,17 @@ uint64_t CSQLHelper::UpdateValue(const int HardwareID, const char* ID, const uns
 
 uint64_t CSQLHelper::UpdateValue(const int HardwareID, const char* ID, const unsigned char unit, const unsigned char devType, const unsigned char subType, const unsigned char signallevel, const unsigned char batterylevel, const int nValue, const char* sValue, std::string &devname, const bool bUseOnOffAction)
 {
+	std::cout << "Updating" << std::endl;
 	uint64_t devRowID = UpdateValueInt(HardwareID, ID, unit, devType, subType, signallevel, batterylevel, nValue, sValue, devname, bUseOnOffAction);
 	if (devRowID == -1)
+	{
+		std::cout << "return -1" << std::endl;
 		return -1;
+	}
 
 	if (!IsLightOrSwitch(devType, subType))
 	{
+		std::cout << "Not light or switch" << std::endl;
 		return devRowID;
 	}
 

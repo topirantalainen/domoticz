@@ -522,6 +522,7 @@ const char *RFX_Type_Desc(const unsigned char i, const unsigned char snum)
 		{ pTypeEvohomeWater, "Heating" , "evohome" },
 		{ pTypeEvohomeRelay, "Heating" , "evohome" },
 		{ pTypeGeneralSwitch, "Light/Switch", "lightbulb" },
+		{ pTypeIHCDevice, "IHC device", "temperature" },
 		{ 0, NULL, NULL }
 	};
 	if (snum == 1)
@@ -930,6 +931,14 @@ const char *RFX_Type_SubType_Desc(const unsigned char dType, const unsigned char
 		{ pTypeGeneralSwitch, sSwitchTypeFaber, "Faber" },
 		{ pTypeGeneralSwitch, sSwitchTypeDrayton, "Drayton" },
 		{ pTypeGeneralSwitch, sSwitchTypeV2Phoenix, "V2Phoenix" },
+
+		{ pTypeIHCDevice, sSwitchIHCOutput1, "IHC Out" },
+		{ pTypeIHCDevice, sSwitchIHCDimmer1, "IHC Dim" },
+		{ pTypeIHCDevice, sSwitchIHCInput1, "IHC In" },
+		{ pTypeIHCDevice, sSwitchIHCFBInput1, "IHC FB in" },
+		{ pTypeIHCDevice, sSwitchIHCFBOutput1, "IHC FB out" },
+		{ pTypeIHCDevice, sIHCHUMInput, "IHC hum" },
+		{ pTypeIHCDevice, sIHCTEMPInput, "IHC temp" },
 		{  0,0,NULL }
 	};
 	return findTableID1ID2(Table, dType, sType);
@@ -1453,6 +1462,7 @@ void GetLightStatus(
 			break;
 		}
 		break;
+		case pTypeIHCDevice:
 	case pTypeGeneralSwitch:
 		maxDimLevel = 100;
 
@@ -1462,6 +1472,13 @@ void GetLightStatus(
 		// Fill in other parameters
 		switch (dSubType)
 		{
+		case sSwitchIHCOutput1:
+		case sSwitchIHCDimmer1:
+		case sSwitchIHCInput1:
+		case sSwitchIHCFBInput1:
+		case sSwitchIHCFBOutput1:
+		case sIHCHUMInput:
+		case sIHCTEMPInput:
 		case sSwitchTypeAC:
 		case sSwitchTypeHEU:
 		case sSwitchTypeANSLUT:
