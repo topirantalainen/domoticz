@@ -47,14 +47,17 @@ private:
 public:
 IhcResourceInteractionService(std::string hostname)
 {
+#ifdef _DEBUG
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
+#endif
 	url = "http://" + hostname + "/ws/ResourceInteractionService";
 }
 
 ResourceValue resourceQuery(int resourceId)
 {
+#ifdef _DEBUG
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
-
+#endif
 	std::stringstream sstr;
     std::string httpData = sstr.str();
 
@@ -110,8 +113,10 @@ ResourceValue resourceQuery(int resourceId)
 
 std::string getValue( TiXmlElement* a, std::string t)
 {
+#ifdef _DEBUG
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
-	TinyXPath::xpath_processor proc(a, t.c_str());
+#endif
+    TinyXPath::xpath_processor proc(a, t.c_str());
 
 
 	if (1 == proc.u_compute_xpath_node_set())
@@ -126,16 +131,20 @@ std::string getValue( TiXmlElement* a, std::string t)
 
 bool resourceUpdate(ResourceValue const value)
 {
+#ifdef _DEBUG
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
-	return doResourceUpdate(value);
+#endif
+    return doResourceUpdate(value);
 }
 
 private:
 
 bool doResourceUpdate(ResourceValue const &query)
 {
+#ifdef _DEBUG
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
-	TiXmlDocument doc;
+#endif
+    TiXmlDocument doc;
 #ifdef _DEBUG
     std::cout << "------------------\n";
     std::cout << query.toXml() << std::endl;
@@ -149,8 +158,10 @@ bool doResourceUpdate(ResourceValue const &query)
 
 boost::shared_ptr<ResourceValue> parseResourceValue(TiXmlElement* xmlRes, int const index)
 {
+#ifdef _DEBUG
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
-	std::string resourceID = getValue(xmlRes, "/ns1:resourceID");
+#endif
+    std::string resourceID = getValue(xmlRes, "/ns1:resourceID");
 
 	if (!resourceID.empty())
 	{
