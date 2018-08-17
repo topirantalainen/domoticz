@@ -3,6 +3,7 @@
 #include "DomoticzHardware.h"
 #include "../tinyxpath/tinyxml.h"
 #include <iostream>
+#include <boost/thread.hpp>
 #include <map>
 
 class CLKIHC : public CDomoticzHardwareBase

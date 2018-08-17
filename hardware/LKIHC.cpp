@@ -76,6 +76,7 @@
 #include <string.h>
 #include <exception>
 #include <cstdlib>
+#include <boost/thread.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 #include <map>

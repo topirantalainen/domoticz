@@ -53,8 +53,9 @@ bool MQTT::StartHardware()
 	m_bIsStarted = true;
 
 	//Start worker thread
-	m_thread = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&MQTT::Do_Work, this)));
-	return (m_thread!=NULL);
+	m_thread = std::make_shared<std::thread>(&MQTT::Do_Work, this);
+	SetThreadName(m_thread->native_handle(), "MQTT");
+	return (m_thread != nullptr);
 }
 
 void MQTT::StopMQTT()
@@ -705,12 +706,12 @@ void MQTT::SendSceneInfo(const uint64_t SceneIdx, const std::string &SceneName)
 	unsigned char scenetype = atoi(sd[5].c_str());
 	//int iProtected = atoi(sd[7].c_str());
 
-	//std::string onaction = base64_encode((const unsigned char*)sd[8].c_str(), sd[8].size());
-	//std::string offaction = base64_encode((const unsigned char*)sd[9].c_str(), sd[9].size());
+	//std::string onaction = base64_encode((sd[8]);
+	//std::string offaction = base64_encode(sd[9]);
 
 	Json::Value root;
 
-	root["idx"] = sd[0];
+	root["idx"] = atoi(sd[0].c_str());
 	root["Name"] = sName;
 	//root["Description"] = sd[10];
 	//root["Favorite"] = atoi(sd[3].c_str());
@@ -736,13 +737,15 @@ void MQTT::SendSceneInfo(const uint64_t SceneIdx, const std::string &SceneName)
 	else
 		root["Status"] = "Mixed";
 	root["Timers"] = (m_sql.HasSceneTimers(sd[0]) == true) ? "true" : "false";
+/*
 	uint64_t camIDX = m_mainworker.m_cameras.IsDevSceneInCamera(1, sd[0]);
 	//root["UsedByCamera"] = (camIDX != 0) ? true : false;
 	if (camIDX != 0) {
 		std::stringstream scidx;
 		scidx << camIDX;
-		//root["CameraIdx"] = scidx.str();
+		//root["CameraIdx"] = std::to_string(camIDX);
 	}
+*/
 	std::string message = root.toStyledString();
 	if (m_publish_topics & PT_out)
 	{

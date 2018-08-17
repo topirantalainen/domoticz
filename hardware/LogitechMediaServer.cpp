@@ -1,16 +1,14 @@
 #include "stdafx.h"
 #include "LogitechMediaServer.h"
-#include <boost/lexical_cast.hpp>
 #include "../hardware/hardwaretypes.h"
 #include "../json/json.h"
 #include "../main/Helper.h"
-#include "../main/Logger.h"
-#include "../main/SQLHelper.h"
-#include "../notifications/NotificationHelper.h"
-#include "../main/WebServer.h"
-#include "../main/mainworker.h"
 #include "../main/localtime_r.h"
-#include "../webserver/cWebem.h"
+#include "../main/Logger.h"
+#include "../main/mainworker.h"
+#include "../main/SQLHelper.h"
+#include "../main/WebServer.h"
+#include "../notifications/NotificationHelper.h"
 #include "../httpclient/HTTPClient.h"
 
 CLogitechMediaServer::CLogitechMediaServer(const int ID, const std::string &IPAddress, const int Port, const std::string &User, const std::string &Pwd, const int PollIntervalsec, const int PingTimeoutms) :
@@ -118,9 +116,10 @@ bool CLogitechMediaServer::StartHardware()
 
 	//Start worker thread
 	m_stoprequested = false;
-	m_thread = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&CLogitechMediaServer::Do_Work, this)));
+	m_thread = std::make_shared<std::thread>(&CLogitechMediaServer::Do_Work, this);
+	SetThreadName(m_thread->native_handle(), "Logitech");
 
-	return (m_thread != NULL);
+	return (m_thread != nullptr);
 }
 
 bool CLogitechMediaServer::StopHardware()
@@ -135,11 +134,9 @@ bool CLogitechMediaServer::StopHardware()
 			m_thread.reset();
 
 			//Make sure all our background workers are stopped
-			int iRetryCounter = 0;
-			while ((m_iThreadsRunning > 0) && (iRetryCounter < 15))
+			while (m_iThreadsRunning > 0)
 			{
-				sleep_milliseconds(500);
-				iRetryCounter++;
+				sleep_milliseconds(150);
 			}
 		}
 	}
@@ -336,7 +333,7 @@ void CLogitechMediaServer::Do_Work()
 			scounter++;
 			if ((scounter >= m_iPollInterval) || (bFirstTime))
 			{
-				boost::lock_guard<boost::mutex> l(m_mutex);
+				std::lock_guard<std::mutex> l(m_mutex);
 
 				scounter = 0;
 				bFirstTime = false;
@@ -352,6 +349,7 @@ void CLogitechMediaServer::Do_Work()
 					{
 						m_iThreadsRunning++;
 						boost::thread t(boost::bind(&CLogitechMediaServer::Do_Node_Work, this, *itt));
+						SetThreadName(t.native_handle(), "LogitechNode");
 						t.join();
 					}
 				}

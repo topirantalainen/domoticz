@@ -17,7 +17,6 @@
 #include "WebServerHelper.h"
 #include "../webserver/Base64.h"
 #include "clx_unzip.h"
-#include <boost/lexical_cast.hpp>
 #include "../notifications/NotificationHelper.h"
 #include "IFTTT.h"
 #ifdef ENABLE_PYTHON
@@ -35,7 +34,7 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
-#define DB_VERSION 129
+#define DB_VERSION 130
 
 extern http::server::CWebServerHelper m_webservers;
 extern std::string szWWWFolder;
@@ -669,13 +668,9 @@ CSQLHelper::~CSQLHelper(void)
 	{
 		m_stoprequested = true;
 		m_background_task_thread->join();
+		m_background_task_thread.reset();
 	}
-	if (m_dbase != NULL)
-	{
-		OptimizeDatabase(m_dbase);
-		sqlite3_close(m_dbase);
-		m_dbase = NULL;
-	}
+	CloseDatabase();
 }
 
 bool CSQLHelper::OpenDatabase()
@@ -896,8 +891,8 @@ bool CSQLHelper::OpenDatabase()
 				for (const auto & itt : result)
 				{
 					std::vector<std::string> sd = itt;
-					std::string camuser = base64_encode((const unsigned char*)sd[1].c_str(), sd[1].size());
-					std::string campwd = base64_encode((const unsigned char*)sd[2].c_str(), sd[2].size());
+					std::string camuser = base64_encode(sd[1]);
+					std::string campwd = base64_encode(sd[2]);
 					safe_query("UPDATE Cameras SET Username='%q', Password='%q' WHERE (ID=='%q')",
 						camuser.c_str(), campwd.c_str(), sd[0].c_str());
 				}
@@ -2125,7 +2120,7 @@ bool CSQLHelper::OpenDatabase()
 			if ((sValue.size() > 100) || (sValue.empty()))
 			{
 				sValue = "application/json";
-				std::string sencoded = base64_encode((const unsigned char*)sValue.c_str(), sValue.size());
+				std::string sencoded = base64_encode(sValue);
 				UpdatePreferencesVar("HTTPPostContentType", sencoded);
 			}
 		}
@@ -2150,7 +2145,7 @@ bool CSQLHelper::OpenDatabase()
 					std::vector<std::string> sd = itt;
 					std::string id = sd[0];
 					std::string extra = sd[1];
-					std::string extraBase64 = base64_encode((const unsigned char *)extra.c_str(), extra.length());
+					std::string extraBase64 = base64_encode(extra);
 					szQuery2.clear();
 					szQuery2.str("");
 					szQuery2 << "UPDATE Hardware SET Mode1=0, Extra='%s' WHERE (ID=" << id << ")";
@@ -2396,11 +2391,6 @@ bool CSQLHelper::OpenDatabase()
 				}
 			}
 		}
-		if (dbversion < 123)
-		{
-			safe_query("UPDATE Hardware SET Mode1 = 5000 WHERE Type = %d", HTYPE_DenkoviSmartdenIPInOut);
-			safe_query("UPDATE Hardware SET Mode1 = 5000 WHERE Type = %d", HTYPE_DenkoviSmartdenLan);
-		}
 		if (dbversion < 124)
 		{
 			query("ALTER TABLE DeviceStatus ADD COLUMN [Color] TEXT DEFAULT NULL");
@@ -2574,6 +2564,27 @@ bool CSQLHelper::OpenDatabase()
 				"FROM tmp_Floorplans");
 
 			query("DROP TABLE tmp_Floorplans;");
+		}
+		if (dbversion < 130)
+		{
+			//Patch for energymeters to store calculated or device energy usage in options map
+			result = safe_query("SELECT ID, Options FROM DeviceStatus WHERE (Type=%d) AND (SubType=%d)", pTypeGeneral, sTypeKwh);
+			if (!result.empty())
+			{
+				for (const auto & itt : result)
+				{
+					std::vector<std::string> sd = itt;
+					std::string idx = sd[0];
+					std::string EnergyMeterMode = sd[1];
+					if (EnergyMeterMode == "1")
+					{
+						std::stringstream sstridx(idx);
+						uint64_t ullidx;
+						sstridx >> ullidx;
+						m_sql.SetDeviceOptions(ullidx, m_sql.BuildDeviceOptions("EnergyMeterMode:"+EnergyMeterMode, false));
+					}
+				}
+			}
 		}
 	}
 	else if (bNewInstall)
@@ -2993,13 +3004,13 @@ bool CSQLHelper::OpenDatabase()
 	if ((!GetPreferencesVar("HTTPURL", sValue)) || (sValue.empty()))
 	{
 		sValue = "https://www.somegateway.com/pushurl.php?username=#FIELD1&password=#FIELD2&apikey=#FIELD3&from=#FIELD4&to=#TO&message=#MESSAGE";
-		std::string sencoded = base64_encode((const unsigned char*)sValue.c_str(), sValue.size());
+		std::string sencoded = base64_encode(sValue);
 		UpdatePreferencesVar("HTTPURL", sencoded);
 	}
 	if ((!GetPreferencesVar("HTTPPostContentType", sValue)) || (sValue.empty()))
 	{
 		sValue = "application/json";
-		std::string sencoded = base64_encode((const unsigned char*)sValue.c_str(), sValue.size());
+		std::string sencoded = base64_encode(sValue);
 		UpdatePreferencesVar("HTTPPostContentType", sencoded);
 	}
 	if (!GetPreferencesVar("ShowUpdateEffect", nValue))
@@ -3037,10 +3048,21 @@ bool CSQLHelper::OpenDatabase()
 	return true;
 }
 
+void CSQLHelper::CloseDatabase()
+{
+	std::lock_guard<std::mutex> l(m_sqlQueryMutex);
+	if (m_dbase != NULL)
+	{
+		OptimizeDatabase(m_dbase);
+		sqlite3_close(m_dbase);
+		m_dbase = NULL;
+	}
+}
+
 bool CSQLHelper::StartThread()
 {
-	m_background_task_thread = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&CSQLHelper::Do_Work, this)));
-
+	m_background_task_thread = std::make_shared<std::thread>(&CSQLHelper::Do_Work, this);
+	SetThreadName(m_background_task_thread->native_handle(), "SQLHelper");
 	return (m_background_task_thread != NULL);
 }
 
@@ -3086,7 +3108,7 @@ void CSQLHelper::Do_Work()
 		}
 
 		{ // additional scope for lock (accessing size should be within lock too)
-			boost::lock_guard<boost::mutex> l(m_background_task_mutex);
+			std::lock_guard<std::mutex> l(m_background_task_mutex);
 			if (m_background_task_queue.size() > 0)
 			{
 				_items2do.clear();
@@ -3466,7 +3488,7 @@ std::vector<std::vector<std::string> > CSQLHelper::query(const std::string &szQu
 		std::vector<std::vector<std::string> > results;
 		return results;
 	}
-	boost::lock_guard<boost::mutex> l(m_sqlQueryMutex);
+	std::lock_guard<std::mutex> l(m_sqlQueryMutex);
 
 	sqlite3_stmt *statement;
 	std::vector<std::vector<std::string> > results;
@@ -3533,7 +3555,7 @@ std::vector<std::vector<std::string> > CSQLHelper::queryBlob(const std::string &
 		std::vector<std::vector<std::string> > results;
 		return results;
 	}
-	boost::lock_guard<boost::mutex> l(m_sqlQueryMutex);
+	std::lock_guard<std::mutex> l(m_sqlQueryMutex);
 
 	sqlite3_stmt *statement;
 	std::vector<std::vector<std::string> > results;
@@ -3577,7 +3599,7 @@ std::vector<std::vector<std::string> > CSQLHelper::queryBlob(const std::string &
 
 uint64_t CSQLHelper::CreateDevice(const int HardwareID, const int SensorType, const int SensorSubType, std::string &devname, const unsigned long nid, const std::string &soptions)
 {
-	uint64_t DeviceRowIdx = -1;
+	uint64_t DeviceRowIdx = (uint64_t )-1;
 	char ID[20];
 	sprintf(ID, "%lu", nid);
 
@@ -3873,7 +3895,7 @@ uint64_t CSQLHelper::UpdateValue(const int HardwareID, const char* ID, const uns
 	std::vector<std::vector<std::string> > result, result2;
 
 	result = safe_query("SELECT ID FROM DeviceStatus WHERE (HardwareID=%d AND DeviceID='%q' AND Unit=%d AND Type=%d AND SubType=%d)", HardwareID, ID, unit, devType, subType);
-	if (result.size() == 0)
+	if (result.empty())
 		return devRowID; //should never happen, because it was previously inserted if non-existent
 
 	std::string idx = result[0][0];
@@ -4119,7 +4141,7 @@ uint64_t CSQLHelper::InsertDevice(const int HardwareID, const char* ID, const un
 	result = safe_query(
 		"SELECT ID FROM DeviceStatus WHERE (HardwareID=%d AND DeviceID='%q' AND Unit=%d AND Type=%d AND SubType=%d)",
 		HardwareID, ID, unit, devType, subType);
-	if (result.size() == 0)
+	if (result.empty())
 	{
 		_log.Log(LOG_ERROR, "Serious database error, problem getting ID from DeviceStatus!");
 		return -1;
@@ -4133,7 +4155,7 @@ uint64_t CSQLHelper::InsertDevice(const int HardwareID, const char* ID, const un
 bool CSQLHelper::DoesDeviceExist(const int HardwareID, const char* ID, const unsigned char unit, const unsigned char devType, const unsigned char subType) {
 	std::vector<std::vector<std::string> > result;
 	result = safe_query("SELECT ID,Name FROM DeviceStatus WHERE (HardwareID=%d AND DeviceID='%q' AND Unit=%d AND Type=%d AND SubType=%d)", HardwareID, ID, unit, devType, subType);
-	if (result.size() == 0) {
+	if (result.empty()) {
 		return false;
 	}
 	else {
@@ -4153,7 +4175,7 @@ uint64_t CSQLHelper::UpdateValueInt(const int HardwareID, const char* ID, const 
 	bool bSameDeviceStatusValue = false;
 	std::vector<std::vector<std::string> > result;
 	result = safe_query("SELECT ID,Name, Used, SwitchType, nValue, sValue, LastUpdate, Options FROM DeviceStatus WHERE (HardwareID=%d AND DeviceID='%q' AND Unit=%d AND Type=%d AND SubType=%d)", HardwareID, ID, unit, devType, subType);
-	if (result.size() == 0)
+	if (result.empty())
 	{
 		//Insert
 		ulID = InsertDevice(HardwareID, ID, unit, devType, subType, 0, nValue, sValue, devname, signallevel, batterylevel);
@@ -4178,6 +4200,7 @@ uint64_t CSQLHelper::UpdateValueInt(const int HardwareID, const char* ID, const 
 		std::stringstream s_str(result[0][0]);
 		s_str >> ulID;
 		std::string sOption = result[0][7];
+		auto options = BuildDeviceOptions(sOption);
 		devname = result[0][1];
 		bDeviceUsed = atoi(result[0][2].c_str()) != 0;
 		_eSwitchType stype = (_eSwitchType)atoi(result[0][3].c_str());
@@ -4188,7 +4211,7 @@ uint64_t CSQLHelper::UpdateValueInt(const int HardwareID, const char* ID, const 
 		localtime_r(&now, &ltime);
 		//Commit: If Option 1: energy is computed as usage*time
 		//Default is option 0, read from device
-		if (sOption == "1" && devType == pTypeGeneral && subType == sTypeKwh)
+		if (options["EnergyMeterMode"] == "1" && devType == pTypeGeneral && subType == sTypeKwh)
 		{
 			std::vector<std::string> parts;
 			struct tm ntime;
@@ -4425,7 +4448,7 @@ uint64_t CSQLHelper::UpdateValueInt(const int HardwareID, const char* ID, const 
 						nszUserDataFolder = ".";
 					s_scriptparams << nszUserDataFolder << " " << HardwareID << " " << ulID << " " << (bIsLightSwitchOn ? "On" : "Off") << " \"" << lstatus << "\"" << " \"" << devname << "\"";
 					//add script to background worker
-					boost::lock_guard<boost::mutex> l(m_background_task_mutex);
+					std::lock_guard<std::mutex> l(m_background_task_mutex);
 					m_background_task_queue.push_back(_tTaskItem::ExecuteScript(1, scriptname, s_scriptparams.str()));
 				}
 			}
@@ -4527,7 +4550,7 @@ uint64_t CSQLHelper::UpdateValueInt(const int HardwareID, const char* ID, const 
 					*/
 					if (bAdd2DelayQueue == true)
 					{
-						boost::lock_guard<boost::mutex> l(m_background_task_mutex);
+						std::lock_guard<std::mutex> l(m_background_task_mutex);
 						_tTaskItem tItem = _tTaskItem::SwitchLight(AddjValue, ulID, HardwareID, ID, unit, devType, subType, switchtype, signallevel, batterylevel, cmd, sValue);
 						//Remove all instances with this device from the queue first
 						//otherwise command will be send twice, and first one will be to soon as it is currently counting
@@ -4600,7 +4623,7 @@ void CSQLHelper::GetAddjustment(const int HardwareID, const char* ID, const unsi
 	result = safe_query(
 		"SELECT AddjValue,AddjMulti FROM DeviceStatus WHERE (HardwareID=%d AND DeviceID='%q' AND Unit=%d AND Type=%d AND SubType=%d)",
 		HardwareID, ID, unit, devType, subType);
-	if (result.size() != 0)
+	if (!result.empty())
 	{
 		AddjValue = static_cast<float>(atof(result[0][0].c_str()));
 		AddjMulti = static_cast<float>(atof(result[0][1].c_str()));
@@ -4614,7 +4637,7 @@ void CSQLHelper::GetMeterType(const int HardwareID, const char* ID, const unsign
 	result = safe_query(
 		"SELECT SwitchType FROM DeviceStatus WHERE (HardwareID=%d AND DeviceID='%q' AND Unit=%d AND Type=%d AND SubType=%d)",
 		HardwareID, ID, unit, devType, subType);
-	if (result.size() != 0)
+	if (!result.empty())
 	{
 		meterType = atoi(result[0][0].c_str());
 	}
@@ -4628,7 +4651,7 @@ void CSQLHelper::GetAddjustment2(const int HardwareID, const char* ID, const uns
 	result = safe_query(
 		"SELECT AddjValue2,AddjMulti2 FROM DeviceStatus WHERE (HardwareID=%d AND DeviceID='%q' AND Unit=%d AND Type=%d AND SubType=%d)",
 		HardwareID, ID, unit, devType, subType);
-	if (result.size() != 0)
+	if (!result.empty())
 	{
 		AddjValue = static_cast<float>(atof(result[0][0].c_str()));
 		AddjMulti = static_cast<float>(atof(result[0][1].c_str()));
@@ -4658,7 +4681,7 @@ void CSQLHelper::UpdatePreferencesVar(const std::string &Key, const int nValue, 
 	std::vector<std::vector<std::string> > result;
 	result = safe_query("SELECT ROWID FROM Preferences WHERE (Key='%q')",
 		Key.c_str());
-	if (result.size() == 0)
+	if (result.empty())
 	{
 		//Insert
 		result = safe_query("INSERT INTO Preferences (Key, nValue, sValue) VALUES ('%q', %d,'%q')",
@@ -4757,7 +4780,7 @@ void CSQLHelper::SetLastBackupNo(const char *Key, const int nValue)
 
 	std::vector<std::vector<std::string> > result;
 	result = safe_query("SELECT ROWID FROM BackupLog WHERE (Key='%q')", Key);
-	if (result.size() == 0)
+	if (result.empty())
 	{
 		//Insert
 		safe_query(
@@ -4796,7 +4819,7 @@ bool CSQLHelper::HasTimers(const uint64_t Idx)
 	std::vector<std::vector<std::string> > result;
 
 	result = safe_query("SELECT COUNT(*) FROM Timers WHERE (DeviceRowID==%" PRIu64 ") AND (TimerPlan==%d)", Idx, m_ActiveTimerPlan);
-	if (result.size() != 0)
+	if (!result.empty())
 	{
 		std::vector<std::string> sd = result[0];
 		int totaltimers = atoi(sd[0].c_str());
@@ -4804,7 +4827,7 @@ bool CSQLHelper::HasTimers(const uint64_t Idx)
 			return true;
 	}
 	result = safe_query("SELECT COUNT(*) FROM SetpointTimers WHERE (DeviceRowID==%" PRIu64 ") AND (TimerPlan==%d)", Idx, m_ActiveTimerPlan);
-	if (result.size() != 0)
+	if (!result.empty())
 	{
 		std::vector<std::string> sd = result[0];
 		int totaltimers = atoi(sd[0].c_str());
@@ -4829,7 +4852,7 @@ bool CSQLHelper::HasSceneTimers(const uint64_t Idx)
 	std::vector<std::vector<std::string> > result;
 
 	result = safe_query("SELECT COUNT(*) FROM SceneTimers WHERE (SceneRowID==%" PRIu64 ") AND (TimerPlan==%d)", Idx, m_ActiveTimerPlan);
-	if (result.size() == 0)
+	if (result.empty())
 		return false;
 	std::vector<std::string> sd = result[0];
 	int totaltimers = atoi(sd[0].c_str());
@@ -6744,7 +6767,7 @@ void CSQLHelper::DeleteDevices(const std::string &idx)
 #endif
 		{
 			//Avoid mutex deadlock here
-			boost::lock_guard<boost::mutex> l(m_sqlQueryMutex);
+			std::lock_guard<std::mutex> l(m_sqlQueryMutex);
 
 			char* errorMessage;
 			sqlite3_exec(m_dbase, "BEGIN TRANSACTION", NULL, NULL, &errorMessage);
@@ -7121,7 +7144,7 @@ void CSQLHelper::DeleteDataPoint(const char *ID, const std::string &Date)
 
 void CSQLHelper::AddTaskItem(const _tTaskItem &tItem, const bool cancelItem)
 {
-	boost::lock_guard<boost::mutex> l(m_background_task_mutex);
+	std::lock_guard<std::mutex> l(m_background_task_mutex);
 
 	// Check if an event for the same device is already in queue, and if so, replace it
 	_log.Debug(DEBUG_NORM, "SQLH AddTask: Request to add task: idx=%" PRIu64 ", DelayTime=%f, Command='%s', Level=%d, Color='%s', RelatedEvent='%s'", tItem._idx, tItem._DelayTime, tItem._command.c_str(), tItem._level, tItem._Color.toString().c_str(), tItem._relatedEvent.c_str());
@@ -7160,7 +7183,7 @@ void CSQLHelper::AddTaskItem(const _tTaskItem &tItem, const bool cancelItem)
 
 void CSQLHelper::EventsGetTaskItems(std::vector<_tTaskItem> &currentTasks)
 {
-	boost::lock_guard<boost::mutex> l(m_background_task_mutex);
+	std::lock_guard<std::mutex> l(m_background_task_mutex);
 
 	currentTasks.clear();
 
@@ -7266,7 +7289,7 @@ bool CSQLHelper::BackupDatabase(const std::string &OutputFile)
 	OptimizeDatabase(m_dbase);
 	VacuumDatabase();
 
-	boost::lock_guard<boost::mutex> l(m_sqlQueryMutex);
+	std::lock_guard<std::mutex> l(m_sqlQueryMutex);
 
 	int rc;                     // Function return code
 	sqlite3 *pFile;             // Database connection opened on zFilename
@@ -8350,7 +8373,7 @@ bool CSQLHelper::InsertCustomIconFromZipFile(const std::string &szZipFile, std::
 
 						//Get our Database ROWID
 						result = safe_query("SELECT ID FROM CustomImages WHERE Base='%q'", IconBase.c_str());
-						if (result.size() == 0)
+						if (result.empty())
 						{
 							ErrorMessage = "Error adding new row to database!";
 							if (iTotalAdded > 0)
@@ -8513,7 +8536,7 @@ std::string CSQLHelper::FormatDeviceOptions(const std::map<std::string, std::str
 			i++;
 			//_log.Log(LOG_STATUS, "DEBUG : Reading device option ['%s', '%s']", itt->first.c_str(), itt->second.c_str());
 			std::string optionName = itt.first.c_str();
-			std::string optionValue = base64_encode((const unsigned char*)itt.second.c_str(), itt.second.size());
+			std::string optionValue = base64_encode(itt.second);
 			ssoptions << optionName << ":" << optionValue;
 			if (i < count) {
 				ssoptions << ";";
