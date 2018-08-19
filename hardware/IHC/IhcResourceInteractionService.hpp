@@ -47,17 +47,17 @@ private:
 public:
 IhcResourceInteractionService(std::string hostname)
 {
-#ifdef _DEBUG
+//#ifdef _DEBUG
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
-#endif
+//#endif
 	url = "http://" + hostname + "/ws/ResourceInteractionService";
 }
 
 ResourceValue resourceQuery(int resourceId)
 {
-#ifdef _DEBUG
+//#ifdef _DEBUG
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
-#endif
+//#endif
 	std::stringstream sstr;
     std::string httpData = sstr.str();
 
@@ -113,9 +113,9 @@ ResourceValue resourceQuery(int resourceId)
 
 std::string getValue( TiXmlElement* a, std::string t)
 {
-#ifdef _DEBUG
+//#ifdef _DEBUG
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
-#endif
+//#endif
     TinyXPath::xpath_processor proc(a, t.c_str());
 
 
@@ -131,9 +131,9 @@ std::string getValue( TiXmlElement* a, std::string t)
 
 bool resourceUpdate(ResourceValue const value)
 {
-#ifdef _DEBUG
+//#ifdef _DEBUG
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
-#endif
+//#endif
     return doResourceUpdate(value);
 }
 
@@ -141,15 +141,15 @@ private:
 
 bool doResourceUpdate(ResourceValue const &query)
 {
-#ifdef _DEBUG
+//#ifdef _DEBUG
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
-#endif
+//#endif
     TiXmlDocument doc;
-#ifdef _DEBUG
+//#ifdef _DEBUG
     std::cout << "------------------\n";
     std::cout << query.toXml() << std::endl;
     std::cout << "------------------\n";
-#endif
+//#endif
     std::string const sResult = sendQuery(url, query.toXml());
     doc.Parse(sResult.c_str());
     return WSLoginResult::parseValueToBoolean(doc, "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:setResourceValue2");
@@ -158,9 +158,9 @@ bool doResourceUpdate(ResourceValue const &query)
 
 boost::shared_ptr<ResourceValue> parseResourceValue(TiXmlElement* xmlRes, int const index)
 {
-#ifdef _DEBUG
+//#ifdef _DEBUG
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
-#endif
+//#endif
     std::string resourceID = getValue(xmlRes, "/ns1:resourceID");
 
 	if (!resourceID.empty())
@@ -209,9 +209,9 @@ public:
 
 void enableRuntimeValueNotifications(std::vector<int> &items)
 {
-#ifdef _DEBUG
+//#ifdef _DEBUG
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
-#endif
+//#endif
 	std::string queryPrefix = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 	queryPrefix += "<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">";
 	queryPrefix += "<soap:Body><enableRuntimeValueNotifications1 xmlns=\"utcs\">";
@@ -236,9 +236,9 @@ void enableRuntimeValueNotifications(std::vector<int> &items)
 
 std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(int const timeoutInSeconds)
 {
-#ifdef _DEBUG
+//#ifdef _DEBUG
 	_log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
-#endif
+//#endif
 	std::string query = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 	query += "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:utcs=\"utcs\">";
 	query += "<soapenv:Header/><soapenv:Body>";
@@ -252,9 +252,9 @@ std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(in
 	TiXmlDocument doc;
 	//sResult = "<?xml version='1.0' encoding='UTF-8'?><SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><SOAP-ENV:Body><SOAP-ENV:Fault><faultcode>SOAP-ENV:Server</faultcode><faultstring>Logon Failed</faultstring><detail>com.wingfoot.soap.server.RouterException: Logon Failed   at _ZN4java4lang11VMThrowable16fillInStackTraceEPNS0_9ThrowableE (/utcs/lib/libgcj.so.5)   at _ZN4java4lang9Throwable16fillInStackTraceEv (/utcs/lib/libgcj.so.5)   at _ZN4java4lang9ThrowableC1EPNS0_6StringE (/utcs/lib/libgcj.so.5)   at _ZN4java4lang9ExceptionC1EPNS0_6StringE (/utcs/lib/libgcj.so.5)   at 0x102965e8 (Unknown Source)   at 0x1029665c (Unknown Source)   at 0x102994d8 (Unknown Source)   at 0x1029abec (Unknown Source)   at 0x10297284 (Unknown Source)   at 0x10256954 (Unknown Source)   at 0x10185cf0 (Unknown Source)   at 0x10185e30 (Unknown Source)   at 0x1019c258 (Unknown Source)   at 0x1019cb14 (Unknown Source)   at 0x1019da6c (Unknown Source)   at _ZN4java4lang6Thread3runEv (/utcs/lib/libgcj.so.5)   at _Z13_Jv_ThreadRunPN4java4lang6ThreadE (/utcs/lib/libgcj.so.5)   at 0x0fc7df24 (Unknown Source)   at GC_start_routine (/utcs/lib/libgcj.so.5)   at 0x0f8f43a0 (Unknown Source)   at __clone (/lib/libc.so.6)</detail></SOAP-ENV:Fault></SOAP-ENV:Body></SOAP-ENV:Envelope>";
     doc.Parse(sResult.c_str());
-#ifdef _DEBUG
+//#ifdef _DEBUG
     doc.Print();
-#endif
+//#endif
     //_log.Log(LOG_STATUS,"IHC_RESULT: %s", sResult.c_str());
     std::vector<boost::shared_ptr<ResourceValue> > resourceList;
 

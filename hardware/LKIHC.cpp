@@ -163,9 +163,9 @@ void CLKIHC::Do_Work()
 
 		if (ihcC->CONNECTED != ihcC->connectionState)
 		{
-#ifdef _DEBUG
+//#ifdef _DEBUG
 		    _log.Log(LOG_STATUS,"LK IHC: Connecting to IHC controller...");
-#endif
+//#endif
 			try
 			{
 				if (0 == sec_counter % 30)
@@ -423,9 +423,9 @@ void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char d
 							  m_HwdID, sid);
     if (result.size() < 1)
     {
-        #ifdef _DEBUG
+//        #ifdef _DEBUG
 			_log.Log(LOG_NORM, "LK IHC: Added device %d %s", m_HwdID, sid);
-        #endif
+//        #endif
         char buff[100];
 
         if (isFunctionBlock)
@@ -561,9 +561,9 @@ std::string CLKIHC::getValue( TiXmlElement* const a, std::string const t)
 }
 bool CLKIHC::UpdateBatteryAndRSSI()
 {
-#ifdef _DEBUG
+//#ifdef _DEBUG
     _log.Log(LOG_STATUS, "LK IHC: Updating battery and RSSI levels");
-#endif
+//#endif
     TiXmlDocument const RFandRSSIinfo =  ihcC->getRF();
     TinyXPath::xpath_processor processor ( RFandRSSIinfo.RootElement(), "/SOAP-ENV:Envelope/SOAP-ENV:Body/ns1:getDetectedDeviceList1/ns1:arrayItem");
     processor.u_compute_xpath_node_set(); // <-- this is important. It executes the Xpath expression
