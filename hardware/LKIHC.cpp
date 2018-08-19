@@ -185,6 +185,7 @@ void CLKIHC::Do_Work()
 			{
 				if (firstTime)
 				{
+				    _log.Log(LOG_STATUS, "IHC First time");
 					firstTime = false;
 					rssiAndBatteryUpdate = 0;
 					activeResourceIdList.clear();
@@ -195,6 +196,7 @@ void CLKIHC::Do_Work()
 					const auto result = m_sql.safe_query("SELECT DeviceID, Type, SubType, BatteryLevel, SignalLevel, Options FROM DeviceStatus WHERE HardwareID==%d", m_HwdID);
 					if (!result.empty())
 					{
+					    _log.Log(LOG_STATUS, "IHC Creating cache");
 						for (auto itt = result.begin(); itt != result.end(); ++itt)
 						{
 							auto sd = *itt;
@@ -216,8 +218,7 @@ void CLKIHC::Do_Work()
 						}
 					}
 
-					/*std::cout << "Cache length: " << DeviceCache.size() << std::endl;
-					std::cout << "Length: " << IhcDeviceSerialToDeviceID.size() << std::endl;*/
+					_log.Log(LOG_STATUS, "Cache length: %d", DeviceCache.size());
 					/*for(std::multimap<IhcDeviceSerial, IhcDeviceID>::iterator iter = IhcSerialList.begin(); iter != IhcSerialList.end(); ++iter)
 					{
 						IhcDeviceSerial k =  (*iter).first;
@@ -311,6 +312,7 @@ void CLKIHC::Do_Work()
 				}
 				else
 				{
+				    _log.Log(LOG_STATUS, "LK IHC: No devices active - disconnecting");
 					sleep_seconds(10);
 					ihcC->reset();
 				}
@@ -474,7 +476,7 @@ void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char d
             "VALUES (%d,'%q',%d,%d,%d,12,255,'%q',0, '', '', '', '%lld')",
             m_HwdID, sid, pTypeGeneralSwitch, deviceType, device, buff,1.0,1.0, serialNumber);
     }
-    else
+    /*else
     {
     	// TODO: Remove when merging to master
     	// Device already exists - add serialnumber
@@ -486,7 +488,7 @@ void CLKIHC::addDeviceIfNotExists(const TiXmlNode* device, const unsigned char d
             m_sql.safe_query("UPDATE DeviceStatus SET Options = '%lld' WHERE HardwareID = '%d' AND DeviceID = '%q'", serialNumber, m_HwdID, sid);
 
         }
-    }
+    }*/
 }
 
 void CLKIHC::iterateDevices(const TiXmlNode* deviceNode)
