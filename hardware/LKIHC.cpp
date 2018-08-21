@@ -153,12 +153,11 @@ void CLKIHC::Do_Work()
     auto crashCounter = 0;
     auto rssiAndBatteryUpdate = 0;
     auto firstTime = true;
-    auto sec_counter = 28;
+    auto sec_counter = 0;
 
     while (!m_stoprequested)
     {
 
-    	sec_counter++;
 		m_LastHeartbeat = mytime(NULL);
 
 		if (ihcC->CONNECTED != ihcC->connectionState)
@@ -177,6 +176,7 @@ void CLKIHC::Do_Work()
 				ihcC->reset();
 				firstTime = true;
 			}
+            sec_counter++;
 		}
 		else
 		{
@@ -311,6 +311,7 @@ void CLKIHC::Do_Work()
 				    _log.Log(LOG_STATUS, "LK IHC: No devices active - disconnecting");
 					sleep_seconds(10);
 					ihcC->reset();
+					sec_counter = 0;
 				}
 			}
 			catch (...)
@@ -318,6 +319,7 @@ void CLKIHC::Do_Work()
 				crashCounter++;
 				_log.Log(LOG_ERROR, "LK IHC: The IHC controller has crashed %d times since Domoticz was started", crashCounter);
 				ihcC->reset();
+				sec_counter = 0;
 				firstTime = true;
 			}
 		}
