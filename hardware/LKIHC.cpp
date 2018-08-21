@@ -180,7 +180,6 @@ void CLKIHC::Do_Work()
 		}
 		else
 		{
-
 			try
 			{
 				if (firstTime)
@@ -259,7 +258,6 @@ void CLKIHC::Do_Work()
 						UpdateBatteryAndRSSI();
 					rssiAndBatteryUpdate++;*/
 
-
 					std::vector<int> resourceIdList;
 					for (auto itt = result.begin(); itt != result.end(); ++itt)
 					{
@@ -275,11 +273,9 @@ void CLKIHC::Do_Work()
 						_log.Log(LOG_STATUS, "LK IHC: Updating listener resource list with %d elements", activeResourceIdList.size());
 					}
 
-					//std::vector<boost::shared_ptr<ResourceValue> > updatedResources;
 					const auto updatedResources = ihcC->waitResourceValueNotifications(RESOURCE_NOTIFICATION_TIMEOUT_S);
 
 					// Handle object state changes
-					//for (std::vector<boost::shared_ptr<ResourceValue> >::iterator it = updatedResources.begin(); it != updatedResources.end(); ++it)
 					for (auto  it = updatedResources.begin(); it != updatedResources.end(); ++it)
 					{
 						ResourceValue & obj = *(*it);
@@ -532,7 +528,11 @@ void CLKIHC::iterateDevices(const TiXmlNode* deviceNode)
         iterateDevices(node);
     }
 }
-
+void CLKIHC::logout()
+{
+std::cout << "Reset"<< std::endl;
+ihcC->ihclogout();
+}
 void CLKIHC::GetDevicesFromController()
 {
 	if (ihcC->CONNECTED != ihcC->connectionState) {
@@ -622,6 +622,37 @@ void CWebServer::GetIHCProjectFromController(WebEmSession & session, const reque
     try
     {
         pHardware->GetDevicesFromController();
+    }
+    catch (const char* msg)
+    {
+        _log.Log(LOG_ERROR, "LK IHC: Exception: '%s'", msg);
+    }
+}
+void CWebServer::debugLogout(WebEmSession & session, const request& req, std::string & redirect_uri)
+{
+    redirect_uri = "/index.html";
+    if (session.rights != 2)
+    {
+        //No admin user, and not allowed to be here
+        return;
+    }
+
+    std::string idx = request::findValue(&req, "idx");
+    if (idx == "") {
+        return;
+    }
+
+    int iHardwareID = atoi(idx.c_str());
+    CDomoticzHardwareBase *pBaseHardware = m_mainworker.GetHardware(iHardwareID);
+    if (pBaseHardware == NULL)
+        return;
+    if (pBaseHardware->HwdType != HTYPE_IHC)
+        return;
+    CLKIHC *pHardware = reinterpret_cast<CLKIHC*>(pBaseHardware);
+
+    try
+    {
+        pHardware->logout();
     }
     catch (const char* msg)
     {

@@ -360,6 +360,7 @@ namespace http {
 			m_pWebEm->RegisterActionCode("sets0metertype", boost::bind(&CWebServer::SetS0MeterType, this, _1, _2, _3));
 			m_pWebEm->RegisterActionCode("setlimitlesstype", boost::bind(&CWebServer::SetLimitlessType, this, _1, _2, _3));
 			m_pWebEm->RegisterActionCode("reloadlkihc", boost::bind(&CWebServer::GetIHCProjectFromController, this, _1, _2, _3));
+			m_pWebEm->RegisterActionCode("resetihc", boost::bind(&CWebServer::debugLogout, this, _1, _2, _3));
 
 			m_pWebEm->RegisterActionCode("uploadfloorplanimage", boost::bind(&CWebServer::UploadFloorplanImage, this, _1, _2, _3));
 

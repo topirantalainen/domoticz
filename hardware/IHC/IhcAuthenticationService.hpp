@@ -52,6 +52,26 @@ public:
 	    loginResult->encodeData(doc);
 	    return loginResult;
 	}
+
+	void logout()
+	{
+		TiXmlDocument doc;
+
+			    std::string sResult;
+
+			    std::string query = "<x:Envelope xmlns:x=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:utc=\"utcs\">\r\n";
+			    query += "<x:Header/>\r\n";
+			    query += "<x:Body/>\r\n";
+			    query += "</x:Envelope>\r\n\r\n";
+		        sResult = sendQuery(url, query, "disconnect");
+
+			    doc.Parse(sResult.c_str());
+			    doc.Print();
+
+
+
+
+	}
 };
 
 #endif /* IHC_IHCAUTHENTICATIONSERVICE_HPP_ */

@@ -13,6 +13,7 @@ public:
 	~CLKIHC(void);
 	bool WriteToHardware(const char *pdata, const unsigned char length);
 	void GetDevicesFromController();
+	void logout();
 
 private:
 	std::string m_IPAddress;

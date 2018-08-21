@@ -4960,6 +4960,12 @@ define(['app'], function (app) {
 				ShowNotify($.t('Device list updated!'), 2500);
 			});
 		}
+		ResetLKIhc = function(idx,name)
+		{
+			$.post("resetihc.webem", { 'idx':idx }, function(data) {
+				ShowNotify($.t('IHC RESET!'), 2500);
+			});
+		}
 
 		AddArilux = function (idx, name) {
 			$.devIdx = idx;
@@ -5195,6 +5201,7 @@ define(['app'], function (app) {
 							}
 							else if (HwTypeStr.indexOf("LK IHC Controller") >= 0) {
 								HwTypeStr += ' <span class="label label-info lcursor" onclick="ReloadLKIhc(' + item.idx + ',\'' + item.Name + '\',' + item.Mode1 + ',' + item.Mode2 + ',' + item.Mode3 + ',' + item.Mode4 + ',' + item.Mode5 + ',' + item.Mode6 + ');">' + $.t("Get devices") + '</span>';
+								HwTypeStr += ' <span class="label label-info lcursor" onclick="ResetLKIhc(' + item.idx + ',\'' + item.Name + '\',' + item.Mode1 + ',' + item.Mode2 + ',' + item.Mode3 + ',' + item.Mode4 + ',' + item.Mode5 + ',' + item.Mode6 + ');">' + $.t("Reset") + '</span>';
 							}
 							else if (HwTypeStr.indexOf("Dummy") >= 0) {
 								HwTypeStr += ' <span class="label label-info lcursor" onclick="CreateDummySensors(' + item.idx + ',\'' + item.Name + '\');">' + $.t("Create Virtual Sensors") + '</span>';

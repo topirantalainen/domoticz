@@ -116,7 +116,13 @@ void openConnection()
 
     connectionState = CONNECTED;
 }
+/* TODO: Remove  before production*/
+void ihclogout()
+{
+authenticationService->logout();
+}
 
+/* end */
 public:
 
 TiXmlDocument getRF()
