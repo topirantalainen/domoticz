@@ -314,6 +314,20 @@ void CLKIHC::Do_Work()
 					sec_counter = 0;
 				}
 			}
+			catch (ihcException &e)
+			{
+				_log.Log(LOG_ERROR,"IHC_RESULT: ------------- START -----------------");
+				//_log.Log(LOG_ERROR,"IHC DUMP: %s", sResult.c_str());
+				//std::cout << "got ihc exception\n";
+				_log.Log(LOG_ERROR,"IHC DUMP Query: %s", e.get_xmla().c_str());
+				_log.Log(LOG_ERROR,"IHC_RESULT: - - - - - - - - - - - - - - - - - - -");
+				_log.Log(LOG_ERROR,"IHC DUMP Response: %s", e.get_xmlb().c_str());
+				_log.Log(LOG_ERROR,"IHC_RESULT: ------------- END -------------------");
+				crashCounter++;
+				ihcC->reset();
+				sec_counter = 0;
+				firstTime = true;
+			}
 			catch (...)
 			{
 				crashCounter++;

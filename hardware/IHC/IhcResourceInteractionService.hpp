@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include "datatypes/WSResourceValue.hpp"
+#include "IhcException.hpp"
 #include <boost/variant.hpp>
 #include <iostream>
 #include <memory>
@@ -198,6 +199,7 @@ boost::shared_ptr<ResourceValue> parseResourceValue(TiXmlElement* xmlRes, int co
 		}
 
 		//Todo: throw unknown type
+		//throw ihcException("Unknown datatype", *xmlRes);
 	}
 
 	boost::shared_ptr<ResourceValue> r = boost::shared_ptr<ResourceValue>(new ResourceValue(123));
@@ -253,7 +255,7 @@ std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(in
 	//sResult = "<?xml version='1.0' encoding='UTF-8'?><SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><SOAP-ENV:Body><SOAP-ENV:Fault><faultcode>SOAP-ENV:Server</faultcode><faultstring>Logon Failed</faultstring><detail>com.wingfoot.soap.server.RouterException: Logon Failed   at _ZN4java4lang11VMThrowable16fillInStackTraceEPNS0_9ThrowableE (/utcs/lib/libgcj.so.5)   at _ZN4java4lang9Throwable16fillInStackTraceEv (/utcs/lib/libgcj.so.5)   at _ZN4java4lang9ThrowableC1EPNS0_6StringE (/utcs/lib/libgcj.so.5)   at _ZN4java4lang9ExceptionC1EPNS0_6StringE (/utcs/lib/libgcj.so.5)   at 0x102965e8 (Unknown Source)   at 0x1029665c (Unknown Source)   at 0x102994d8 (Unknown Source)   at 0x1029abec (Unknown Source)   at 0x10297284 (Unknown Source)   at 0x10256954 (Unknown Source)   at 0x10185cf0 (Unknown Source)   at 0x10185e30 (Unknown Source)   at 0x1019c258 (Unknown Source)   at 0x1019cb14 (Unknown Source)   at 0x1019da6c (Unknown Source)   at _ZN4java4lang6Thread3runEv (/utcs/lib/libgcj.so.5)   at _Z13_Jv_ThreadRunPN4java4lang6ThreadE (/utcs/lib/libgcj.so.5)   at 0x0fc7df24 (Unknown Source)   at GC_start_routine (/utcs/lib/libgcj.so.5)   at 0x0f8f43a0 (Unknown Source)   at __clone (/lib/libc.so.6)</detail></SOAP-ENV:Fault></SOAP-ENV:Body></SOAP-ENV:Envelope>";
     doc.Parse(sResult.c_str());
 //#ifdef _DEBUG
-    doc.Print();
+    //doc.Print();
 //#endif
     //_log.Log(LOG_STATUS,"IHC_RESULT: %s", sResult.c_str());
     std::vector<boost::shared_ptr<ResourceValue> > resourceList;
@@ -280,9 +282,10 @@ std::vector<boost::shared_ptr<ResourceValue> > waitResourceValueNotifications(in
     }
     else
     {
-        _log.Log(LOG_STATUS,"IHC_RESULT: Controller crash!? ---------------------------------");
-        _log.Log(LOG_STATUS,"IHC DUMP: %s", sResult.c_str());
-        throw std::runtime_error("Empty result");
+        //_log.Log(LOG_STATUS,"IHC_RESULT: Controller crash!? ---------------------------------");
+        //_log.Log(LOG_STATUS,"IHC DUMP: %s", sResult.c_str());
+        //throw std::runtime_error("Empty result");
+        throw ihcException("Empty result", query, sResult);
     }
 
     return resourceList;
