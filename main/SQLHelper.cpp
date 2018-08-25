@@ -3076,7 +3076,7 @@ bool CSQLHelper::SwitchLightFromTasker(uint64_t idx, const std::string &switchcm
 {
 	//Get Device details
 	std::vector<std::vector<std::string> > result;
-	result = safe_query("SELECT HardwareID, DeviceID,Unit,Type,SubType,SwitchType,AddjValue2,nValue,sValue,Name,Options FROM DeviceStatus WHERE (ID == %" PRIu64 ")", idx);
+	result = safe_query("SELECT HardwareID, DeviceID,Unit,Type,SubType,SwitchType,AddjValue2,nValue,sValue,Name,Options,SignalLevel,BatteryLevel FROM DeviceStatus WHERE (ID == %" PRIu64 ")", idx);
 	if (result.empty())
 		return false;
 
