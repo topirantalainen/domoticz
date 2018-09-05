@@ -10860,7 +10860,7 @@ bool MainWorker::SwitchLightInt(const std::vector<std::string> &sd, std::string 
 	_eSwitchType switchtype = (_eSwitchType)atoi(sd[5].c_str());
 	std::map<std::string, std::string> options = m_sql.BuildDeviceOptions(sd[10].c_str());
 	unsigned char rssi = 12; //(atoi(sd[11].c_str()) > 0 ) ? atoi(sd[11].c_str()) : 12;
-	unsigned char batteryLevel = (atoi(sd[12].c_str()) > 0 ) ? atoi(sd[12].c_str()) : -1;
+	unsigned char batteryLevel = -1; //(atoi(sd[12].c_str()) > 0 ) ? atoi(sd[12].c_str()) : -1;
 
 	//when asking for Toggle, just switch to the opposite value
 	if (switchcmd == "Toggle") {

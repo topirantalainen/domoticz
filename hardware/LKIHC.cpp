@@ -254,10 +254,10 @@ void CLKIHC::Do_Work()
 						ihcC->openConnection();
 					}
 
-					if (rssiAndBatteryUpdate % 100 == 0)
+					/*if (rssiAndBatteryUpdate % 100 == 0)
 						UpdateBatteryAndRSSI();
 					rssiAndBatteryUpdate++;
-
+*/
 					std::vector<int> resourceIdList;
 					for (auto itt = result.begin(); itt != result.end(); ++itt)
 					{
