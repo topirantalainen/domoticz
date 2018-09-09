@@ -65,7 +65,6 @@ ihcClient(std::string const &ip, std::string const &username, std::string const 
     authenticationService = new IhcAuthenticationService(ip);
     resourceInteractionService = new IhcResourceInteractionService(ip);
     controllerService = new IhcControllerService(ip);
-    controllerState = controllerService->getControllerState();
     wire = new IhcWireless(ip);
 }
 
@@ -85,16 +84,16 @@ void openConnection()
     connectionState = CONNECTING;
 
     WSLoginResult* loginResult;
-    try
-    {
+//    try
+//    {
          loginResult = authenticationService->authenticate(username, password);
-    }
+/*    }
     catch (const char* msg)
     {
         _log.Log(LOG_ERROR, "LK IHC: Error: '%s'", msg);
         throw std::runtime_error(msg);
     }
-
+*/
     if (!loginResult->isLoginWasSuccessful())
     {
         connectionState = DISCONNECTED;

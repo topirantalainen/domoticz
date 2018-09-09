@@ -30,6 +30,7 @@ public:
 	}
 	TiXmlDocument getRF()
 	{
+	    _log.Log(LOG_STATUS,"IHC_TRACE: %s", __FUNCTION__);
 	    //std::string url = url = "http://192.168.1.99/ws/AirlinkManagementService";
         std::string sResult;
         TiXmlDocument doc;

@@ -108,8 +108,14 @@ bool CLKIHC::StartHardware()
     /*Start worker thread*/
     m_bIsStarted=true;
     sOnConnected(this);
+    try {
     ihcC = new ihcClient(m_IPAddress, m_UserName, m_Password);
+    }
+    catch(...)
+    {
 
+	    _log.Log(LOG_STATUS,"LK IHC: THIS ERROR SHOULD NEVER OCCUR...");
+    }
     m_thread = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&CLKIHC::Do_Work, this)));
 
     return (m_thread!=NULL);
@@ -176,6 +182,14 @@ void CLKIHC::Do_Work()
 				ihcC->reset();
 				firstTime = true;
 			}
+	    catch(std::exception& e )
+	    {
+
+		std::string what = e.what();
+            	_log.Log(LOG_ERROR, "LK IHC: Error: '%s'", what.c_str());
+		ihcC->reset();
+		firstTime = true;
+	    }
             sec_counter++;
 		}
 		else
